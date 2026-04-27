@@ -1,6 +1,6 @@
-import { AppProviders } from '@/core/AppProviders';
-import { RootErrorBoundary } from '@/core/RootErrorBoundary';
-import { StartupGate } from '@/core/StartupGate';
+import { AppProviders } from '@/src/core/AppProviders';
+import { RootErrorBoundary } from '@/src/core/RootErrorBoundary';
+import { StartupGate } from '@/src/core/StartupGate';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
