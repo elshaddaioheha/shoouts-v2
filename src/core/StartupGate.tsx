@@ -1,20 +1,13 @@
 import { LoadingState } from '@/src/components/ui/LoadingState';
-import { ReactNode, useEffect, useState } from 'react';
+import { useAuthBootstrap } from '@/src/features/auth/useAuthBootstrap';
+import { ReactNode } from 'react';
 
 type StartupGateProps = {
   children: ReactNode;
 };
 
 export function StartupGate({ children }: StartupGateProps) {
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setReady(true);
-    }, 300);
-
-    return () => clearTimeout(timeout);
-  }, []);
+  const { ready } = useAuthBootstrap();
 
   if (!ready) {
     return <LoadingState label="Starting Shoout..." />;

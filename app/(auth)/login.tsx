@@ -1,8 +1,30 @@
 import { Screen } from '@/src/components/ui/Screen';
+import { auth } from '@/src/config/firebase';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useState } from 'react';
+import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function LoginScreen() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleLogin() {
+    if (!email.trim() || !password) return;
+
+    setSubmitting(true);
+
+    try {
+      await signInWithEmailAndPassword(auth, email.trim(), password);
+      router.replace('/');
+    } catch {
+      Alert.alert('Login failed', 'Check your email and password, then try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <Screen keyboard>
       <View style={styles.container}>
@@ -11,18 +33,24 @@ export default function LoginScreen() {
         <TextInput
           placeholder="Email"
           placeholderTextColor="rgba(255,255,255,0.5)"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
           style={styles.input}
         />
 
         <TextInput
           placeholder="Password"
           placeholderTextColor="rgba(255,255,255,0.5)"
+          value={password}
+          onChangeText={setPassword}
           secureTextEntry
           style={styles.input}
         />
 
-        <Pressable style={styles.button} onPress={() => router.replace('/(tabs)')}>
-          <Text style={styles.buttonText}>Login Test</Text>
+        <Pressable style={styles.button} onPress={handleLogin} disabled={submitting}>
+          <Text style={styles.buttonText}>{submitting ? 'Logging in...' : 'Login'}</Text>
         </Pressable>
       </View>
     </Screen>
