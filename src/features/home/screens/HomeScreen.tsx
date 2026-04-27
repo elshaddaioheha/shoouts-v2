@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, StatusBar, Image } from 'react-native';
 import { useAppTheme } from '@/src/hooks/use-app-theme';
+import { AppShell } from '@/src/features/navigation/components/AppShell';
 
 const mockTracks = [
   {
@@ -31,44 +32,46 @@ export function HomeScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: appTheme.colors.background }]}>
-      <StatusBar barStyle={appTheme.isDark ? 'light-content' : 'dark-content'} />
+    <AppShell>
+      <View style={[styles.container, { backgroundColor: appTheme.colors.background }]}>
+        <StatusBar barStyle={appTheme.isDark ? 'light-content' : 'dark-content'} />
 
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: appTheme.colors.textPrimary }]}>Home</Text>
-        <Text style={[styles.subtitle, { color: appTheme.colors.textSecondary }]}>Latest demos and featured beats</Text>
-      </View>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: appTheme.colors.textPrimary }]}>Home</Text>
+          <Text style={[styles.subtitle, { color: appTheme.colors.textSecondary }]}>Latest demos and featured beats</Text>
+        </View>
 
-      <FlatList
-        data={mockTracks}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => (
-          <View style={[styles.card, { borderColor: appTheme.colors.border }]}>
-            {item.artworkUrl ? (
-              <Image source={{ uri: item.artworkUrl }} style={styles.artwork} />
-            ) : (
-              <View style={[styles.artworkPlaceholder, { backgroundColor: appTheme.isDark ? '#222' : '#EEE' }]} />
-            )}
+        <FlatList
+          data={mockTracks}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item }) => (
+            <View style={[styles.card, { borderColor: appTheme.colors.border }]}>
+              {item.artworkUrl ? (
+                <Image source={{ uri: item.artworkUrl }} style={styles.artwork} />
+              ) : (
+                <View style={[styles.artworkPlaceholder, { backgroundColor: appTheme.isDark ? '#222' : '#EEE' }]} />
+              )}
 
-            <View style={styles.meta}>
-              <Text style={[styles.trackTitle, { color: appTheme.colors.textPrimary }]} numberOfLines={1}>{item.title}</Text>
-              <Text style={[styles.trackArtist, { color: appTheme.colors.textSecondary }]} numberOfLines={1}>{item.artist}</Text>
-              <Text style={[styles.trackPrice, { color: appTheme.colors.textSecondary }]}>{item.price > 0 ? `$${item.price}` : 'Free'}</Text>
+              <View style={styles.meta}>
+                <Text style={[styles.trackTitle, { color: appTheme.colors.textPrimary }]} numberOfLines={1}>{item.title}</Text>
+                <Text style={[styles.trackArtist, { color: appTheme.colors.textSecondary }]} numberOfLines={1}>{item.artist}</Text>
+                <Text style={[styles.trackPrice, { color: appTheme.colors.textSecondary }]}>{item.price > 0 ? `$${item.price}` : 'Free'}</Text>
 
-              <View style={styles.actionsRow}>
-                <TouchableOpacity style={[styles.actionButton, { borderColor: appTheme.colors.border }]} onPress={handlePlay}>
-                  <Text style={[styles.actionText, { color: appTheme.colors.primary }]}>Play</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionButton, { borderColor: appTheme.colors.border }]} onPress={handleAddToCart}>
-                  <Text style={[styles.actionText, { color: appTheme.colors.primary }]}>Add to Cart</Text>
-                </TouchableOpacity>
+                <View style={styles.actionsRow}>
+                  <TouchableOpacity style={[styles.actionButton, { borderColor: appTheme.colors.border }]} onPress={handlePlay}>
+                    <Text style={[styles.actionText, { color: appTheme.colors.primary }]}>Play</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.actionButton, { borderColor: appTheme.colors.border }]} onPress={handleAddToCart}>
+                    <Text style={[styles.actionText, { color: appTheme.colors.primary }]}>Add to Cart</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </View>
-        )}
-      />
-    </View>
+          )}
+        />
+      </View>
+    </AppShell>
   );
 }
 
