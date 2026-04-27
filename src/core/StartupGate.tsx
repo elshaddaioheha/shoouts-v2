@@ -12,28 +12,10 @@ type StartupGateProps = {
 export function StartupGate({ children }: StartupGateProps) {
   const { ready } = useAuthBootstrap();
   const clearSession = useAuthStore((s) => s.clearSession);
-
-  useEffect(() => {
-    // Force sign-out on startup (temporary, dev-only helper).
-    // This ensures onboarding appears for local testing even when
-    // a Firebase session was persisted on the device.
-    let mounted = true;
-
-    (async () => {
-      try {
-        await signOut(auth);
-      } catch {
-        // ignore sign-out errors
-      }
-
-      if (!mounted) return;
-      clearSession();
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, [clearSession]);
+  // NOTE: Temporary forced sign-out removed so onboarding/role selection
+  // no longer get triggered unexpectedly. If you need a dev-only
+  // forced sign-out, wrap the logic below with a feature flag or
+  // set `if (__DEV__) { ... }` and uncomment.
 
   if (!ready) {
     return <LoadingState label="Starting Shoout..." />;

@@ -1,0 +1,1 @@
+export { RoleSelectionScreen as default } from '@/src/features/auth/screens/RoleSelectionScreen';
