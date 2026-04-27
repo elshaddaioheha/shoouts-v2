@@ -6,7 +6,6 @@ export default function TabsLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="marketplace" />
       <Stack.Screen name="cart" />
-      <Stack.Screen name="downloads" />
       <Stack.Screen name="more" />
     </Stack>
   );

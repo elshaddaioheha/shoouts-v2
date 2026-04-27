@@ -10,7 +10,6 @@ export const EXPERIENCE_NAVIGATION: Record<AppExperience, ExperienceNavigationCo
       { key: 'home', label: 'Home', route: '/(tabs)' },
       { key: 'marketplace', label: 'Market', route: '/(tabs)/marketplace' },
       { key: 'cart', label: 'Cart', route: '/(tabs)/cart' },
-      { key: 'downloads', label: 'Downloads', route: '/(tabs)/downloads' },
       { key: 'more', label: 'More', route: '/(tabs)/more' },
     ],
   },
