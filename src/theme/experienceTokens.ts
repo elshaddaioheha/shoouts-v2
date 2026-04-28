@@ -25,6 +25,7 @@ export type ExperienceTone = {
   };
 
   gradient: readonly [string, string];
+  mediaGradient?: readonly [string, string];
 };
 
 export const experienceTokens: Record<AppExperience | UserRole, ExperienceTone> = {
@@ -49,6 +50,7 @@ export const experienceTokens: Record<AppExperience | UserRole, ExperienceTone> 
       accentBorder: 'rgba(236,92,57,0.28)',
     },
     gradient: ['#EC5C39', '#FF8A5B'],
+    mediaGradient: ['#522007', '#666666'],
   },
 
   vault: {

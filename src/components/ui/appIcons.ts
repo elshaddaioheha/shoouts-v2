@@ -1,0 +1,62 @@
+import {
+  BarChart3,
+  Bell,
+  CreditCard,
+  Download,
+  Folder,
+  Heart,
+  Home,
+  Library,
+  Lock,
+  MessageCircle,
+  Mic,
+  MoreHorizontal,
+  Music,
+  Pause,
+  Play,
+  Plus,
+  Search,
+  Settings,
+  Share2,
+  ShieldCheck,
+  ShoppingCart,
+  Upload,
+  User,
+  Wallet,
+  Zap,
+} from 'lucide-react-native';
+
+export const appIcons = {
+  home: Home,
+  market: Search,
+  cart: ShoppingCart,
+  downloads: Download,
+  more: MoreHorizontal,
+
+  vault: Folder,
+  folders: Library,
+  record: Mic,
+  shared: Lock,
+
+  studio: Music,
+  listings: Library,
+  upload: Upload,
+  promote: Zap,
+  analytics: BarChart3,
+
+  hybrid: ShieldCheck,
+
+  play: Play,
+  pause: Pause,
+  like: Heart,
+  share: Share2,
+  messages: MessageCircle,
+  settings: Settings,
+  profile: User,
+  wallet: Wallet,
+  billing: CreditCard,
+  notifications: Bell,
+  add: Plus,
+} as const;
+
+export type AppIconKey = keyof typeof appIcons;

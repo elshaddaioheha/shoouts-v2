@@ -1,3 +1,4 @@
+import { AppIcon } from '@/src/components/ui/AppIcon';
 import { AppText } from '@/src/components/ui/AppText';
 import { EXPERIENCE_NAVIGATION } from '@/src/features/navigation/navigation.config';
 import { useExperienceNavigationStore } from '@/src/features/navigation/navigation.store';
@@ -26,6 +27,14 @@ export function BottomPillBar() {
               onPress={() => router.replace(item.route as any)}
               style={[styles.item, active && styles.activeItem]}
             >
+              <AppIcon
+                name={item.icon}
+                size="sm"
+                variant={active ? 'solid' : 'plain'}
+                tone={active ? 'inverse' : 'secondary'}
+                stroke={active ? 'medium' : 'regular'}
+              />
+
               <AppText
                 variant="caption"
                 tone={active ? 'primary' : 'secondary'}
@@ -72,6 +81,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: theme.spacing.sm,
+      gap: theme.spacing.xs,
     },
     activeItem: {
       backgroundColor: theme.colors.accent,

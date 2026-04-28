@@ -1,3 +1,4 @@
+import type { AppIconKey } from '@/src/components/ui/appIcons';
 import type { AppExperience } from '@/src/features/access/access.types';
 
 export type AppTabKey =
@@ -21,6 +22,7 @@ export type BottomNavItem = {
   key: AppTabKey;
   label: string;
   route: string;
+  icon: AppIconKey;
 };
 
 export type ExperienceNavigationConfig = {

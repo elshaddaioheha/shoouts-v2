@@ -1,6 +1,7 @@
 export * from './colors';
 export * from './experienceTokens';
 export * from './fonts';
+export * from './icons';
 export * from './layout';
 export * from './neutralPalettes';
 export * from './radius';

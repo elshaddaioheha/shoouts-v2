@@ -1,6 +1,7 @@
 import { useExperienceNavigationStore } from '@/src/features/navigation/navigation.store';
 import { useColorScheme } from 'react-native';
 import { experienceTokens } from './experienceTokens';
+import { iconContainers, iconSizes, iconStrokeWidths } from './icons';
 import { layout } from './layout';
 import { neutralPalettes } from './neutralPalettes';
 import { radius } from './radius';
@@ -67,5 +68,8 @@ export function useThemeTokens() {
     layout,
     typography,
     shadows,
+    iconSizes,
+    iconStrokeWidths,
+    iconContainers,
   };
 }
