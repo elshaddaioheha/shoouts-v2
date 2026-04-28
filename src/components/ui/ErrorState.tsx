@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useThemeTokens } from '@/src/theme';
 
 type ErrorStateProps = {
   title?: string;
@@ -13,6 +14,9 @@ export function ErrorState({
   actionLabel = 'Retry',
   onAction,
 }: ErrorStateProps) {
+  const theme = useThemeTokens();
+  const styles = createStyles(theme);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
@@ -27,35 +31,37 @@ export function ErrorState({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#140F10',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  title: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  message: {
-    color: 'rgba(255,255,255,0.72)',
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: '#EC5C39',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-});
+function createStyles(theme: ReturnType<typeof useThemeTokens>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+    },
+    title: {
+      color: theme.colors.textPrimary,
+      fontSize: 22,
+      fontWeight: '700',
+      textAlign: 'center',
+      marginBottom: 8,
+    },
+    message: {
+      color: theme.colors.textSecondary,
+      fontSize: 14,
+      textAlign: 'center',
+      marginBottom: 20,
+    },
+    button: {
+      backgroundColor: theme.experience.accent,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 12,
+    },
+    buttonText: {
+      color: '#FFFFFF',
+      fontWeight: '700',
+    },
+  });
+}

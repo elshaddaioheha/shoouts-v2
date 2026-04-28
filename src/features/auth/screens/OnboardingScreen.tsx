@@ -225,8 +225,8 @@ export function OnboardingScreen() {
               activeOpacity={0.9}
               onPress={handleNext}
             >
-              <Text style={styles.nextText}>{currentIndex === slides.length - 1 ? 'Get Started' : 'Next'}</Text>
-              <Text style={styles.nextArrow}>→</Text>
+              <Text style={[styles.nextText, { color: appTheme.colors.textPrimary }]}>{currentIndex === slides.length - 1 ? 'Get Started' : 'Next'}</Text>
+              <Text style={[styles.nextArrow, { color: appTheme.colors.textPrimary }]}>→</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -320,13 +320,11 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   nextText: {
-    color: '#FFFFFF',
     fontFamily: 'Poppins-SemiBold',
     fontSize: 18,
     lineHeight: 24,
   },
   nextArrow: {
-    color: '#FFFFFF',
     fontFamily: 'Poppins-SemiBold',
     fontSize: 18,
     lineHeight: 24,

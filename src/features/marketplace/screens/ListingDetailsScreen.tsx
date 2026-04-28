@@ -147,7 +147,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       backgroundColor: theme.colors.card,
     },
     primaryText: {
-      color: '#FFFFFF',
+      color: theme.colors.textPrimary,
       fontWeight: '900',
     },
     buyButton: {
@@ -189,20 +189,21 @@ export function ListingDetailsScreen() {
     );
   }
 
-  const inCart = isInCart(listing.id);
+  const listingData = listing;
+  const inCart = isInCart(listingData.id);
 
   function handlePreview() {
-    Alert.alert('Player coming soon', `Preview playback for ${listing.title} will be added later.`);
+    Alert.alert('Player coming soon', `Preview playback for ${listingData.title} will be added later.`);
   }
 
   function handleAddToCart() {
     addItem({
-      id: listing.id,
-      listingId: listing.id,
-      title: listing.title,
-      artist: listing.artist,
-      price: listing.price,
-      coverUrl: listing.coverUrl,
+      id: listingData.id,
+      listingId: listingData.id,
+      title: listingData.title,
+      artist: listingData.artist,
+      price: listingData.price,
+      coverUrl: listingData.coverUrl,
     });
   }
 
@@ -213,7 +214,7 @@ export function ListingDetailsScreen() {
   function handleOpenArtist() {
     router.push({
       pathname: '/profile/[id]',
-      params: { id: listing.sellerId },
+      params: { id: listingData.sellerId },
     } as any);
   }
 
@@ -225,42 +226,42 @@ export function ListingDetailsScreen() {
         </Pressable>
 
         <View style={styles.hero}>
-          <Text style={styles.heroText}>{listing.genre ?? 'Beat'}</Text>
+          <Text style={styles.heroText}>{listingData.genre ?? 'Beat'}</Text>
         </View>
 
         <Text style={styles.eyebrow}>Marketplace Listing</Text>
-        <Text style={styles.title}>{listing.title}</Text>
+        <Text style={styles.title}>{listingData.title}</Text>
 
         <Pressable onPress={handleOpenArtist}>
-          <Text style={styles.artist}>by {listing.artist}</Text>
+          <Text style={styles.artist}>by {listingData.artist}</Text>
         </Pressable>
 
         <View style={styles.metaGrid}>
           <View style={styles.metaCard}>
             <Text style={styles.metaLabel}>Price</Text>
             <Text style={styles.metaValue}>
-              {listing.price <= 0 ? 'Free' : `$${listing.price.toFixed(2)}`}
+              {listingData.price <= 0 ? 'Free' : `$${listingData.price.toFixed(2)}`}
             </Text>
           </View>
 
           <View style={styles.metaCard}>
             <Text style={styles.metaLabel}>BPM</Text>
-            <Text style={styles.metaValue}>{listing.bpm ?? 'N/A'}</Text>
+            <Text style={styles.metaValue}>{listingData.bpm ?? 'N/A'}</Text>
           </View>
 
           <View style={styles.metaCard}>
             <Text style={styles.metaLabel}>Key</Text>
-            <Text style={styles.metaValue}>{listing.key ?? 'N/A'}</Text>
+            <Text style={styles.metaValue}>{listingData.key ?? 'N/A'}</Text>
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Description</Text>
-          <Text style={styles.description}>{listing.description}</Text>
+          <Text style={styles.description}>{listingData.description}</Text>
         </View>
 
         <View style={styles.tagRow}>
-          {listing.tags?.map((tag) => (
+          {listingData.tags?.map((tag) => (
             <View key={tag} style={styles.tag}>
               <Text style={styles.tagText}>{tag}</Text>
             </View>
@@ -283,7 +284,7 @@ export function ListingDetailsScreen() {
 
         <Pressable style={styles.buyButton} onPress={handleBuyNow}>
           <Text style={styles.buyText}>
-            {listing.price <= 0 ? 'Download later' : 'Buy now'}
+            {listingData.price <= 0 ? 'Download later' : 'Buy now'}
           </Text>
         </Pressable>
       </ScrollView>

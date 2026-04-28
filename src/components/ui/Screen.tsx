@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useThemeTokens } from '@/src/theme';
 
 type ScreenProps = {
   children: ReactNode;
@@ -9,6 +10,9 @@ type ScreenProps = {
 };
 
 export function Screen({ children, padded = true, keyboard = false }: ScreenProps) {
+  const theme = useThemeTokens();
+  const styles = createStyles(theme);
+
   const content = (
     <SafeAreaView style={[styles.container, padded && styles.padded]}>
       {children}
@@ -27,15 +31,17 @@ export function Screen({ children, padded = true, keyboard = false }: ScreenProp
   );
 }
 
-const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#140F10',
-  },
-  padded: {
-    paddingHorizontal: 16,
-  },
-});
+function createStyles(theme: ReturnType<typeof useThemeTokens>) {
+  return StyleSheet.create({
+    flex: {
+      flex: 1,
+    },
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    padded: {
+      paddingHorizontal: theme.spacing.lg,
+    },
+  });
+}

@@ -1,8 +1,10 @@
+import { useThemeTokens } from '@/src/theme';
 import { useAppTheme } from '@/src/hooks/use-app-theme';
 import { useRouter } from 'expo-router';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { Eye, EyeOff } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
+import { SocialButton } from '@/src/features/auth/components/SocialButton';
 import {
   Alert,
   Animated,
@@ -23,6 +25,8 @@ import { auth } from '@/src/config/firebase';
 const { width } = Dimensions.get('window');
 
 export function LoginScreen() {
+  const themeTokens = useThemeTokens();
+  const styles = createStyles(themeTokens);
   const appTheme = useAppTheme();
   const isLightMode = !appTheme.isDark;
   const lightBackground = '#FFF4EE';
@@ -173,25 +177,6 @@ export function LoginScreen() {
   );
 }
 
-function SocialButton({
-  icon,
-  text,
-  onPress,
-  isLight,
-}: {
-  icon: React.ReactNode;
-  text: string;
-  onPress?: () => void;
-  isLight: boolean;
-}) {
-  return (
-    <TouchableOpacity style={[styles.socialButton, isLight && { borderColor: '#D8B9AD', backgroundColor: '#FFF9F6' }]} onPress={onPress}>
-      {icon}
-      <Text style={[styles.socialButtonText, isLight && { color: '#2F2624' }]}>{text}</Text>
-    </TouchableOpacity>
-  );
-}
-
 function AppleIcon({ color = '#FFFFFF' }: { color?: string }) {
   return (
     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -214,180 +199,182 @@ function GoogleIcon() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#140F10',
-  },
-  scrollContent: {
-    paddingHorizontal: 33,
-    paddingTop: 60,
-    paddingBottom: 40,
-    alignItems: 'center',
-  },
-  guestRow: {
-    width: '100%',
-    alignItems: 'flex-end',
-    marginBottom: 12,
-  },
-  guestText: {
-    color: '#B7B7B7',
-    fontSize: 13,
-    fontFamily: 'Poppins-Regular',
-  },
-  logoContainer: {
-    width: 256,
-    height: 56,
-    marginBottom: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoText: {
-    color: 'white',
-    fontSize: 24,
-    fontFamily: 'Poppins-Bold',
-  },
-  title: {
-    color: 'white',
-    fontSize: 32,
-    fontFamily: 'Poppins-Bold',
-    lineHeight: 51,
-    textAlign: 'center',
-    letterSpacing: -0.5,
-    marginBottom: 15,
-  },
-  subtitle: {
-    color: 'white',
-    fontSize: 15,
-    fontFamily: 'Poppins-Regular',
-    lineHeight: 25,
-    textAlign: 'center',
-    letterSpacing: -0.5,
-    marginBottom: 27,
-  },
-  socialContainer: {
-    width: '100%',
-    gap: 12,
-    marginBottom: 17,
-  },
-  socialButton: {
-    width: '100%',
-    height: 56,
-    borderWidth: 1.5,
-    borderColor: '#464646',
-    borderRadius: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  socialButtonText: {
-    color: 'white',
-    fontSize: 15,
-    fontFamily: 'Poppins-Regular',
-    letterSpacing: -0.5,
-  },
-  dividerContainer: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 1,
-    marginBottom: 16,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#464646',
-  },
-  dividerText: {
-    flex: 2,
-    color: '#676767',
-    fontSize: 13,
-    fontFamily: 'Poppins-Regular',
-    textAlign: 'center',
-    letterSpacing: -0.5,
-  },
-  form: {
-    width: '100%',
-    gap: 16,
-    marginBottom: 23,
-  },
-  input: {
-    width: '100%',
-    height: 56,
-    paddingHorizontal: 16,
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: '#464646',
-    borderRadius: 10,
-    justifyContent: 'center',
-  },
-  inputText: {
-    color: 'white',
-    fontSize: 15,
-    fontFamily: 'Poppins-Regular',
-    height: '100%',
-    paddingVertical: 0,
-  },
-  passwordContainer: {
-    position: 'relative',
-    width: '100%',
-    height: 56,
-    paddingHorizontal: 16,
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: '#464646',
-    borderRadius: 10,
-    justifyContent: 'center',
-  },
-  eyeIcon: {
-    position: 'absolute',
-    right: 15,
-    top: 16,
-  },
-  actionContainer: {
-    width: '100%',
-    alignItems: 'flex-end',
-    gap: 24,
-    marginBottom: 23,
-  },
-  forgotPasswordText: {
-    fontSize: 15,
-    fontFamily: 'Poppins-Regular',
-    lineHeight: 25,
-    letterSpacing: -0.5,
-  },
-  loginButton: {
-    width: '100%',
-    height: 48,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#D32626',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  loginButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontFamily: 'Poppins-SemiBold',
-  },
-  footer: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  footerText: {
-    color: 'white',
-    fontSize: 15,
-    fontFamily: 'Poppins-Regular',
-    lineHeight: 25,
-    letterSpacing: -0.5,
-  },
-  registerText: {
-    fontSize: 15,
-    fontFamily: 'Poppins-SemiBold',
-  },
-});
+function createStyles(theme: ReturnType<typeof useThemeTokens>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    scrollContent: {
+      paddingHorizontal: 33,
+      paddingTop: 60,
+      paddingBottom: 40,
+      alignItems: 'center',
+    },
+    guestRow: {
+      width: '100%',
+      alignItems: 'flex-end',
+      marginBottom: 12,
+    },
+    guestText: {
+      color: theme.colors.textSecondary,
+      fontSize: 13,
+      fontFamily: 'Poppins-Regular',
+    },
+    logoContainer: {
+      width: 256,
+      height: 56,
+      marginBottom: 15,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    logoText: {
+      color: theme.colors.textPrimary,
+      fontSize: 24,
+      fontFamily: 'Poppins-Bold',
+    },
+    title: {
+      color: theme.colors.textPrimary,
+      fontSize: 32,
+      fontFamily: 'Poppins-Bold',
+      lineHeight: 51,
+      textAlign: 'center',
+      letterSpacing: -0.5,
+      marginBottom: 15,
+    },
+    subtitle: {
+      color: theme.colors.textPrimary,
+      fontSize: 15,
+      fontFamily: 'Poppins-Regular',
+      lineHeight: 25,
+      textAlign: 'center',
+      letterSpacing: -0.5,
+      marginBottom: 27,
+    },
+    socialContainer: {
+      width: '100%',
+      gap: 12,
+      marginBottom: 17,
+    },
+    socialButton: {
+      width: '100%',
+      height: 56,
+      borderWidth: 1.5,
+      borderColor: theme.colors.cardBorder,
+      borderRadius: 10,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+    },
+    socialButtonText: {
+      color: theme.colors.textPrimary,
+      fontSize: 15,
+      fontFamily: 'Poppins-Regular',
+      letterSpacing: -0.5,
+    },
+    dividerContainer: {
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 1,
+      marginBottom: 16,
+    },
+    dividerLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: theme.colors.cardBorder,
+    },
+    dividerText: {
+      flex: 2,
+      color: theme.colors.textMuted,
+      fontSize: 13,
+      fontFamily: 'Poppins-Regular',
+      textAlign: 'center',
+      letterSpacing: -0.5,
+    },
+    form: {
+      width: '100%',
+      gap: 16,
+      marginBottom: 23,
+    },
+    input: {
+      width: '100%',
+      height: 56,
+      paddingHorizontal: 16,
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderColor: theme.colors.cardBorder,
+      borderRadius: 10,
+      justifyContent: 'center',
+    },
+    inputText: {
+      color: theme.colors.textPrimary,
+      fontSize: 15,
+      fontFamily: 'Poppins-Regular',
+      height: '100%',
+      paddingVertical: 0,
+    },
+    passwordContainer: {
+      position: 'relative',
+      width: '100%',
+      height: 56,
+      paddingHorizontal: 16,
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderColor: theme.colors.cardBorder,
+      borderRadius: 10,
+      justifyContent: 'center',
+    },
+    eyeIcon: {
+      position: 'absolute',
+      right: 15,
+      top: 16,
+    },
+    actionContainer: {
+      width: '100%',
+      alignItems: 'flex-end',
+      gap: 24,
+      marginBottom: 23,
+    },
+    forgotPasswordText: {
+      fontSize: 15,
+      fontFamily: 'Poppins-Regular',
+      lineHeight: 25,
+      letterSpacing: -0.5,
+    },
+    loginButton: {
+      width: '100%',
+      height: 48,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#D32626',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 8,
+      elevation: 5,
+    },
+    loginButtonText: {
+      color: '#FFFFFF',
+      fontSize: 14,
+      fontFamily: 'Poppins-SemiBold',
+    },
+    footer: {
+      width: '100%',
+      flexDirection: 'row',
+      justifyContent: 'center',
+    },
+    footerText: {
+      color: theme.colors.textPrimary,
+      fontSize: 15,
+      fontFamily: 'Poppins-Regular',
+      lineHeight: 25,
+      letterSpacing: -0.5,
+    },
+    registerText: {
+      fontSize: 15,
+      fontFamily: 'Poppins-SemiBold',
+    },
+  });
+}

@@ -1,53 +1,145 @@
 import type { AppExperience, UserRole } from '@/src/features/access/access.types';
 
-export type ExperienceToken = {
+export type ExperienceTone = {
   id: AppExperience | UserRole;
   label: string;
+
   accent: string;
-  accentSoftDark: string;
-  accentSoftLight: string;
+  accentHover: string;
+  accentPressed: string;
+
+  dark: {
+    background: string;
+    surface: string;
+    surfaceElevated: string;
+    accentSoft: string;
+    accentBorder: string;
+  };
+
+  light: {
+    background: string;
+    surface: string;
+    surfaceElevated: string;
+    accentSoft: string;
+    accentBorder: string;
+  };
+
   gradient: readonly [string, string];
 };
 
-export const experienceTokens: Record<AppExperience | UserRole, ExperienceToken> = {
+export const experienceTokens: Record<AppExperience | UserRole, ExperienceTone> = {
   shoouts: {
     id: 'shoouts',
     label: 'Shoouts',
     accent: '#EC5C39',
-    accentSoftDark: 'rgba(236,92,57,0.18)',
-    accentSoftLight: 'rgba(236,92,57,0.12)',
+    accentHover: '#FF704D',
+    accentPressed: '#C9472B',
+    dark: {
+      background: '#140F10',
+      surface: '#1E1819',
+      surfaceElevated: '#2A2022',
+      accentSoft: 'rgba(236,92,57,0.16)',
+      accentBorder: 'rgba(236,92,57,0.36)',
+    },
+    light: {
+      background: '#FFF7F2',
+      surface: '#FFFFFF',
+      surfaceElevated: '#FFF1EA',
+      accentSoft: 'rgba(236,92,57,0.11)',
+      accentBorder: 'rgba(236,92,57,0.28)',
+    },
     gradient: ['#EC5C39', '#FF8A5B'],
   },
+
   vault: {
     id: 'vault',
     label: 'Vault',
     accent: '#7C5CFF',
-    accentSoftDark: 'rgba(124,92,255,0.2)',
-    accentSoftLight: 'rgba(124,92,255,0.12)',
+    accentHover: '#9278FF',
+    accentPressed: '#5F44D6',
+    dark: {
+      background: '#100F1A',
+      surface: '#19172A',
+      surfaceElevated: '#23203A',
+      accentSoft: 'rgba(124,92,255,0.18)',
+      accentBorder: 'rgba(124,92,255,0.38)',
+    },
+    light: {
+      background: '#F7F5FF',
+      surface: '#FFFFFF',
+      surfaceElevated: '#EFEBFF',
+      accentSoft: 'rgba(124,92,255,0.12)',
+      accentBorder: 'rgba(124,92,255,0.28)',
+    },
     gradient: ['#7C5CFF', '#B8A6FF'],
   },
+
   vault_pro: {
     id: 'vault_pro',
     label: 'Vault Pro',
     accent: '#9B6DFF',
-    accentSoftDark: 'rgba(155,109,255,0.2)',
-    accentSoftLight: 'rgba(155,109,255,0.12)',
+    accentHover: '#B48CFF',
+    accentPressed: '#7446D8',
+    dark: {
+      background: '#130E1F',
+      surface: '#1E1730',
+      surfaceElevated: '#2A2140',
+      accentSoft: 'rgba(155,109,255,0.18)',
+      accentBorder: 'rgba(155,109,255,0.4)',
+    },
+    light: {
+      background: '#FAF6FF',
+      surface: '#FFFFFF',
+      surfaceElevated: '#F2E9FF',
+      accentSoft: 'rgba(155,109,255,0.12)',
+      accentBorder: 'rgba(155,109,255,0.3)',
+    },
     gradient: ['#9B6DFF', '#D0B8FF'],
   },
+
   studio: {
     id: 'studio',
     label: 'Studio',
-    accent: '#4CAF50',
-    accentSoftDark: 'rgba(76,175,80,0.18)',
-    accentSoftLight: 'rgba(76,175,80,0.12)',
-    gradient: ['#4CAF50', '#8AE68E'],
+    accent: '#22C55E',
+    accentHover: '#3DDC78',
+    accentPressed: '#159447',
+    dark: {
+      background: '#07140D',
+      surface: '#102018',
+      surfaceElevated: '#183326',
+      accentSoft: 'rgba(34,197,94,0.16)',
+      accentBorder: 'rgba(34,197,94,0.34)',
+    },
+    light: {
+      background: '#F2FFF7',
+      surface: '#FFFFFF',
+      surfaceElevated: '#E9FFF1',
+      accentSoft: 'rgba(34,197,94,0.11)',
+      accentBorder: 'rgba(34,197,94,0.28)',
+    },
+    gradient: ['#22C55E', '#86EFAC'],
   },
+
   hybrid: {
     id: 'hybrid',
     label: 'Hybrid',
-    accent: '#FFD700',
-    accentSoftDark: 'rgba(255,215,0,0.18)',
-    accentSoftLight: 'rgba(255,215,0,0.14)',
-    gradient: ['#FFD700', '#FF9F1C'],
+    accent: '#F5B700',
+    accentHover: '#FFD24A',
+    accentPressed: '#C88F00',
+    dark: {
+      background: '#171204',
+      surface: '#241B08',
+      surfaceElevated: '#33270B',
+      accentSoft: 'rgba(245,183,0,0.17)',
+      accentBorder: 'rgba(245,183,0,0.38)',
+    },
+    light: {
+      background: '#FFFBEB',
+      surface: '#FFFFFF',
+      surfaceElevated: '#FFF4C7',
+      accentSoft: 'rgba(245,183,0,0.13)',
+      accentBorder: 'rgba(245,183,0,0.3)',
+    },
+    gradient: ['#F5B700', '#FF8A00'],
   },
 };

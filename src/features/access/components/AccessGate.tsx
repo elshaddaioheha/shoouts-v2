@@ -1,6 +1,7 @@
 import { can } from '@/src/features/access/access.helpers';
 import type { FeaturePermission } from '@/src/features/access/access.types';
 import { useAccountStore } from '@/src/features/account/account.store';
+import { useThemeTokens } from '@/src/theme';
 import { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -20,6 +21,8 @@ export function AccessGate({
   onUpgrade,
 }: AccessGateProps) {
   const role = useAccountStore((state) => state.role);
+  const theme = useThemeTokens();
+  const styles = createStyles(theme);
 
   if (can(role, permission)) {
     return <>{children}</>;
@@ -39,35 +42,37 @@ export function AccessGate({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-  },
-  title: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '800',
-    marginBottom: 6,
-  },
-  message: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 14,
-  },
-  button: {
-    backgroundColor: '#EC5C39',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-  },
-});
+function createStyles(theme: ReturnType<typeof useThemeTokens>) {
+  return StyleSheet.create({
+    container: {
+      padding: 20,
+      borderRadius: 18,
+      backgroundColor: theme.colors.card,
+      borderWidth: 1,
+      borderColor: theme.colors.cardBorder,
+    },
+    title: {
+      color: theme.colors.textPrimary,
+      fontSize: 18,
+      fontWeight: '800',
+      marginBottom: 6,
+    },
+    message: {
+      color: theme.colors.textSecondary,
+      fontSize: 14,
+      lineHeight: 20,
+      marginBottom: 14,
+    },
+    button: {
+      backgroundColor: theme.experience.accent,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderRadius: 12,
+      alignItems: 'center',
+    },
+    buttonText: {
+      color: '#FFFFFF',
+      fontWeight: '800',
+    },
+  });
+}
