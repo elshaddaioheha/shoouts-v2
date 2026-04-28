@@ -1,9 +1,11 @@
 import { useExperienceNavigationStore } from '@/src/features/navigation/navigation.store';
 import { useColorScheme } from 'react-native';
 import { experienceTokens } from './experienceTokens';
+import { layout } from './layout';
 import { neutralPalettes } from './neutralPalettes';
 import { radius } from './radius';
 import { semanticColors } from './semanticColors';
+import { shadows } from './shadows';
 import { spacing } from './spacing';
 import { typography } from './typography';
 
@@ -62,6 +64,8 @@ export function useThemeTokens() {
 
     spacing,
     radius,
+    layout,
     typography,
+    shadows,
   };
 }

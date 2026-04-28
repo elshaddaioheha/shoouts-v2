@@ -1,5 +1,6 @@
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { AppText } from '@/src/components/ui/AppText';
 import { useThemeTokens } from '@/src/theme';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 type LoadingStateProps = {
   label?: string;
@@ -12,7 +13,9 @@ export function LoadingState({ label = 'Loading...' }: LoadingStateProps) {
   return (
     <View style={styles.container}>
       <ActivityIndicator color={theme.colors.accent} />
-      <Text style={styles.label}>{label}</Text>
+      <AppText variant="body" tone="secondary">
+        {label}
+      </AppText>
     </View>
   );
 }
@@ -25,10 +28,6 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       alignItems: 'center',
       justifyContent: 'center',
       gap: theme.spacing.md,
-    },
-    label: {
-      color: theme.colors.textPrimary,
-      ...theme.typography.body,
     },
   });
 }

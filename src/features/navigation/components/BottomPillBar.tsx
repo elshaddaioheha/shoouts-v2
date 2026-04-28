@@ -1,15 +1,15 @@
 import { AppText } from '@/src/components/ui/AppText';
 import { EXPERIENCE_NAVIGATION } from '@/src/features/navigation/navigation.config';
 import { useExperienceNavigationStore } from '@/src/features/navigation/navigation.store';
-import { useThemeTokens } from '@/src/theme';
+import { layout, useThemeTokens } from '@/src/theme';
 import { router, usePathname } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 export function BottomPillBar() {
-  const pathname = usePathname();
-  const activeExperience = useExperienceNavigationStore((state) => state.activeExperience);
   const theme = useThemeTokens();
   const styles = createStyles(theme);
+  const pathname = usePathname();
+  const activeExperience = useExperienceNavigationStore((state) => state.activeExperience);
   const config = EXPERIENCE_NAVIGATION[activeExperience];
 
   return (
@@ -29,7 +29,8 @@ export function BottomPillBar() {
               <AppText
                 variant="caption"
                 tone={active ? 'primary' : 'secondary'}
-                style={active && styles.activeLabel}
+                numberOfLines={1}
+                style={active ? styles.activeLabel : undefined}
               >
                 {item.label}
               </AppText>
@@ -45,34 +46,35 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
   return StyleSheet.create({
     wrapper: {
       position: 'absolute',
-      left: 16,
-      right: 16,
-      bottom: 18,
+      left: theme.spacing.lg,
+      right: theme.spacing.lg,
+      bottom: layout.bottomBarOffset,
       alignItems: 'center',
     },
     container: {
       width: '100%',
-      minHeight: 58,
-      borderRadius: 999,
-      backgroundColor: theme.colors.card,
+      minHeight: layout.bottomBarHeight,
+      borderRadius: theme.radius.pill,
+      backgroundColor: theme.colors.surface,
       borderWidth: 1,
-      borderColor: theme.colors.cardBorder,
+      borderColor: theme.colors.borderStrong,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-around',
-      paddingHorizontal: 8,
-      paddingVertical: 6,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.sm,
+      ...theme.shadows.md,
     },
     item: {
       flex: 1,
-      minHeight: 42,
-      borderRadius: 999,
+      minHeight: theme.layout.minTouchTarget,
+      borderRadius: theme.radius.pill,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 8,
+      paddingHorizontal: theme.spacing.sm,
     },
     activeItem: {
-      backgroundColor: theme.experience.accent,
+      backgroundColor: theme.colors.accent,
     },
     activeLabel: {
       color: '#FFFFFF',

@@ -1,8 +1,8 @@
-import { ExperienceSwitcher } from './ExperienceSwitcher';
 import { BottomPillBar } from './BottomPillBar';
+import { ExperienceSwitcher } from './ExperienceSwitcher';
+import { layout, useThemeTokens } from '@/src/theme';
 import { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useThemeTokens } from '@/src/theme';
 
 type AppShellProps = {
   children: ReactNode;
@@ -37,7 +37,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     },
     content: {
       flex: 1,
-      paddingBottom: 96,
+      paddingBottom: layout.bottomBarHeight + layout.bottomBarOffset + theme.spacing.lg,
     },
   });
 }

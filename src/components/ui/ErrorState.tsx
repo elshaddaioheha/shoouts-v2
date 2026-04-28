@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppText } from '@/src/components/ui/AppText';
 import { useThemeTokens } from '@/src/theme';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 type ErrorStateProps = {
   title?: string;
@@ -19,12 +20,17 @@ export function ErrorState({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.message}>{message}</Text>
+      <AppText variant="sectionHeading">{title}</AppText>
+
+      <AppText variant="body" tone="secondary" style={styles.message}>
+        {message}
+      </AppText>
 
       {onAction ? (
         <Pressable style={styles.button} onPress={onAction}>
-          <Text style={styles.buttonText}>{actionLabel}</Text>
+          <AppText variant="button" style={styles.buttonText}>
+            {actionLabel}
+          </AppText>
         </Pressable>
       ) : null}
     </View>
@@ -38,30 +44,21 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       backgroundColor: theme.colors.background,
       alignItems: 'center',
       justifyContent: 'center',
-      padding: 24,
-    },
-    title: {
-      color: theme.colors.textPrimary,
-      fontSize: 22,
-      fontWeight: '700',
-      textAlign: 'center',
-      marginBottom: 8,
+      padding: theme.spacing.xxl,
     },
     message: {
-      color: theme.colors.textSecondary,
-      fontSize: 14,
       textAlign: 'center',
-      marginBottom: 20,
+      marginTop: theme.spacing.sm,
+      marginBottom: theme.spacing.xl,
     },
     button: {
-      backgroundColor: theme.experience.accent,
-      paddingHorizontal: 20,
-      paddingVertical: 12,
-      borderRadius: 12,
+      backgroundColor: theme.colors.accent,
+      paddingHorizontal: theme.spacing.xl,
+      paddingVertical: theme.spacing.md,
+      borderRadius: theme.radius.lg,
     },
     buttonText: {
       color: '#FFFFFF',
-      fontWeight: '700',
     },
   });
 }

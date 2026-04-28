@@ -7,18 +7,18 @@ import type { AppExperience } from '@/src/features/access/access.types';
 import { useAccountStore } from '@/src/features/account/account.store';
 import { EXPERIENCE_NAVIGATION } from '@/src/features/navigation/navigation.config';
 import { useExperienceNavigationStore } from '@/src/features/navigation/navigation.store';
-import { useThemeTokens } from '@/src/theme';
+import { layout, useThemeTokens } from '@/src/theme';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 const experiences: AppExperience[] = ['shoouts', 'vault', 'studio', 'hybrid'];
 
 export function ExperienceSwitcher() {
+  const theme = useThemeTokens();
+  const styles = createStyles(theme);
   const role = useAccountStore((state) => state.role);
   const activeExperience = useExperienceNavigationStore((state) => state.activeExperience);
   const setActiveExperience = useExperienceNavigationStore((state) => state.setActiveExperience);
-  const theme = useThemeTokens();
-  const styles = createStyles(theme);
 
   function handleSwitch(experience: AppExperience) {
     const canPreview = canPreviewExperience(role, experience);
@@ -53,13 +53,14 @@ export function ExperienceSwitcher() {
                 styles.pill,
                 active && styles.activePill,
                 !unlocked && styles.previewPill,
+                !previewable && styles.disabledPill,
               ]}
             >
               <AppText
                 variant="caption"
                 tone={active ? 'primary' : 'secondary'}
                 numberOfLines={1}
-                style={active && styles.activeText}
+                style={active ? styles.activeText : undefined}
               >
                 {config.label}
                 {!unlocked ? ' Preview' : ''}
@@ -76,11 +77,11 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
   return StyleSheet.create({
     wrapper: {
       width: '100%',
-      height: 56,
-      maxHeight: 56,
-      minHeight: 56,
-      paddingTop: 8,
-      paddingBottom: 6,
+      height: layout.topSwitcherHeight,
+      maxHeight: layout.topSwitcherHeight,
+      minHeight: layout.topSwitcherHeight,
+      paddingTop: theme.spacing.sm,
+      paddingBottom: theme.spacing.xs,
       backgroundColor: theme.colors.background,
     },
     scroll: {
@@ -92,27 +93,31 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     content: {
       height: 42,
       alignItems: 'center',
-      gap: 8,
-      paddingHorizontal: 16,
+      gap: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.lg,
     },
     pill: {
       height: 38,
-      maxHeight: 38,
       minHeight: 38,
-      paddingHorizontal: 14,
-      borderRadius: 999,
+      maxHeight: 38,
+      paddingHorizontal: theme.spacing.md,
+      borderRadius: theme.radius.pill,
       backgroundColor: theme.colors.card,
       borderWidth: 1,
-      borderColor: theme.colors.cardBorder,
+      borderColor: theme.colors.border,
       alignItems: 'center',
       justifyContent: 'center',
     },
     activePill: {
-      backgroundColor: theme.experience.accent,
-      borderColor: theme.experience.accent,
+      backgroundColor: theme.colors.accent,
+      borderColor: theme.colors.accent,
     },
     previewPill: {
       borderStyle: 'dashed',
+      borderColor: theme.colors.accentBorder,
+    },
+    disabledPill: {
+      opacity: 0.45,
     },
     activeText: {
       color: '#FFFFFF',
