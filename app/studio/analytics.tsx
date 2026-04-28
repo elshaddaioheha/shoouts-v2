@@ -1,17 +1,1 @@
-import { AppShell } from '@/src/features/navigation/components/AppShell';
-import { Text, View } from 'react-native';
-
-export default function StudioAnalyticsScreen() {
-  return (
-    <AppShell>
-      <View style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
-        <Text style={{ color: '#FFFFFF', fontSize: 28, fontWeight: '800' }}>
-          Analytics
-        </Text>
-        <Text style={{ color: 'rgba(255,255,255,0.7)', marginTop: 8 }}>
-          Studio analytics coming next.
-        </Text>
-      </View>
-    </AppShell>
-  );
-}
+export { StudioHomeScreen as default } from '@/src/features/studio/screens/StudioHomeScreen';
