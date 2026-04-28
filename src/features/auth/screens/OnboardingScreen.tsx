@@ -1,5 +1,6 @@
 import { useAppTheme } from '@/src/hooks/use-app-theme';
 import { useReducedMotion } from '@/src/hooks/use-reduced-motion';
+import { fontFamily } from '@/src/theme/fonts';
 import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import {
@@ -29,7 +30,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 type OnboardingSlide = {
   key: string;
   kicker?: string;
-  lines: Array<Array<{ text: string; accent: boolean }>>;
+  lines: { text: string; accent: boolean }[][];
   body: string;
   asset: any;
   imageScale: number;
@@ -251,7 +252,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   kicker: {
-    fontFamily: 'Poppins-Regular',
+    fontFamily: fontFamily.workSansRegular,
     fontSize: 15,
     lineHeight: 22,
   },
@@ -259,14 +260,14 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   title: {
-    fontFamily: 'Poppins-Bold',
+    fontFamily: fontFamily.interSemiBold,
     fontSize: 30,
     lineHeight: 38,
     letterSpacing: -0.8,
   },
   body: {
     maxWidth: 320,
-    fontFamily: 'Poppins-Regular',
+    fontFamily: fontFamily.workSansRegular,
     fontSize: 16,
     lineHeight: 26,
   },
@@ -306,7 +307,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   skipText: {
-    fontFamily: 'Poppins-Regular',
+    fontFamily: fontFamily.workSansRegular,
     fontSize: 16,
     lineHeight: 24,
   },
@@ -320,12 +321,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   nextText: {
-    fontFamily: 'Poppins-SemiBold',
+    fontFamily: fontFamily.interSemiBold,
     fontSize: 18,
     lineHeight: 24,
   },
   nextArrow: {
-    fontFamily: 'Poppins-SemiBold',
+    fontFamily: fontFamily.interSemiBold,
     fontSize: 18,
     lineHeight: 24,
   },

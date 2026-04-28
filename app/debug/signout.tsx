@@ -15,7 +15,7 @@ export default function DebugSignOut() {
     (async () => {
       try {
         await signOut(auth);
-      } catch (e) {
+      } catch {
         // ignore errors during sign-out
       }
 

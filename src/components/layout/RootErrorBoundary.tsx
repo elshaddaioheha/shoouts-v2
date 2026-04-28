@@ -7,7 +7,7 @@ function RootFallback({ error, resetErrorBoundary }: FallbackProps) {
   return (
     <ErrorState
       title="App error"
-      message={error.message || 'An unexpected error occurred.'}
+      message={error instanceof Error ? error.message : 'An unexpected error occurred.'}
       actionLabel="Try again"
       onAction={resetErrorBoundary}
     />

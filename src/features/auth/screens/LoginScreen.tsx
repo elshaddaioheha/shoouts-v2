@@ -1,4 +1,5 @@
 import { useThemeTokens } from '@/src/theme';
+import { fontFamily } from '@/src/theme/fonts';
 import { useAppTheme } from '@/src/hooks/use-app-theme';
 import { useRouter } from 'expo-router';
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -7,8 +8,6 @@ import React, { useRef, useState } from 'react';
 import { SocialButton } from '@/src/features/auth/components/SocialButton';
 import {
   Alert,
-  Animated,
-  Dimensions,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -21,8 +20,6 @@ import {
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { auth } from '@/src/config/firebase';
-
-const { width } = Dimensions.get('window');
 
 export function LoginScreen() {
   const themeTokens = useThemeTokens();
@@ -41,9 +38,6 @@ export function LoginScreen() {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const passwordInputRef = useRef<TextInput>(null);
-
-  const emailFocused = useRef(new Animated.Value(0)).current;
-  const passwordFocused = useRef(new Animated.Value(0)).current;
 
   const handleLogin = async () => {
     if (!email.trim() || !password) return;
@@ -166,8 +160,8 @@ export function LoginScreen() {
           </View>
 
           <View style={styles.footer}>
-            <Text style={[styles.footerText, isLightMode && { color: lightMutedText }]}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/signup')}>
+            <Text style={[styles.footerText, isLightMode && { color: lightMutedText }]}>{"Don't have an account? "}</Text>
+            <TouchableOpacity onPress={() => Alert.alert('Coming soon', 'Sign up will be available soon.')}>
               <Text style={[styles.registerText, { color: appTheme.colors.primary }]}>Sign up</Text>
             </TouchableOpacity>
           </View>
@@ -219,7 +213,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     guestText: {
       color: theme.colors.textSecondary,
       fontSize: 13,
-      fontFamily: 'Poppins-Regular',
+      fontFamily: fontFamily.workSansRegular,
     },
     logoContainer: {
       width: 256,
@@ -231,12 +225,12 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     logoText: {
       color: theme.colors.textPrimary,
       fontSize: 24,
-      fontFamily: 'Poppins-Bold',
+      fontFamily: fontFamily.interSemiBold,
     },
     title: {
       color: theme.colors.textPrimary,
       fontSize: 32,
-      fontFamily: 'Poppins-Bold',
+      fontFamily: fontFamily.interSemiBold,
       lineHeight: 51,
       textAlign: 'center',
       letterSpacing: -0.5,
@@ -245,7 +239,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     subtitle: {
       color: theme.colors.textPrimary,
       fontSize: 15,
-      fontFamily: 'Poppins-Regular',
+      fontFamily: fontFamily.workSansRegular,
       lineHeight: 25,
       textAlign: 'center',
       letterSpacing: -0.5,
@@ -270,7 +264,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     socialButtonText: {
       color: theme.colors.textPrimary,
       fontSize: 15,
-      fontFamily: 'Poppins-Regular',
+      fontFamily: fontFamily.workSansRegular,
       letterSpacing: -0.5,
     },
     dividerContainer: {
@@ -289,7 +283,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       flex: 2,
       color: theme.colors.textMuted,
       fontSize: 13,
-      fontFamily: 'Poppins-Regular',
+      fontFamily: fontFamily.workSansRegular,
       textAlign: 'center',
       letterSpacing: -0.5,
     },
@@ -311,7 +305,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     inputText: {
       color: theme.colors.textPrimary,
       fontSize: 15,
-      fontFamily: 'Poppins-Regular',
+      fontFamily: fontFamily.workSansRegular,
       height: '100%',
       paddingVertical: 0,
     },
@@ -339,7 +333,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     },
     forgotPasswordText: {
       fontSize: 15,
-      fontFamily: 'Poppins-Regular',
+      fontFamily: fontFamily.workSansRegular,
       lineHeight: 25,
       letterSpacing: -0.5,
     },
@@ -358,7 +352,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     loginButtonText: {
       color: '#FFFFFF',
       fontSize: 14,
-      fontFamily: 'Poppins-SemiBold',
+      fontFamily: fontFamily.interSemiBold,
     },
     footer: {
       width: '100%',
@@ -368,13 +362,13 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     footerText: {
       color: theme.colors.textPrimary,
       fontSize: 15,
-      fontFamily: 'Poppins-Regular',
+      fontFamily: fontFamily.workSansRegular,
       lineHeight: 25,
       letterSpacing: -0.5,
     },
     registerText: {
       fontSize: 15,
-      fontFamily: 'Poppins-SemiBold',
+      fontFamily: fontFamily.interSemiBold,
     },
   });
 }

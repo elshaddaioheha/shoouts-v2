@@ -1,5 +1,3 @@
-import { ROLE_CONFIG } from '@/src/features/access/access.config';
-import { getRoleConfig } from '@/src/features/access/access.helpers';
 import type { UserRole } from '@/src/features/access/access.types';
 import { useAccountStore } from '@/src/features/account/account.store';
 import { useAppTheme } from '@/src/hooks/use-app-theme';
@@ -7,9 +5,8 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { CheckCircle, ChevronRight, Zap, Lock, Music, Sparkles } from 'lucide-react-native';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Dimensions,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -20,6 +17,7 @@ import {
 import Animated, {
   Easing,
   interpolate,
+  type SharedValue,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -27,10 +25,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-const { width } = Dimensions.get('window');
-
 // Role definitions with basic metadata
-const ROLE_OPTIONS: Array<{
+const ROLE_OPTIONS: {
   id: UserRole;
   title: string;
   subtitle: string;
@@ -38,7 +34,7 @@ const ROLE_OPTIONS: Array<{
   icon: React.ReactNode;
   colors: { primary: string; gradient: [string, string]; accent: string };
   features: string[];
-}> = [
+}[] = [
   {
     id: 'shoouts',
     title: 'Shoouts',
@@ -117,7 +113,7 @@ export function RoleSelectionScreen() {
         easing: Easing.out(Easing.cubic),
       })
     );
-  }, []);
+  }, [buttonProgress, headerProgress]);
 
   useEffect(() => {
     if (selectedRole) {
@@ -126,7 +122,7 @@ export function RoleSelectionScreen() {
         withTiming(1, { duration: 150, easing: Easing.out(Easing.cubic) })
       );
     }
-  }, [selectedRole]);
+  }, [pulseProgress, selectedRole]);
 
   const headerAnimatedStyle = useAnimatedStyle(() => ({
     opacity: headerProgress.value,
@@ -341,7 +337,7 @@ export function RoleSelectionScreen() {
               colors={
                 selectedRole && selectedTier
                   ? [selectedTier.colors.primary, selectedTier.colors.gradient[1]]
-                  : [appTheme.colors.border, appTheme.colors.borderLight]
+                  : [appTheme.colors.border, appTheme.colors.border]
               }
               style={styles.continueGradient}
               start={{ x: 0, y: 0 }}
@@ -364,7 +360,7 @@ interface AnimatedRoleCardProps {
   index: number;
   isSelected: boolean;
   isSubmitting: boolean;
-  pulseProgress: Animated.Shared<number>;
+  pulseProgress: SharedValue<number>;
   cardGradient: [string, string];
   appTheme: ReturnType<typeof useAppTheme>;
   onPress: () => void;
@@ -390,7 +386,7 @@ function AnimatedRoleCard({
         easing: Easing.out(Easing.cubic),
       })
     );
-  }, []);
+  }, [cardProgress, index]);
 
   const cardAnimatedStyle = useAnimatedStyle(() => ({
     opacity: cardProgress.value,

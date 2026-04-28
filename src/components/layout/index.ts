@@ -2,4 +2,3 @@
 export * from './AppProviders';
 export * from './RootErrorBoundary';
 export * from './StartupGate';
-export * from './Screen';

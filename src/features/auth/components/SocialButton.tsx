@@ -1,4 +1,5 @@
 import { useThemeTokens } from '@/src/theme';
+import { fontFamily } from '@/src/theme/fonts';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 
@@ -38,7 +39,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>, isLight: boolean
     socialButtonText: {
       color: isLight ? '#2F2624' : theme.colors.textPrimary,
       fontSize: 15,
-      fontFamily: 'Poppins-Regular',
+      fontFamily: fontFamily.workSansRegular,
       letterSpacing: -0.5,
     },
   });
