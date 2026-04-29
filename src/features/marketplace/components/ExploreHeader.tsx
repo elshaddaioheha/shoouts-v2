@@ -2,6 +2,7 @@ import { AppIcon } from '@/src/components/ui/AppIcon';
 import { AppText } from '@/src/components/ui/AppText';
 import { useThemeTokens } from '@/src/theme';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ExploreHeaderProps = {
   onSearchPress: () => void;
@@ -9,10 +10,11 @@ type ExploreHeaderProps = {
 
 export function ExploreHeader({ onSearchPress }: ExploreHeaderProps) {
   const theme = useThemeTokens();
+  const insets = useSafeAreaInsets();
   const styles = createStyles(theme);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { top: insets.top + 8 }]}>
       <View style={styles.avatar}>
         <AppText variant="title" style={styles.avatarText}>
           C

@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Bell,
+  ChevronDown,
   CreditCard,
   Download,
   Folder,
@@ -32,6 +33,7 @@ export const appIcons = {
   cart: ShoppingCart,
   downloads: Download,
   more: MoreHorizontal,
+  chevronDown: ChevronDown,
 
   vault: Folder,
   folders: Library,

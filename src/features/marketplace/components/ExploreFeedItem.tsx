@@ -3,22 +3,28 @@ import { AppText } from '@/src/components/ui/AppText';
 import { useThemeTokens } from '@/src/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Alert, Dimensions, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import {
   formatExplorePrice,
   type MockExploreItem,
 } from '../data/mockExploreItems';
 import { ExploreActionRail } from './ExploreActionRail';
 
-const { height: windowHeight } = Dimensions.get('window');
+const ARTWORK_SIZE = 140;
+const ARTWORK_RADIUS = ARTWORK_SIZE / 2;
+const ARTWORK_CENTER_OFFSET = 10;
+const BLUR_ORB_CENTER_OFFSET = -6;
+const DISC_WIDTH = 265;
+const DISC_HEIGHT = 286;
 
 type ExploreFeedItemProps = {
   item: MockExploreItem;
+  pageHeight: number;
 };
 
-export function ExploreFeedItem({ item }: ExploreFeedItemProps) {
+export function ExploreFeedItem({ item, pageHeight }: ExploreFeedItemProps) {
   const theme = useThemeTokens();
-  const styles = createStyles(theme);
+  const styles = createStyles(theme, pageHeight);
   const mediaGradient = theme.experience.mediaGradient ?? theme.experience.gradient;
 
   function handleOpenListing() {
@@ -46,15 +52,19 @@ export function ExploreFeedItem({ item }: ExploreFeedItemProps) {
   return (
     <View style={styles.page}>
       <LinearGradient colors={mediaGradient} style={styles.media}>
-        <View style={styles.blurOrb} />
+        <View style={styles.blurOrbAnchor}>
+          <View style={styles.blurOrb} />
+        </View>
 
-        <Pressable style={styles.artwork} onPress={handleArtworkPress}>
-          <AppText variant="title" style={styles.artworkText}>
-            {item.artworkLabel ?? item.genre ?? 'Beat'}
-          </AppText>
-        </Pressable>
+        <View style={styles.artworkAnchor}>
+          <Pressable style={styles.artwork} onPress={handleArtworkPress}>
+            <AppText variant="title" style={styles.artworkText}>
+              {item.artworkLabel ?? item.genre ?? 'Beat'}
+            </AppText>
+          </Pressable>
+        </View>
 
-        <ExploreActionRail item={item} />
+        <ExploreActionRail item={item} bottomOffset={122} />
 
         <View style={styles.meta}>
           <AppText variant="title" style={styles.trackTitle}>
@@ -86,38 +96,51 @@ export function ExploreFeedItem({ item }: ExploreFeedItemProps) {
   );
 }
 
-function createStyles(theme: ReturnType<typeof useThemeTokens>) {
+function createStyles(theme: ReturnType<typeof useThemeTokens>, pageHeight: number) {
   return StyleSheet.create({
     page: {
-      height: windowHeight,
+      height: pageHeight,
       width: '100%',
       backgroundColor: theme.colors.background,
     },
     media: {
       flex: 1,
-      marginHorizontal: 5,
       overflow: 'hidden',
+    },
+    blurOrbAnchor: {
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      width: 0,
+      height: 0,
+      transform: [{ translateY: BLUR_ORB_CENTER_OFFSET }],
     },
     blurOrb: {
       position: 'absolute',
-      width: 265,
-      height: 286,
+      width: DISC_WIDTH,
+      height: DISC_HEIGHT,
       borderRadius: 143,
-      left: '12%',
-      top: '30%',
+      left: -(DISC_WIDTH / 2),
+      top: -(DISC_HEIGHT / 2),
       backgroundColor: 'rgba(97,96,96,0.88)',
       opacity: 0.78,
       transform: [{ scale: 1.05 }],
     },
+    artworkAnchor: {
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      width: 0,
+      height: 0,
+      transform: [{ translateY: ARTWORK_CENTER_OFFSET }],
+    },
     artwork: {
       position: 'absolute',
-      width: 135,
-      height: 135,
-      borderRadius: 68,
-      left: '50%',
-      top: '41%',
-      marginLeft: -68,
-      marginTop: -68,
+      width: ARTWORK_SIZE,
+      height: ARTWORK_SIZE,
+      borderRadius: ARTWORK_RADIUS,
+      left: -ARTWORK_RADIUS,
+      top: -ARTWORK_RADIUS,
       backgroundColor: theme.colors.accentSoft,
       alignItems: 'center',
       justifyContent: 'center',
@@ -132,8 +155,8 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     meta: {
       position: 'absolute',
       left: theme.spacing.lg,
-      right: 130,
-      bottom: 124,
+      right: 116,
+      bottom: 112,
     },
     trackTitle: {
       color: '#FFFFFF',
@@ -166,12 +189,13 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     moreMetaButton: {
       position: 'absolute',
       right: theme.spacing.xxl,
-      bottom: 178,
+      bottom: 112,
       width: 42,
       height: 42,
       borderRadius: theme.radius.pill,
       alignItems: 'center',
       justifyContent: 'center',
+      backgroundColor: 'rgba(0,0,0,0.12)',
     },
   });
 }

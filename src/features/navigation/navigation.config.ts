@@ -8,7 +8,7 @@ export const EXPERIENCE_NAVIGATION: Record<AppExperience, ExperienceNavigationCo
     defaultRoute: '/(tabs)',
     tabs: [
       { key: 'home', label: 'Home', route: '/(tabs)', icon: 'home' },
-      { key: 'marketplace', label: 'Market', route: '/(tabs)/marketplace', icon: 'market' },
+      { key: 'marketplace', label: 'Explore', route: '/(tabs)/marketplace', icon: 'market' },
       { key: 'cart', label: 'Cart', route: '/(tabs)/cart', icon: 'cart' },
       { key: 'more', label: 'More', route: '/(tabs)/more', icon: 'more' },
     ],

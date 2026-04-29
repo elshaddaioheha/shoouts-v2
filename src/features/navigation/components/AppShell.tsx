@@ -3,6 +3,7 @@ import { ExperienceSwitcher } from './ExperienceSwitcher';
 import { layout, useThemeTokens } from '@/src/theme';
 import { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type AppShellProps = {
   children: ReactNode;
@@ -19,6 +20,7 @@ export function AppShell({
 }: AppShellProps) {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.container}>
@@ -27,7 +29,13 @@ export function AppShell({
       <View
         style={[
           styles.content,
-          reserveBottomBarSpace && styles.contentWithBottomBarSpace,
+          reserveBottomBarSpace && {
+            paddingBottom:
+              layout.bottomBarHeight +
+              layout.bottomBarOffset +
+              insets.bottom +
+              theme.spacing.lg,
+          },
         ]}
       >
         {children}
@@ -46,9 +54,6 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     },
     content: {
       flex: 1,
-    },
-    contentWithBottomBarSpace: {
-      paddingBottom: layout.bottomBarHeight + layout.bottomBarOffset + theme.spacing.lg,
     },
   });
 }

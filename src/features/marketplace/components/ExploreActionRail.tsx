@@ -6,9 +6,13 @@ import type { MockExploreItem } from '../data/mockExploreItems';
 
 type ExploreActionRailProps = {
   item: MockExploreItem;
+  bottomOffset?: number;
 };
 
-export function ExploreActionRail({ item }: ExploreActionRailProps) {
+export function ExploreActionRail({
+  item,
+  bottomOffset = 188,
+}: ExploreActionRailProps) {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
 
@@ -27,12 +31,8 @@ export function ExploreActionRail({ item }: ExploreActionRailProps) {
     Alert.alert('Share coming soon', 'Share links will be added later.');
   }
 
-  function handleMore() {
-    Alert.alert('More options', 'More actions will be added later.');
-  }
-
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { bottom: bottomOffset }]}>
       <Pressable style={styles.creatorButton} onPress={handleFollow}>
         <View style={styles.creatorAvatar}>
           <AppText variant="caption" style={styles.creatorInitial}>
@@ -59,10 +59,6 @@ export function ExploreActionRail({ item }: ExploreActionRailProps) {
           Share
         </AppText>
       </Pressable>
-
-      <Pressable style={styles.moreButton} onPress={handleMore}>
-        <AppIcon name="more" size="lg" tone="inverse" stroke="bold" />
-      </Pressable>
     </View>
   );
 }
@@ -72,7 +68,6 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     container: {
       position: 'absolute',
       right: theme.spacing.xxl,
-      top: '34%',
       zIndex: 15,
       alignItems: 'center',
       gap: theme.spacing.xl,
@@ -118,13 +113,6 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       textShadowColor: 'rgba(0,0,0,0.35)',
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 1,
-    },
-    moreButton: {
-      width: 42,
-      height: 42,
-      borderRadius: theme.radius.pill,
-      alignItems: 'center',
-      justifyContent: 'center',
     },
   });
 }

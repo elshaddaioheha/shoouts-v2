@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Dimensions, FlatList, StyleSheet } from 'react-native';
+import { FlatList, StyleSheet, useWindowDimensions } from 'react-native';
 import {
   getExploreItemsByTab,
   type ExploreFeedTab,
@@ -7,30 +7,31 @@ import {
 } from '../data/mockExploreItems';
 import { ExploreFeedItem } from './ExploreFeedItem';
 
-const { height: windowHeight } = Dimensions.get('window');
-
 type ExploreFeedProps = {
   activeTab: ExploreFeedTab;
 };
 
 export function ExploreFeed({ activeTab }: ExploreFeedProps) {
   const data = useMemo(() => getExploreItemsByTab(activeTab), [activeTab]);
+  const { height } = useWindowDimensions();
 
   return (
     <FlatList<MockExploreItem>
       data={data}
+      key={height}
       keyExtractor={(item) => item.id}
-      renderItem={({ item }) => <ExploreFeedItem item={item} />}
+      renderItem={({ item }) => <ExploreFeedItem item={item} pageHeight={height} />}
       pagingEnabled
       showsVerticalScrollIndicator={false}
-      snapToInterval={windowHeight}
+      snapToInterval={height}
       decelerationRate="fast"
       getItemLayout={(_, index) => ({
-        length: windowHeight,
-        offset: windowHeight * index,
+        length: height,
+        offset: height * index,
         index,
       })}
       style={styles.list}
+      bounces={false}
     />
   );
 }

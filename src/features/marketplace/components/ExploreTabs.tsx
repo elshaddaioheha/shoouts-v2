@@ -1,6 +1,7 @@
 import { AppText } from '@/src/components/ui/AppText';
 import { useThemeTokens } from '@/src/theme';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ExploreFeedTab } from '../data/mockExploreItems';
 
 type ExploreTabsProps = {
@@ -15,10 +16,11 @@ const tabs: { key: ExploreFeedTab; label: string }[] = [
 
 export function ExploreTabs({ activeTab, onChangeTab }: ExploreTabsProps) {
   const theme = useThemeTokens();
+  const insets = useSafeAreaInsets();
   const styles = createStyles(theme);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { top: insets.top + 56 }]}>
       {tabs.map((tab) => {
         const active = activeTab === tab.key;
 
