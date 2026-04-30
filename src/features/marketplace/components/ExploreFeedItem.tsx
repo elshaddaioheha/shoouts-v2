@@ -1,4 +1,3 @@
-import { AppIcon } from '@/src/components/ui/AppIcon';
 import { AppText } from '@/src/components/ui/AppText';
 import { useThemeTokens } from '@/src/theme';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -64,7 +63,11 @@ export function ExploreFeedItem({ item, pageHeight }: ExploreFeedItemProps) {
           </Pressable>
         </View>
 
-        <ExploreActionRail item={item} bottomOffset={122} />
+        <ExploreActionRail
+          item={item}
+          bottomOffset={104}
+          onMorePress={handleMoreMetadata}
+        />
 
         <View style={styles.meta}>
           <AppText variant="title" style={styles.trackTitle}>
@@ -87,10 +90,6 @@ export function ExploreFeedItem({ item, pageHeight }: ExploreFeedItemProps) {
             </Pressable>
           </View>
         </View>
-
-        <Pressable style={styles.moreMetaButton} onPress={handleMoreMetadata}>
-          <AppIcon name="more" size="md" tone="inverse" stroke="bold" />
-        </Pressable>
       </LinearGradient>
     </View>
   );
@@ -185,17 +184,6 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>, pageHeight: numb
     },
     purchaseText: {
       color: '#FFFFFF',
-    },
-    moreMetaButton: {
-      position: 'absolute',
-      right: theme.spacing.xxl,
-      bottom: 112,
-      width: 42,
-      height: 42,
-      borderRadius: theme.radius.pill,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: 'rgba(0,0,0,0.12)',
     },
   });
 }

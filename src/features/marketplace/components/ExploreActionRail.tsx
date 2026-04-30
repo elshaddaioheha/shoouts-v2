@@ -7,11 +7,13 @@ import type { MockExploreItem } from '../data/mockExploreItems';
 type ExploreActionRailProps = {
   item: MockExploreItem;
   bottomOffset?: number;
+  onMorePress: () => void;
 };
 
 export function ExploreActionRail({
   item,
   bottomOffset = 188,
+  onMorePress,
 }: ExploreActionRailProps) {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
@@ -59,6 +61,10 @@ export function ExploreActionRail({
           Share
         </AppText>
       </Pressable>
+
+      <Pressable style={styles.moreAction} onPress={onMorePress}>
+        <AppIcon name="more" size="md" tone="inverse" stroke="bold" />
+      </Pressable>
     </View>
   );
 }
@@ -70,7 +76,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       right: theme.spacing.xxl,
       zIndex: 15,
       alignItems: 'center',
-      gap: theme.spacing.xl,
+      gap: theme.spacing.lg,
     },
     creatorButton: {
       width: 52,
@@ -105,7 +111,9 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       lineHeight: 14,
     },
     action: {
+      minHeight: 50,
       alignItems: 'center',
+      justifyContent: 'center',
       gap: theme.spacing.xs,
     },
     actionLabel: {
@@ -113,6 +121,14 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       textShadowColor: 'rgba(0,0,0,0.35)',
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 1,
+    },
+    moreAction: {
+      width: 42,
+      height: 42,
+      borderRadius: theme.radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(0,0,0,0.12)',
     },
   });
 }

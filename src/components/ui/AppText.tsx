@@ -6,6 +6,7 @@ type AppTextVariant =
   | 'sectionHeading'
   | 'pageHeading'
   | 'title'
+  | 'eyebrow'
   | 'caption'
   | 'input'
   | 'navItem'
@@ -58,6 +59,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     sectionHeading: theme.typography.sectionHeading,
     pageHeading: theme.typography.pageHeading,
     title: theme.typography.title,
+    eyebrow: theme.typography.eyebrow,
     caption: theme.typography.caption,
     input: theme.typography.input,
     navItem: theme.typography.navItem,

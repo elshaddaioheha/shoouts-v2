@@ -1,7 +1,11 @@
 import { BottomPillBar } from './BottomPillBar';
 import { ExperienceSwitcher } from './ExperienceSwitcher';
+import { HeaderWithGradient } from './HeaderWithGradient';
+import { deriveExperienceFromPathname } from '@/src/features/navigation/navigation.helpers';
+import { useExperienceNavigationStore } from '@/src/features/navigation/navigation.store';
 import { layout, useThemeTokens } from '@/src/theme';
-import { ReactNode } from 'react';
+import { usePathname } from 'expo-router';
+import { ReactNode, useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -21,10 +25,25 @@ export function AppShell({
   const theme = useThemeTokens();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
+  const pathname = usePathname();
+  const activeExperience = useExperienceNavigationStore((state) => state.activeExperience);
+  const setActiveExperience = useExperienceNavigationStore((state) => state.setActiveExperience);
+
+  useEffect(() => {
+    const routeExperience = deriveExperienceFromPathname(pathname);
+
+    if (routeExperience !== activeExperience) {
+      setActiveExperience(routeExperience);
+    }
+  }, [activeExperience, pathname, setActiveExperience]);
 
   return (
     <View style={styles.container}>
-      {showSwitcher ? <ExperienceSwitcher /> : null}
+      {showSwitcher ? (
+        <HeaderWithGradient>
+          <ExperienceSwitcher />
+        </HeaderWithGradient>
+      ) : null}
 
       <View
         style={[

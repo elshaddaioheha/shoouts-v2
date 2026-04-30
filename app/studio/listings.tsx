@@ -1,1 +1,1 @@
-export { StudioHomeScreen as default } from '@/src/features/studio/screens/StudioHomeScreen';
+export { StudioListingsScreen as default } from '@/src/features/studio/screens/StudioHomeScreen';

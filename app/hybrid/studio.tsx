@@ -1,1 +1,1 @@
-export { HybridDashboardScreen as default } from '@/src/features/hybrid/screens/HybridDashboardScreen';
+export { HybridStudioScreen as default } from '@/src/features/hybrid/screens/HybridDashboardScreen';

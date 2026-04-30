@@ -6,10 +6,11 @@ import {
 } from '@/src/features/access/access.helpers';
 import type { AppExperience } from '@/src/features/access/access.types';
 import { useAccountStore } from '@/src/features/account/account.store';
+import { deriveExperienceFromPathname } from '@/src/features/navigation/navigation.helpers';
 import { EXPERIENCE_NAVIGATION } from '@/src/features/navigation/navigation.config';
 import { useExperienceNavigationStore } from '@/src/features/navigation/navigation.store';
 import { layout, useThemeTokens } from '@/src/theme';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { useState } from 'react';
 import {
   Image,
@@ -36,10 +37,12 @@ export function ExperienceSwitcher() {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
+  const pathname = usePathname();
   const role = useAccountStore((state) => state.role);
-  const activeExperience = useExperienceNavigationStore((state) => state.activeExperience);
+  const storedExperience = useExperienceNavigationStore((state) => state.activeExperience);
   const setActiveExperience = useExperienceNavigationStore((state) => state.setActiveExperience);
   const [activeSheet, setActiveSheet] = useState<ActiveSheet>(null);
+  const activeExperience = deriveExperienceFromPathname(pathname || '/') ?? storedExperience;
 
   const activeConfig = EXPERIENCE_NAVIGATION[activeExperience];
   const activeUnlocked = canAccessExperience(role, activeExperience);

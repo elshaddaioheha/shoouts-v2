@@ -1,1 +1,1 @@
-export { VaultHomeScreen as default } from '@/src/features/vault/screens/VaultHomeScreen';
+export { VaultFoldersScreen as default } from '@/src/features/vault/screens/VaultHomeScreen';

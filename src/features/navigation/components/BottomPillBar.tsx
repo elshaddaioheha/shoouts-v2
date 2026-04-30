@@ -1,7 +1,7 @@
 import { AppIcon } from '@/src/components/ui/AppIcon';
 import { AppText } from '@/src/components/ui/AppText';
+import { deriveExperienceFromPathname, normalizeNavigationPath } from '@/src/features/navigation/navigation.helpers';
 import { EXPERIENCE_NAVIGATION } from '@/src/features/navigation/navigation.config';
-import { useExperienceNavigationStore } from '@/src/features/navigation/navigation.store';
 import { layout, useThemeTokens } from '@/src/theme';
 import { router, usePathname } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -10,8 +10,6 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   Easing,
-  Extrapolation,
-  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -29,27 +27,20 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-function normalizePath(path: string) {
-  const withoutGroups = path.replace(/\/\([^/]+\)/g, '');
-  const collapsed = withoutGroups.replace(/\/{2,}/g, '/');
-  const trimmed = collapsed !== '/' ? collapsed.replace(/\/$/, '') : collapsed;
-  return trimmed.length > 0 ? trimmed : '/';
-}
-
 export function BottomPillBar() {
   const theme = useThemeTokens();
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme);
   const pathname = usePathname();
-  const normalizedPathname = normalizePath(pathname);
-  const activeExperience = useExperienceNavigationStore((state) => state.activeExperience);
-  const config = EXPERIENCE_NAVIGATION[activeExperience];
+  const normalizedPathname = normalizeNavigationPath(pathname);
+  const routeExperience = deriveExperienceFromPathname(pathname);
+  const config = EXPERIENCE_NAVIGATION[routeExperience];
   const tabs = config.tabs;
   const isDenseLayout = tabs.length >= 5;
   const barEdgeInset = isDenseLayout ? theme.spacing.sm : theme.spacing.md;
   const barHorizontalPadding = theme.spacing.xs;
   const tabHorizontalPadding = isDenseLayout ? theme.spacing.xs : theme.spacing.sm;
-  const pillHorizontalInset = isDenseLayout ? theme.spacing.xs : theme.spacing.sm;
+  const pillHorizontalInset = isDenseLayout ? theme.spacing.sm : theme.spacing.md;
   const [tabLayouts, setTabLayouts] = useState<Record<string, TabLayout>>({});
   const [labelWidths, setLabelWidths] = useState<LabelMeasurements>({});
   const [barWidth, setBarWidth] = useState(0);
@@ -58,7 +49,7 @@ export function BottomPillBar() {
     () =>
       tabs.findIndex(
         (item) => {
-          const normalizedRoute = normalizePath(item.route);
+          const normalizedRoute = normalizeNavigationPath(item.route);
           if (normalizedRoute === '/') {
             return normalizedPathname === '/';
           }
@@ -74,7 +65,7 @@ export function BottomPillBar() {
   const selectedTab = tabs[selectedIndex];
   const selectedTabLayout = tabLayouts[selectedTab.key];
   const selectedLabelWidth = labelWidths[selectedTab.key] ?? 0;
-  const labelRevealWidth = Math.max(24, Math.ceil(selectedLabelWidth || 0));
+  const measuredLabelWidth = Math.max(20, Math.ceil(selectedLabelWidth || 0));
 
   const indicatorX = useSharedValue(0);
   const indicatorWidth = useSharedValue(0);
@@ -87,21 +78,17 @@ export function BottomPillBar() {
 
     const iconWidth = 18;
     const horizontalInset = pillHorizontalInset;
-    const contentWidth =
-      iconWidth + labelRevealWidth + theme.spacing.xs + horizontalInset * 2;
-    const maxWidthInsideBar = barWidth
-      ? Math.max(44, barWidth - theme.spacing.sm * 2)
-      : contentWidth;
-    const targetWidth = Math.min(contentWidth, maxWidthInsideBar);
-    const tabCenterX = layoutForActive.x + layoutForActive.width / 2;
-    const unclampedX = tabCenterX - targetWidth / 2;
+    const contentWidth = Math.max(44, iconWidth, measuredLabelWidth) + horizontalInset * 2;
+    const maxWidthInsideCell = Math.max(44, layoutForActive.width - theme.spacing.xs * 2);
+    const targetWidth = Math.min(contentWidth, maxWidthInsideCell);
+    const targetX = layoutForActive.x + (layoutForActive.width - targetWidth) / 2;
     const minX = theme.spacing.xs;
     const maxX = barWidth
       ? Math.max(minX, barWidth - targetWidth - theme.spacing.xs)
-      : unclampedX;
-    const targetX = clamp(unclampedX, minX, maxX);
+      : Math.max(minX, targetX);
+    const clampedX = clamp(targetX, minX, maxX);
 
-    indicatorX.value = withTiming(targetX, {
+    indicatorX.value = withTiming(clampedX, {
       duration: 220,
       easing: Easing.out(Easing.cubic),
     });
@@ -119,13 +106,12 @@ export function BottomPillBar() {
     indicatorOpacity,
     indicatorWidth,
     indicatorX,
-    labelRevealWidth,
+    measuredLabelWidth,
     selectedIndex,
     selectedTabLayout,
     tabLayouts,
     tabs,
     theme.spacing.xs,
-    theme.spacing.sm,
     barWidth,
     pillHorizontalInset,
   ]);
@@ -187,6 +173,7 @@ export function BottomPillBar() {
         style={[styles.container, { paddingHorizontal: barHorizontalPadding }]}
         onLayout={(event) => setBarWidth(event.nativeEvent.layout.width)}
       >
+        <View pointerEvents="none" style={styles.topBorder} />
         <Animated.View pointerEvents="none" style={[styles.activePill, indicatorStyle]} />
         {tabs.map((item) => {
           const active = tabs[selectedIndex]?.key === item.key;
@@ -204,9 +191,7 @@ export function BottomPillBar() {
                 icon={item.icon}
                 label={item.label}
                 active={active}
-                labelGap={theme.spacing.xs}
                 styles={styles}
-                labelRevealWidth={labelRevealWidth}
                 onLabelLayout={(width) => handleLabelLayout(item.key, width)}
               />
             </Pressable>
@@ -221,34 +206,15 @@ function BottomTabItem({
   icon,
   label,
   active,
-  labelGap,
   styles,
-  labelRevealWidth,
   onLabelLayout,
 }: {
   icon: Parameters<typeof AppIcon>[0]['name'];
   label: string;
   active: boolean;
-  labelGap: number;
   styles: ReturnType<typeof createStyles>;
-  labelRevealWidth: number;
   onLabelLayout: (width: number) => void;
 }) {
-  const progress = useSharedValue(active ? 1 : 0);
-
-  useEffect(() => {
-    progress.value = withTiming(active ? 1 : 0, {
-      duration: 200,
-      easing: Easing.out(Easing.cubic),
-    });
-  }, [active, progress]);
-
-  const labelStyle = useAnimatedStyle(() => ({
-    opacity: progress.value,
-    width: interpolate(progress.value, [0, 1], [0, labelRevealWidth], Extrapolation.CLAMP),
-    marginLeft: interpolate(progress.value, [0, 1], [0, labelGap], Extrapolation.CLAMP),
-  }));
-
   return (
     <View style={styles.itemContent}>
       <AppIcon
@@ -256,20 +222,20 @@ function BottomTabItem({
         size="sm"
         variant="plain"
         tone={active ? 'inverse' : 'secondary'}
-        stroke={active ? 'medium' : 'regular'}
+        stroke="regular"
       />
 
-      <Animated.View style={[styles.labelWrap, labelStyle]}>
+      <View style={styles.labelWrap}>
         <AppText
-          variant="caption"
+          variant="bodySmall"
           tone={active ? 'primary' : 'secondary'}
           numberOfLines={1}
           onLayout={(event) => onLabelLayout(event.nativeEvent.layout.width)}
-          style={active ? styles.activeLabel : undefined}
+          style={[styles.labelText, active ? styles.activeLabel : undefined]}
         >
           {label}
         </AppText>
-      </Animated.View>
+      </View>
     </View>
   );
 }
@@ -298,6 +264,16 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       paddingVertical: theme.spacing.sm,
       ...theme.shadows.md,
     },
+    topBorder: {
+      position: 'absolute',
+      left: theme.spacing.md,
+      right: theme.spacing.md,
+      top: 0,
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.colors.borderStrong,
+      opacity: 0.72,
+      zIndex: 2,
+    },
     activePill: {
       position: 'absolute',
       left: 0,
@@ -316,16 +292,28 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       overflow: 'visible',
     },
     itemContent: {
-      flexDirection: 'row',
+      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       minHeight: theme.layout.minTouchTarget,
+      gap: 2,
       paddingHorizontal: theme.spacing.xs,
+      width: '100%',
     },
     labelWrap: {
-      overflow: 'hidden',
       justifyContent: 'center',
-      alignItems: 'flex-start',
+      alignItems: 'center',
+      maxWidth: '100%',
+      minHeight: 12,
+    },
+    labelText: {
+      fontSize: 10,
+      lineHeight: 12,
+      letterSpacing: 0,
+      textTransform: 'none',
+      color: theme.colors.textMuted,
+      textAlign: 'center',
+      maxWidth: '100%',
     },
     activeLabel: {
       color: '#FFFFFF',
