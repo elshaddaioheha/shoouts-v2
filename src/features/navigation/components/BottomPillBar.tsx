@@ -316,7 +316,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       maxWidth: '100%',
     },
     activeLabel: {
-      color: '#FFFFFF',
+      color: theme.colors.textOnAccent,
     },
   });
 }

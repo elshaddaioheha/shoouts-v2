@@ -1,6 +1,6 @@
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getAuth, getReactNativePersistence, initializeAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, initializeFirestore } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { env } from './env';
@@ -32,4 +32,18 @@ function getFirebaseAuth() {
 
 export const auth = getFirebaseAuth();
 
-export const db = getFirestore(firebaseApp);
+function getFirebaseDb() {
+  if (Platform.OS === 'web') {
+    return getFirestore(firebaseApp);
+  }
+
+  try {
+    return initializeFirestore(firebaseApp, {
+      experimentalForceLongPolling: true,
+    });
+  } catch {
+    return getFirestore(firebaseApp);
+  }
+}
+
+export const db = getFirebaseDb();

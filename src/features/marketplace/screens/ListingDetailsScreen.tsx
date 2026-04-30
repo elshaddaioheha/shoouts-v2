@@ -1,6 +1,11 @@
-import { AppShell } from '@/src/features/navigation/components/AppShell';
+import { ErrorState } from '@/src/components/ui/ErrorState';
+import { LoadingState } from '@/src/components/ui/LoadingState';
 import { useCartStore } from '@/src/features/cart/cart.store';
-import { getMockListingById } from '@/src/features/marketplace/data/mockListings';
+import {
+  useMarketplaceListingDetail,
+} from '@/src/features/marketplace/marketplace.hooks';
+import { formatMarketplacePrice } from '@/src/features/marketplace/marketplace.types';
+import { AppShell } from '@/src/features/navigation/components/AppShell';
 import { useThemeTokens } from '@/src/theme';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -147,7 +152,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       backgroundColor: theme.colors.card,
     },
     primaryText: {
-      color: theme.colors.textPrimary,
+      color: theme.colors.textOnAccent,
       fontWeight: '900',
     },
     buyButton: {
@@ -167,12 +172,33 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
 export function ListingDetailsScreen() {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
-
   const { id } = useLocalSearchParams<{ id: string }>();
-  const listing = getMockListingById(String(id));
-
+  const listingId = typeof id === 'string' ? id : null;
+  const listingQuery = useMarketplaceListingDetail(listingId);
   const addItem = useCartStore((state) => state.addItem);
   const isInCart = useCartStore((state) => state.isInCart);
+
+  if (listingQuery.isLoading) {
+    return (
+      <AppShell>
+        <LoadingState label="Loading listing..." />
+      </AppShell>
+    );
+  }
+
+  if (listingQuery.isError) {
+    return (
+      <AppShell>
+        <ErrorState
+          title="Couldn't load listing"
+          message="Please check Firestore access and try again."
+          onAction={() => listingQuery.refetch()}
+        />
+      </AppShell>
+    );
+  }
+
+  const listing = listingQuery.data;
 
   if (!listing) {
     return (
@@ -203,7 +229,7 @@ export function ListingDetailsScreen() {
       title: listingData.title,
       artist: listingData.artist,
       price: listingData.price,
-      coverUrl: listingData.coverUrl,
+      coverUrl: listingData.coverUrl ?? undefined,
     });
   }
 
@@ -239,9 +265,7 @@ export function ListingDetailsScreen() {
         <View style={styles.metaGrid}>
           <View style={styles.metaCard}>
             <Text style={styles.metaLabel}>Price</Text>
-            <Text style={styles.metaValue}>
-              {listingData.price <= 0 ? 'Free' : `$${listingData.price.toFixed(2)}`}
-            </Text>
+            <Text style={styles.metaValue}>{formatMarketplacePrice(listingData)}</Text>
           </View>
 
           <View style={styles.metaCard}>
@@ -257,16 +281,20 @@ export function ListingDetailsScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Description</Text>
-          <Text style={styles.description}>{listingData.description}</Text>
+          <Text style={styles.description}>
+            {listingData.description ?? 'No description has been added for this listing yet.'}
+          </Text>
         </View>
 
-        <View style={styles.tagRow}>
-          {listingData.tags?.map((tag) => (
-            <View key={tag} style={styles.tag}>
-              <Text style={styles.tagText}>{tag}</Text>
-            </View>
-          ))}
-        </View>
+        {listingData.tags.length > 0 ? (
+          <View style={styles.tagRow}>
+            {listingData.tags.map((tag) => (
+              <View key={tag} style={styles.tag}>
+                <Text style={styles.tagText}>{tag}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
 
         <View style={styles.actions}>
           <Pressable style={styles.secondaryButton} onPress={handlePreview}>
@@ -291,6 +319,3 @@ export function ListingDetailsScreen() {
     </AppShell>
   );
 }
-
-
-

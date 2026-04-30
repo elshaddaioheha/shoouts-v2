@@ -53,10 +53,10 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       marginRight: theme.spacing.md,
     },
     avatarText: {
-      color: '#FFFFFF',
+      color: theme.colors.textOnAccent,
     },
     title: {
-      color: '#FFFFFF',
+      color: theme.colors.textOnMedia,
       flex: 1,
     },
     searchButton: {
@@ -65,7 +65,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       borderRadius: theme.radius.pill,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: 'rgba(0,0,0,0.18)',
+      backgroundColor: theme.colors.overlay,
     },
   });
 }

@@ -1,6 +1,7 @@
 import { ErrorState } from '@/src/components/ui/ErrorState';
 import { assertEnv } from '@/src/config/env';
 import { queryClient } from '@/src/config/queryClient';
+import { useAccountProfileBootstrap } from '@/src/features/account/useAccountProfileBootstrap';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
@@ -24,6 +25,7 @@ export function AppProviders({ children }: AppProvidersProps) {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
+        <AccountBootstrapBridge />
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           {envError ? (
             <ErrorState title="Configuration missing" message={envError} />
@@ -34,4 +36,9 @@ export function AppProviders({ children }: AppProvidersProps) {
       </QueryClientProvider>
     </SafeAreaProvider>
   );
+}
+
+function AccountBootstrapBridge() {
+  useAccountProfileBootstrap();
+  return null;
 }

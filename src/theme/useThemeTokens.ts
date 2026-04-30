@@ -65,6 +65,9 @@ export function useThemeTokens() {
 
       card: experienceMode.surfaceElevated,
       cardBorder: neutral.border,
+      textOnAccent: '#FFFFFF',
+      textOnMedia: '#FFFFFF',
+      textOnMediaMuted: 'rgba(255,255,255,0.82)',
     },
 
     spacing,

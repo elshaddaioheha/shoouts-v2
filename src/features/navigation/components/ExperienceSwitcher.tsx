@@ -339,7 +339,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     modalRoot: {
       flex: 1,
       justifyContent: 'flex-end',
-      backgroundColor: 'rgba(15, 23, 42, 0.24)',
+      backgroundColor: theme.colors.overlay,
     },
     backdrop: {
       ...StyleSheet.absoluteFillObject,
@@ -399,10 +399,10 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       gap: theme.spacing.sm,
     },
     optionTitleActive: {
-      color: '#FFFFFF',
+      color: theme.colors.textOnAccent,
     },
     optionDescriptionActive: {
-      color: '#FFFFFF',
+      color: theme.colors.textOnAccent,
     },
     previewBadge: {
       borderRadius: theme.radius.pill,
@@ -423,7 +423,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       backgroundColor: 'rgba(255,255,255,0.18)',
     },
     optionMetaActiveText: {
-      color: '#FFFFFF',
+      color: theme.colors.textOnAccent,
     },
     placeholderCard: {
       borderRadius: theme.radius.xl,

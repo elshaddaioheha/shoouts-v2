@@ -219,7 +219,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       flexShrink: 0,
     },
     avatarText: {
-      color: '#FFFFFF',
+      color: theme.colors.textOnAccent,
     },
     greetingText: {
       flex: 1,
@@ -258,10 +258,10 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       gap: theme.spacing.xs,
     },
     subscriptionTitle: {
-      color: '#FFFFFF',
+      color: theme.colors.textOnAccent,
     },
     subscriptionText: {
-      color: '#FFFFFF',
+      color: theme.colors.textOnAccent,
     },
   });
 }

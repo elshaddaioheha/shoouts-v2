@@ -1,93 +1,48 @@
 import { AppIcon } from '@/src/components/ui/AppIcon';
 import { AppText } from '@/src/components/ui/AppText';
+import { ErrorState } from '@/src/components/ui/ErrorState';
+import { LoadingState } from '@/src/components/ui/LoadingState';
 import { useCartStore } from '@/src/features/cart/cart.store';
+import {
+  useMarketplaceListings,
+} from '@/src/features/marketplace/marketplace.hooks';
+import {
+  formatMarketplacePrice,
+  type MarketplaceListing,
+} from '@/src/features/marketplace/marketplace.types';
 import { AppShell } from '@/src/features/navigation/components/AppShell';
 import { useThemeTokens } from '@/src/theme';
 import { router } from 'expo-router';
+import { useMemo } from 'react';
 import { Alert, FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-type HomeTrack = {
-  id: string;
-  title: string;
-  artist: string;
-  genre: string;
-  price: number;
+type HomeTrack = MarketplaceListing & {
   color: string;
 };
 
-const FEATURED_TRACKS: HomeTrack[] = [
-  {
-    id: 'demo-paid-1',
-    title: 'Premium Studio Beat',
-    artist: 'Studio Producer',
-    genre: 'Trap',
-    price: 19.99,
-    color: '#8B7355',
-  },
-  {
-    id: 'demo-paid-2',
-    title: 'Hybrid Creator Pack',
-    artist: 'Hybrid Producer',
-    genre: 'R&B',
-    price: 29.99,
-    color: '#6C6F8F',
-  },
-  {
-    id: 'demo-free-1',
-    title: 'Free Demo Beat',
-    artist: 'Shoout Producer',
-    genre: 'Afrobeats',
-    price: 0,
-    color: '#6C7E62',
-  },
-];
-
-const RELEASE_TRACKS: HomeTrack[] = [
-  {
-    id: 'demo-free-1',
-    title: 'Free Demo Beat',
-    artist: 'Shoout Producer',
-    genre: 'Afrobeats',
-    price: 0,
-    color: '#5E615D',
-  },
-  {
-    id: 'demo-paid-1',
-    title: 'Premium Studio Beat',
-    artist: 'Studio Producer',
-    genre: 'Trap',
-    price: 19.99,
-    color: '#685452',
-  },
-  {
-    id: 'demo-paid-2',
-    title: 'Hybrid Creator Pack',
-    artist: 'Hybrid Producer',
-    genre: 'R&B',
-    price: 29.99,
-    color: '#4D5C70',
-  },
-];
-
-const FREE_TRACKS = RELEASE_TRACKS.filter((track) => track.price === 0);
-
-const POPULAR_TRACKS: HomeTrack[] = [
-  ...FEATURED_TRACKS,
-  {
-    id: 'demo-paid-3',
-    title: 'Night Pulse Kit',
-    artist: 'Shoouts Originals',
-    genre: 'Amapiano',
-    price: 24.99,
-    color: '#55585F',
-  },
-];
+const HOME_CARD_COLORS = ['#8B7355', '#6C6F8F', '#6C7E62', '#5E615D', '#685452', '#4D5C70'];
 
 export function HomeScreen() {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
   const addItem = useCartStore((state) => state.addItem);
   const isInCart = useCartStore((state) => state.isInCart);
+  const listingsQuery = useMarketplaceListings(24);
+  const tracks = useMemo<HomeTrack[]>(
+    () =>
+      (listingsQuery.data ?? []).map((listing, index) => ({
+        ...listing,
+        color: HOME_CARD_COLORS[index % HOME_CARD_COLORS.length],
+      })),
+    [listingsQuery.data]
+  );
+  const featuredTracks = useMemo(() => tracks.slice(0, 3), [tracks]);
+  const releaseTracks = useMemo(() => tracks.slice(0, 6), [tracks]);
+  const freeTracks = useMemo(() => tracks.filter((track) => track.price <= 0).slice(0, 6), [tracks]);
+  const popularTracks = useMemo(() => {
+    const nextSlice = tracks.slice(1, 5);
+    return nextSlice.length > 0 ? nextSlice : tracks.slice(0, 4);
+  }, [tracks]);
 
   function openListing(trackId: string) {
     router.push({
@@ -98,6 +53,7 @@ export function HomeScreen() {
 
   function handleAddToCart(track: HomeTrack) {
     const cartId = `${track.id}-basic`;
+
     if (isInCart(cartId)) {
       Alert.alert('Already added', `${track.title} is already in your cart.`);
       return;
@@ -109,6 +65,7 @@ export function HomeScreen() {
       title: track.title,
       artist: track.artist,
       price: track.price,
+      coverUrl: track.coverUrl ?? undefined,
     });
 
     Alert.alert('Added to cart', `${track.title} is now in your cart.`);
@@ -116,6 +73,26 @@ export function HomeScreen() {
 
   function handlePlay(track: HomeTrack) {
     Alert.alert('Playback next', `Audio player for "${track.title}" lands in the next phase.`);
+  }
+
+  if (listingsQuery.isLoading) {
+    return (
+      <AppShell>
+        <LoadingState label="Loading marketplace picks..." />
+      </AppShell>
+    );
+  }
+
+  if (listingsQuery.isError) {
+    return (
+      <AppShell>
+        <ErrorState
+          title="Couldn't load marketplace picks"
+          message="Please check Firestore access and try again."
+          onAction={() => listingsQuery.refetch()}
+        />
+      </AppShell>
+    );
   }
 
   return (
@@ -132,135 +109,162 @@ export function HomeScreen() {
           </AppText>
         </View>
 
-        <SectionHeader title="Featured Picks" actionLabel="Explore" onActionPress={() => router.push('/(tabs)/marketplace' as any)} />
-        <FlatList
-          data={FEATURED_TRACKS}
-          keyExtractor={(item) => `featured-${item.id}`}
-          horizontal
-          scrollEnabled
-          showsHorizontalScrollIndicator={false}
-          ItemSeparatorComponent={() => <View style={{ width: theme.spacing.md }} />}
-          contentContainerStyle={styles.horizontalList}
-          renderItem={({ item }) => (
-            <View style={[styles.featuredCard, { backgroundColor: item.color }]}>
-              <Pressable style={styles.featuredTapArea} onPress={() => openListing(item.id)}>
-                <View style={styles.featuredMeta}>
-                  <AppText variant="title" style={styles.whiteText} numberOfLines={2}>
+        {tracks.length === 0 ? (
+          <View style={styles.emptyState}>
+            <AppText variant="sectionHeading">No listings yet</AppText>
+            <AppText variant="bodySmall" tone="secondary">
+              Marketplace sections will fill in as soon as published listings are available in Firestore.
+            </AppText>
+          </View>
+        ) : (
+          <>
+            <SectionHeader
+              title="Featured Picks"
+              actionLabel="Explore"
+              onActionPress={() => router.push('/(tabs)/marketplace' as any)}
+            />
+            <FlatList
+              data={featuredTracks}
+              keyExtractor={(item) => `featured-${item.id}`}
+              horizontal
+              scrollEnabled
+              showsHorizontalScrollIndicator={false}
+              ItemSeparatorComponent={() => <View style={{ width: theme.spacing.md }} />}
+              contentContainerStyle={styles.horizontalList}
+              renderItem={({ item }) => (
+                <View style={[styles.featuredCard, { backgroundColor: item.color }]}>
+                  <Pressable style={styles.featuredTapArea} onPress={() => openListing(item.id)}>
+                    <View style={styles.featuredMeta}>
+                      <AppText variant="title" style={styles.whiteText} numberOfLines={2}>
+                        {item.title}
+                      </AppText>
+                      <AppText variant="bodySmall" style={styles.whiteMuted} numberOfLines={1}>
+                        {item.artist}
+                      </AppText>
+                    </View>
+                  </Pressable>
+                  <Pressable style={styles.playButton} onPress={() => handlePlay(item)}>
+                    <AppIcon name="play" size="sm" tone="inverse" stroke="bold" />
+                  </Pressable>
+                </View>
+              )}
+            />
+
+            <SectionHeader
+              title="Latest Releases"
+              actionLabel="See All"
+              onActionPress={() => router.push('/(tabs)/marketplace' as any)}
+            />
+            <FlatList
+              data={releaseTracks}
+              keyExtractor={(item) => `release-${item.id}`}
+              horizontal
+              scrollEnabled
+              showsHorizontalScrollIndicator={false}
+              ItemSeparatorComponent={() => <View style={{ width: theme.spacing.md }} />}
+              contentContainerStyle={styles.horizontalList}
+              renderItem={({ item }) => (
+                <Pressable style={styles.releaseCard} onPress={() => openListing(item.id)}>
+                  <View style={[styles.releaseVisual, { backgroundColor: item.color }]} />
+                  <AppText variant="title" numberOfLines={1}>
                     {item.title}
                   </AppText>
-                  <AppText variant="bodySmall" style={styles.whiteMuted} numberOfLines={1}>
-                    {item.artist}
+                  <AppText variant="bodySmall" tone="secondary" numberOfLines={1}>
+                    {item.genre ?? 'Marketplace'}
                   </AppText>
-                </View>
-              </Pressable>
-              <Pressable style={styles.playButton} onPress={() => handlePlay(item)}>
-                <AppIcon name="play" size="sm" tone="inverse" stroke="bold" />
-              </Pressable>
-            </View>
-          )}
-        />
+                  <AppText variant="bodySmall" tone="accent">
+                    {formatMarketplacePrice(item)}
+                  </AppText>
+                </Pressable>
+              )}
+            />
 
-        <SectionHeader title="Latest Releases" actionLabel="See All" onActionPress={() => router.push('/(tabs)/marketplace' as any)} />
-        <FlatList
-          data={RELEASE_TRACKS}
-          keyExtractor={(item) => `release-${item.id}`}
-          horizontal
-          scrollEnabled
-          showsHorizontalScrollIndicator={false}
-          ItemSeparatorComponent={() => <View style={{ width: theme.spacing.md }} />}
-          contentContainerStyle={styles.horizontalList}
-          renderItem={({ item }) => (
-            <Pressable style={styles.releaseCard} onPress={() => openListing(item.id)}>
-              <View style={[styles.releaseVisual, { backgroundColor: item.color }]} />
-              <AppText variant="title" numberOfLines={1}>
-                {item.title}
-              </AppText>
-              <AppText variant="bodySmall" tone="secondary" numberOfLines={1}>
-                {item.genre}
-              </AppText>
-              <AppText variant="bodySmall" tone="accent">
-                {item.price > 0 ? `$${item.price.toFixed(2)}` : 'Free'}
-              </AppText>
-            </Pressable>
-          )}
-        />
-
-        <SectionHeader title="Free Music" actionLabel="Browse" onActionPress={() => router.push('/(tabs)/marketplace' as any)} />
-        <FlatList
-          data={FREE_TRACKS}
-          keyExtractor={(item) => `free-${item.id}`}
-          horizontal
-          scrollEnabled
-          showsHorizontalScrollIndicator={false}
-          ItemSeparatorComponent={() => <View style={{ width: theme.spacing.md }} />}
-          contentContainerStyle={styles.horizontalList}
-          renderItem={({ item }) => (
-            <View style={styles.freeCard}>
-              <Pressable style={styles.freeTapArea} onPress={() => openListing(item.id)}>
-                <View style={[styles.freeVisual, { backgroundColor: item.color }]} />
-                <AppText variant="title" numberOfLines={1}>
-                  {item.title}
-                </AppText>
-                <AppText variant="bodySmall" tone="secondary" numberOfLines={1}>
-                  {item.artist}
-                </AppText>
-              </Pressable>
-              <Pressable style={styles.inlineIconButton} onPress={() => handleAddToCart(item)}>
-                <AppIcon name="cart" size="sm" tone="accent" stroke="medium" />
-              </Pressable>
-            </View>
-          )}
-        />
-
-        <SectionHeader title="Popular Beats" actionLabel="More" onActionPress={() => router.push('/(tabs)/marketplace' as any)} />
-        <View style={styles.popularList}>
-          {POPULAR_TRACKS.map((track, index) => {
-            const cartId = `${track.id}-basic`;
-            const inCart = isInCart(cartId);
-            const isLast = index === POPULAR_TRACKS.length - 1;
-
-            return (
-              <View key={`popular-${track.id}-${index}`} style={styles.popularRow}>
-                <Pressable style={styles.popularTapArea} onPress={() => openListing(track.id)}>
-                  <View style={[styles.popularArt, { backgroundColor: track.color }]} />
-
-                  <View style={styles.popularMeta}>
+            <SectionHeader
+              title="Free Music"
+              actionLabel="Browse"
+              onActionPress={() => router.push('/(tabs)/marketplace' as any)}
+            />
+            <FlatList
+              data={freeTracks}
+              keyExtractor={(item) => `free-${item.id}`}
+              horizontal
+              scrollEnabled
+              showsHorizontalScrollIndicator={false}
+              ItemSeparatorComponent={() => <View style={{ width: theme.spacing.md }} />}
+              contentContainerStyle={styles.horizontalList}
+              renderItem={({ item }) => (
+                <View style={styles.freeCard}>
+                  <Pressable style={styles.freeTapArea} onPress={() => openListing(item.id)}>
+                    <View style={[styles.freeVisual, { backgroundColor: item.color }]} />
                     <AppText variant="title" numberOfLines={1}>
-                      {track.title}
+                      {item.title}
                     </AppText>
                     <AppText variant="bodySmall" tone="secondary" numberOfLines={1}>
-                      {track.artist}
+                      {item.artist}
                     </AppText>
-                    <AppText variant="bodySmall" tone="accent">
-                      {track.price > 0 ? `$${track.price.toFixed(2)}` : 'Free'}
-                    </AppText>
-                  </View>
-                </Pressable>
-
-                <View style={styles.rowActions}>
-                  <Pressable style={styles.rowIconButton} onPress={() => handleAddToCart(track)}>
-                    <AppIcon
-                      name="cart"
-                      size="sm"
-                      tone={inCart ? 'success' : 'secondary'}
-                      stroke="medium"
-                    />
                   </Pressable>
-                  <Pressable
-                    style={styles.rowIconButton}
-                    onPress={() =>
-                      Alert.alert('Options', `More actions for "${track.title}" will be wired next.`)
-                    }
-                  >
-                    <AppIcon name="more" size="sm" tone="secondary" stroke="medium" />
+                  <Pressable style={styles.inlineIconButton} onPress={() => handleAddToCart(item)}>
+                    <AppIcon name="cart" size="sm" tone="accent" stroke="medium" />
                   </Pressable>
                 </View>
+              )}
+            />
 
-                {!isLast ? <View style={styles.divider} /> : null}
-              </View>
-            );
-          })}
-        </View>
+            <SectionHeader
+              title="Popular Beats"
+              actionLabel="More"
+              onActionPress={() => router.push('/(tabs)/marketplace' as any)}
+            />
+            <View style={styles.popularList}>
+              {popularTracks.map((track, index) => {
+                const cartId = `${track.id}-basic`;
+                const inCart = isInCart(cartId);
+                const isLast = index === popularTracks.length - 1;
+
+                return (
+                  <View key={`popular-${track.id}-${index}`} style={styles.popularRow}>
+                    <Pressable style={styles.popularTapArea} onPress={() => openListing(track.id)}>
+                      <View style={[styles.popularArt, { backgroundColor: track.color }]} />
+
+                      <View style={styles.popularMeta}>
+                        <AppText variant="title" numberOfLines={1}>
+                          {track.title}
+                        </AppText>
+                        <AppText variant="bodySmall" tone="secondary" numberOfLines={1}>
+                          {track.artist}
+                        </AppText>
+                        <AppText variant="bodySmall" tone="accent">
+                          {formatMarketplacePrice(track)}
+                        </AppText>
+                      </View>
+                    </Pressable>
+
+                    <View style={styles.rowActions}>
+                      <Pressable style={styles.rowIconButton} onPress={() => handleAddToCart(track)}>
+                        <AppIcon
+                          name="cart"
+                          size="sm"
+                          tone={inCart ? 'success' : 'secondary'}
+                          stroke="medium"
+                        />
+                      </Pressable>
+                      <Pressable
+                        style={styles.rowIconButton}
+                        onPress={() =>
+                          Alert.alert('Options', `More actions for "${track.title}" will be wired next.`)
+                        }
+                      >
+                        <AppIcon name="more" size="sm" tone="secondary" stroke="medium" />
+                      </Pressable>
+                    </View>
+
+                    {!isLast ? <View style={styles.divider} /> : null}
+                  </View>
+                );
+              })}
+            </View>
+          </>
+        )}
       </ScrollView>
     </AppShell>
   );
@@ -305,6 +309,14 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       gap: theme.spacing.xs,
       paddingTop: theme.spacing.md,
     },
+    emptyState: {
+      borderRadius: theme.radius.xl,
+      backgroundColor: theme.colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      padding: theme.spacing.lg,
+      gap: theme.spacing.sm,
+    },
     sectionHeader: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -331,10 +343,10 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       flex: 1,
     },
     whiteText: {
-      color: '#FFFFFF',
+      color: theme.colors.textOnMedia,
     },
     whiteMuted: {
-      color: 'rgba(255,255,255,0.82)',
+      color: theme.colors.textOnMediaMuted,
     },
     playButton: {
       alignSelf: 'flex-end',
@@ -343,7 +355,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       borderRadius: theme.radius.md,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: 'rgba(0,0,0,0.26)',
+      backgroundColor: theme.colors.overlay,
       borderWidth: 1,
       borderColor: 'rgba(255,255,255,0.22)',
     },

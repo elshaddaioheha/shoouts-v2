@@ -94,7 +94,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       justifyContent: 'center',
     },
     creatorInitial: {
-      color: '#FFFFFF',
+      color: theme.colors.textOnMedia,
     },
     plusBadge: {
       position: 'absolute',
@@ -107,7 +107,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       justifyContent: 'center',
     },
     plusText: {
-      color: '#FFFFFF',
+      color: theme.colors.textOnAccent,
       lineHeight: 14,
     },
     action: {
@@ -117,7 +117,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       gap: theme.spacing.xs,
     },
     actionLabel: {
-      color: '#FFFFFF',
+      color: theme.colors.textOnMedia,
       textShadowColor: 'rgba(0,0,0,0.35)',
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 1,
@@ -128,7 +128,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       borderRadius: theme.radius.pill,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: 'rgba(0,0,0,0.12)',
+      backgroundColor: theme.colors.overlay,
     },
   });
 }

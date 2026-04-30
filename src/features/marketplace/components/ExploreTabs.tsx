@@ -62,17 +62,17 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       minHeight: 30,
     },
     label: {
-      color: 'rgba(255,255,255,0.92)',
+      color: theme.colors.textOnMediaMuted,
     },
     activeLabel: {
-      color: '#FFFFFF',
+      color: theme.colors.textOnMedia,
     },
     indicator: {
       width: '100%',
       height: 3,
       marginTop: 2,
       borderRadius: theme.radius.pill,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: theme.colors.textOnMedia,
     },
   });
 }

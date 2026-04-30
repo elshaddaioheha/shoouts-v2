@@ -1,11 +1,11 @@
 import { AppText } from '@/src/components/ui/AppText';
-import type { MockMarketplaceListing } from '@/src/features/marketplace/data/mockListings';
+import type { MarketplaceListing } from '@/src/features/marketplace/marketplace.types';
 import { useThemeTokens } from '@/src/theme';
 import { Music2, Play, ShoppingCart } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 type MarketplaceListingCardProps = {
-  listing: MockMarketplaceListing;
+  listing: MarketplaceListing;
   inCart: boolean;
   onOpen: () => void;
   onPreview: () => void;
@@ -94,7 +94,7 @@ export function MarketplaceListingCard({
             }}
             disabled={inCart}
           >
-            <ShoppingCart size={16} color={theme.colors.surface} />
+            <ShoppingCart size={16} color={theme.colors.textOnAccent} />
             <AppText variant="button" style={styles.primaryButtonText}>
               {inCart ? 'Added' : 'Add'}
             </AppText>
@@ -206,7 +206,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       backgroundColor: theme.colors.accentPressed,
     },
     primaryButtonText: {
-      color: '#FFFFFF',
+      color: theme.colors.textOnAccent,
     },
     disabledButton: {
       backgroundColor: theme.colors.surfacePressed,

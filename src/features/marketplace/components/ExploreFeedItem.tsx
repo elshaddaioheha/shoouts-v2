@@ -147,7 +147,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>, pageHeight: numb
       borderColor: 'rgba(255,255,255,0.2)',
     },
     artworkText: {
-      color: '#FFFFFF',
+      color: theme.colors.textOnMedia,
       textAlign: 'center',
       paddingHorizontal: theme.spacing.sm,
     },
@@ -158,11 +158,11 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>, pageHeight: numb
       bottom: 112,
     },
     trackTitle: {
-      color: '#FFFFFF',
+      color: theme.colors.textOnMedia,
       marginBottom: theme.spacing.xs,
     },
     artist: {
-      color: '#FFFFFF',
+      color: theme.colors.textOnMedia,
       marginBottom: theme.spacing.sm,
     },
     priceRow: {
@@ -171,7 +171,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>, pageHeight: numb
       gap: theme.spacing.md,
     },
     currency: {
-      color: '#FFFFFF',
+      color: theme.colors.textOnMedia,
       letterSpacing: 0.3,
     },
     purchaseButton: {
@@ -183,7 +183,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>, pageHeight: numb
       justifyContent: 'center',
     },
     purchaseText: {
-      color: '#FFFFFF',
+      color: theme.colors.textOnAccent,
     },
   });
 }
