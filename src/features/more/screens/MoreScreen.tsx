@@ -64,7 +64,8 @@ export function MoreScreen() {
   const role = useAccountStore((state) => state.role);
   const displayName = profile?.displayName?.trim() || 'Creator';
   const initials = getInitials(displayName);
-  const roleLabel = role.replace('_', ' ').toUpperCase();
+  const planLabel = formatPlanLabel(profile?.subscriptionTier ?? role);
+  const statusLabel = formatStatusLabel(profile?.subscriptionStatus ?? 'free');
 
   return (
     <AppShell>
@@ -97,7 +98,7 @@ export function MoreScreen() {
                 Hi, {displayName}
               </AppText>
               <AppText variant="bodySmall" tone="secondary" numberOfLines={1}>
-                {roleLabel}
+                {planLabel} - {statusLabel}
               </AppText>
             </View>
           </View>
@@ -131,7 +132,7 @@ export function MoreScreen() {
                   key={option.title}
                   title={option.title}
                   description={option.description}
-                  value={option.title === 'Subscriptions' ? roleLabel : undefined}
+                  value={option.title === 'Subscriptions' ? statusLabel : undefined}
                   icon={option.icon}
                   onPress={() => router.push(option.route as any)}
                 />
@@ -175,6 +176,14 @@ function getInitials(name: string) {
     .toUpperCase();
 
   return initials || 'C';
+}
+
+function formatPlanLabel(value: string) {
+  return value.replace('_', ' ').toUpperCase();
+}
+
+function formatStatusLabel(value: string) {
+  return value.replace('_', ' ').toUpperCase();
 }
 
 function createStyles(theme: ReturnType<typeof useThemeTokens>) {

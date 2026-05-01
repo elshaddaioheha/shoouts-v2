@@ -1,5 +1,6 @@
 import { getFirebaseDb } from '@/src/config/firebase';
 import {
+  canPreviewExperience,
   getDefaultExperience,
   normalizeRole,
 } from '@/src/features/access/access.helpers';
@@ -9,10 +10,12 @@ import type {
   UserRole,
 } from '@/src/features/access/access.types';
 import type { AuthUser } from '@/src/features/auth/auth.types';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import type { AccountProfile, SellerVerificationStatus } from './account.types';
 
 const USERS_COLLECTION = 'users';
+const SUBSCRIPTION_COLLECTION = 'subscription';
+const CURRENT_SUBSCRIPTION_DOCUMENT = 'current';
 
 export function buildFallbackAccountProfile(user: AuthUser): AccountProfile {
   const role: UserRole = 'shoouts';
@@ -25,6 +28,8 @@ export function buildFallbackAccountProfile(user: AuthUser): AccountProfile {
     role,
     activeExperience: getDefaultExperience(role),
     subscriptionStatus: 'free',
+    subscriptionTier: role,
+    isSubscribed: false,
     onboarding: {
       hasSeenOnboarding: true,
       needsRoleSelection: false,
@@ -44,26 +49,48 @@ export function buildFallbackAccountProfile(user: AuthUser): AccountProfile {
 
 export async function fetchAccountProfile(user: AuthUser): Promise<AccountProfile> {
   const db = getFirebaseDb();
-  const snapshot = await getDoc(doc(db, USERS_COLLECTION, user.uid));
+  const userRef = doc(db, USERS_COLLECTION, user.uid);
+  const snapshot = await getDoc(userRef);
 
   if (!snapshot.exists()) {
     return buildFallbackAccountProfile(user);
   }
 
   const raw = snapshot.data();
+  const subscriptionRaw = await fetchCurrentSubscriptionDoc(user.uid);
   const onboarding = asRecord(raw.onboarding);
   const seller = asRecord(raw.seller);
   const usage = asRecord(raw.usage);
-  const subscription = asRecord(raw.subscription);
+  const embeddedSubscription = asRecord(raw.subscription);
+  const subscription = {
+    ...embeddedSubscription,
+    ...subscriptionRaw,
+  };
   const role = normalizeRole(
-    asString(raw.role) ?? asString(onboarding.selectedRole) ?? 'shoouts'
+    asString(raw.role) ??
+      asString(onboarding.selectedRole) ??
+      asString(subscription.tier) ??
+      'shoouts'
+  );
+  const subscriptionTier = normalizeRole(
+    asString(subscription.tier) ??
+      asString(raw.subscriptionTier) ??
+      asString(raw.plan) ??
+      asString(raw.role) ??
+      'shoouts'
   );
   const selectedRole = normalizeOptionalRole(
     onboarding.selectedRole ?? raw.selectedRole ?? raw.role
   );
-  const activeExperience = normalizeExperience(
+  const requestedExperience = normalizeExperience(
     raw.activeExperience ?? raw.lastExperience ?? raw.workspace,
     getDefaultExperience(role)
+  );
+  const activeExperience = canPreviewExperience(role, requestedExperience)
+    ? requestedExperience
+    : getDefaultExperience(role);
+  const subscriptionStatus = normalizeSubscriptionStatus(
+    raw.subscriptionStatus ?? subscription.status
   );
 
   return {
@@ -79,9 +106,11 @@ export async function fetchAccountProfile(user: AuthUser): Promise<AccountProfil
       asNullableString(raw.profileImageUrl),
     role,
     activeExperience,
-    subscriptionStatus: normalizeSubscriptionStatus(
-      raw.subscriptionStatus ?? subscription.status
-    ),
+    subscriptionStatus,
+    subscriptionTier,
+    isSubscribed:
+      asBoolean(subscription.isSubscribed) ??
+      (subscriptionStatus === 'active' || subscriptionStatus === 'trial'),
     onboarding: {
       hasSeenOnboarding: asBoolean(onboarding.hasSeenOnboarding) ?? true,
       needsRoleSelection:
@@ -100,6 +129,67 @@ export async function fetchAccountProfile(user: AuthUser): Promise<AccountProfil
       vaultUploadCount: asNumber(usage.vaultUploadCount ?? raw.vaultUploadCount) ?? 0,
     },
   };
+}
+
+export async function updateAccountRoleSelection(
+  uid: string,
+  role: UserRole
+): Promise<void> {
+  const db = getFirebaseDb();
+  const activeExperience = getDefaultExperience(role);
+
+  await setDoc(
+    doc(db, USERS_COLLECTION, uid),
+    {
+      role,
+      activeExperience,
+      onboarding: {
+        hasSeenOnboarding: true,
+        needsRoleSelection: false,
+        selectedRole: role,
+      },
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+}
+
+export async function updateAccountActiveExperience(
+  uid: string,
+  activeExperience: AppExperience
+): Promise<void> {
+  const db = getFirebaseDb();
+
+  await setDoc(
+    doc(db, USERS_COLLECTION, uid),
+    {
+      activeExperience,
+      lastExperience: activeExperience,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+}
+
+async function fetchCurrentSubscriptionDoc(uid: string): Promise<Record<string, unknown>> {
+  try {
+    const db = getFirebaseDb();
+    const snapshot = await getDoc(
+      doc(
+        db,
+        USERS_COLLECTION,
+        uid,
+        SUBSCRIPTION_COLLECTION,
+        CURRENT_SUBSCRIPTION_DOCUMENT
+      )
+    );
+
+    return snapshot.exists() ? snapshot.data() : {};
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown subscription read error';
+    console.warn(`[account] users/${uid}/subscription/current unavailable: ${message}`);
+    return {};
+  }
 }
 
 function normalizeSubscriptionStatus(value: unknown): SubscriptionStatus {

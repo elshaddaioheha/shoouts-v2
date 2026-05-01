@@ -6,7 +6,9 @@ import {
   canPreviewExperience,
 } from '@/src/features/access/access.helpers';
 import type { AppExperience } from '@/src/features/access/access.types';
+import { updateAccountActiveExperience } from '@/src/features/account/account.api';
 import { useAccountStore } from '@/src/features/account/account.store';
+import { useAuthStore } from '@/src/features/auth/auth.store';
 import { deriveExperienceFromPathname } from '@/src/features/navigation/navigation.helpers';
 import { EXPERIENCE_NAVIGATION } from '@/src/features/navigation/navigation.config';
 import { useExperienceNavigationStore } from '@/src/features/navigation/navigation.store';
@@ -38,7 +40,9 @@ export function ExperienceSwitcher() {
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
+  const user = useAuthStore((state) => state.user);
   const role = useAccountStore((state) => state.role);
+  const setAccountActiveExperience = useAccountStore((state) => state.setActiveExperience);
   const storedExperience = useExperienceNavigationStore((state) => state.activeExperience);
   const setActiveExperience = useExperienceNavigationStore((state) => state.setActiveExperience);
   const [activeSheet, setActiveSheet] = useState<ActiveSheet>(null);
@@ -47,12 +51,21 @@ export function ExperienceSwitcher() {
   const activeConfig = EXPERIENCE_NAVIGATION[activeExperience];
   const activeUnlocked = canAccessExperience(role, activeExperience);
 
-  function handleSwitch(experience: AppExperience) {
+  async function handleSwitch(experience: AppExperience) {
     if (!canPreviewExperience(role, experience)) return;
 
     setActiveExperience(experience);
+    setAccountActiveExperience(experience);
     setActiveSheet(null);
     router.replace(EXPERIENCE_NAVIGATION[experience].defaultRoute as any);
+
+    if (user) {
+      try {
+        await updateAccountActiveExperience(user.uid, experience);
+      } catch (error) {
+        console.warn('[account] Failed to persist active experience.', error);
+      }
+    }
   }
 
   return (

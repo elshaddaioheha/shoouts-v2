@@ -1,4 +1,7 @@
-import { getDefaultExperience } from '@/src/features/access/access.helpers';
+import {
+  canPreviewExperience,
+  getDefaultExperience,
+} from '@/src/features/access/access.helpers';
 import type { AppExperience, UserRole } from '@/src/features/access/access.types';
 import { create } from 'zustand';
 import type { AccountProfile } from './account.types';
@@ -22,12 +25,24 @@ export const useAccountStore = create<AccountState>((set) => ({
   activeExperience: 'shoouts',
   previewExperience: null,
 
-  setProfile: (profile) =>
+  setProfile: (profile) => {
+    const role = profile?.role ?? 'shoouts';
+    const requestedExperience = profile?.activeExperience ?? getDefaultExperience(role);
+    const activeExperience = canPreviewExperience(role, requestedExperience)
+      ? requestedExperience
+      : getDefaultExperience(role);
+
     set({
-      profile,
-      role: profile?.role ?? 'shoouts',
-      activeExperience: profile?.activeExperience ?? getDefaultExperience(profile?.role),
-    }),
+      profile: profile
+        ? {
+            ...profile,
+            activeExperience,
+          }
+        : null,
+      role,
+      activeExperience,
+    });
+  },
 
   setRole: (role) =>
     set({

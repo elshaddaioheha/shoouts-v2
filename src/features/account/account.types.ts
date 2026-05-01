@@ -19,6 +19,8 @@ export type AccountProfile = {
   role: UserRole;
   activeExperience: AppExperience;
   subscriptionStatus: SubscriptionStatus;
+  subscriptionTier: UserRole;
+  isSubscribed: boolean;
 
   onboarding: {
     hasSeenOnboarding: boolean;

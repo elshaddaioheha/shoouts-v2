@@ -1,5 +1,7 @@
 import type { UserRole } from '@/src/features/access/access.types';
+import { updateAccountRoleSelection } from '@/src/features/account/account.api';
 import { useAccountStore } from '@/src/features/account/account.store';
+import { useAuthStore } from '@/src/features/auth/auth.store';
 import { useAppTheme } from '@/src/hooks/use-app-theme';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -92,6 +94,7 @@ const ROLE_OPTIONS: {
 export function RoleSelectionScreen() {
   const appTheme = useAppTheme();
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
   const setRole = useAccountStore((state) => state.setRole);
 
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
@@ -150,6 +153,13 @@ export function RoleSelectionScreen() {
     setIsSubmitting(true);
     try {
       setRole(selectedRole);
+      if (user) {
+        try {
+          await updateAccountRoleSelection(user.uid, selectedRole);
+        } catch (error) {
+          console.warn('[account] Failed to persist selected role.', error);
+        }
+      }
       router.replace('/');
     } catch {
       // Silently fail for now; role was set locally
