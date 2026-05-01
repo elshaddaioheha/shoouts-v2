@@ -1,9 +1,10 @@
-import { db } from '@/src/config/firebase';
+import { getFirebaseDb } from '@/src/config/firebase';
 import { collection, getDocs, limit, query } from 'firebase/firestore';
 import type { LibraryPurchase } from './downloads.types';
 
 export async function fetchUserPurchases(uid: string, limitCount = 24): Promise<LibraryPurchase[]> {
   try {
+    const db = getFirebaseDb();
     const snapshot = await getDocs(
       query(collection(db, 'users', uid, 'purchases'), limit(limitCount))
     );

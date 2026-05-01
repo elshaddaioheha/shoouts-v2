@@ -1,4 +1,4 @@
-import { db } from '@/src/config/firebase';
+import { getFirebaseDb } from '@/src/config/firebase';
 import { normalizeRole } from '@/src/features/access/access.helpers';
 import {
   collectionGroup,
@@ -18,6 +18,7 @@ const SELLERS_COLLECTION = 'sellers';
 
 export async function fetchMarketplaceListings(limitCount = 24): Promise<MarketplaceListing[]> {
   try {
+    const db = getFirebaseDb();
     const scanLimit = Math.max(limitCount * 4, limitCount);
     const snapshot = await getDocs(
       query(collectionGroup(db, UPLOADS_COLLECTION), limit(scanLimit))
@@ -38,6 +39,7 @@ export async function fetchMarketplaceListingById(
   listingId: string
 ): Promise<MarketplaceListing | null> {
   try {
+    const db = getFirebaseDb();
     const topLevelSnapshot = await getDoc(doc(db, UPLOADS_COLLECTION, listingId));
 
     if (topLevelSnapshot.exists()) {
@@ -67,6 +69,7 @@ export async function fetchMarketplaceListingById(
 
 export async function fetchSellerProfile(sellerId: string): Promise<SellerProfile | null> {
   try {
+    const db = getFirebaseDb();
     for (const collectionName of [USERS_COLLECTION, SELLERS_COLLECTION]) {
       const snapshot = await getDoc(doc(db, collectionName, sellerId));
 
@@ -87,6 +90,7 @@ export async function fetchSellerListings(
   limitCount = 12
 ): Promise<MarketplaceListing[]> {
   try {
+    const db = getFirebaseDb();
     const scanLimit = Math.max(limitCount * 3, limitCount);
 
     for (const field of ['sellerId', 'ownerId', 'userId', 'uid']) {

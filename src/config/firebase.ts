@@ -1,9 +1,27 @@
-import { getApp, getApps, initializeApp } from 'firebase/app';
-import { getAuth, getReactNativePersistence, initializeAuth } from 'firebase/auth';
-import { getFirestore, initializeFirestore } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
+import * as FirebaseAuth from 'firebase/auth';
+import {
+  getAuth,
+  initializeAuth,
+  type Auth,
+  type Persistence,
+} from 'firebase/auth';
+import {
+  getFirestore,
+  initializeFirestore,
+  type Firestore,
+} from 'firebase/firestore';
 import { Platform } from 'react-native';
-import { env } from './env';
+import { assertEnv, env } from './env';
+
+type ReactNativePersistenceFactory = (
+  storage: typeof AsyncStorage
+) => Persistence;
+
+let firebaseApp: FirebaseApp | null = null;
+let firebaseAuth: Auth | null = null;
+let firebaseDb: Firestore | null = null;
 
 const firebaseConfig = {
   apiKey: env.firebaseApiKey,
@@ -14,36 +32,71 @@ const firebaseConfig = {
   appId: env.firebaseAppId,
 };
 
-export const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
+export function getFirebaseApp() {
+  assertEnv();
 
-function getFirebaseAuth() {
-  if (Platform.OS === 'web') {
-    return getAuth(firebaseApp);
+  if (!firebaseApp) {
+    firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
   }
 
-  try {
-    return initializeAuth(firebaseApp, {
-      persistence: getReactNativePersistence(AsyncStorage),
-    });
-  } catch {
-    return getAuth(firebaseApp);
-  }
+  return firebaseApp;
 }
 
-export const auth = getFirebaseAuth();
+export function getFirebaseAuth() {
+  if (firebaseAuth) {
+    return firebaseAuth;
+  }
 
-function getFirebaseDb() {
+  const app = getFirebaseApp();
+
   if (Platform.OS === 'web') {
-    return getFirestore(firebaseApp);
+    firebaseAuth = getAuth(app);
+    return firebaseAuth;
+  }
+
+  const getReactNativePersistence = (
+    FirebaseAuth as unknown as {
+      getReactNativePersistence?: ReactNativePersistenceFactory;
+    }
+  ).getReactNativePersistence;
+
+  try {
+    firebaseAuth =
+      typeof getReactNativePersistence === 'function'
+        ? initializeAuth(app, {
+            persistence: getReactNativePersistence(AsyncStorage),
+          })
+        : getAuth(app);
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[firebase] Falling back to default auth initialization.', error);
+    }
+
+    firebaseAuth = getAuth(app);
+  }
+
+  return firebaseAuth;
+}
+
+export function getFirebaseDb() {
+  if (firebaseDb) {
+    return firebaseDb;
+  }
+
+  const app = getFirebaseApp();
+
+  if (Platform.OS === 'web') {
+    firebaseDb = getFirestore(app);
+    return firebaseDb;
   }
 
   try {
-    return initializeFirestore(firebaseApp, {
+    firebaseDb = initializeFirestore(app, {
       experimentalForceLongPolling: true,
     });
   } catch {
-    return getFirestore(firebaseApp);
+    firebaseDb = getFirestore(app);
   }
-}
 
-export const db = getFirebaseDb();
+  return firebaseDb;
+}

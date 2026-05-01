@@ -1,4 +1,4 @@
-import { db } from '@/src/config/firebase';
+import { getFirebaseDb } from '@/src/config/firebase';
 import {
   getDefaultExperience,
   normalizeRole,
@@ -43,6 +43,7 @@ export function buildFallbackAccountProfile(user: AuthUser): AccountProfile {
 }
 
 export async function fetchAccountProfile(user: AuthUser): Promise<AccountProfile> {
+  const db = getFirebaseDb();
   const snapshot = await getDoc(doc(db, USERS_COLLECTION, user.uid));
 
   if (!snapshot.exists()) {

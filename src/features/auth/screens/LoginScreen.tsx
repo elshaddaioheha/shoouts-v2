@@ -21,7 +21,7 @@ import {
   View,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { auth } from '@/src/config/firebase';
+import { getFirebaseAuth } from '@/src/config/firebase';
 
 export function LoginScreen() {
   const themeTokens = useThemeTokens();
@@ -47,10 +47,15 @@ export function LoginScreen() {
     setSubmitting(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email.trim(), password);
+      await signInWithEmailAndPassword(getFirebaseAuth(), email.trim(), password);
       router.replace('/');
-    } catch {
-      Alert.alert('Login failed', 'Check your email and password, then try again.');
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message.includes('Missing required environment variables')
+          ? error.message
+          : 'Check your email and password, then try again.';
+
+      Alert.alert('Login failed', message);
     } finally {
       setSubmitting(false);
     }

@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { signOut } from 'firebase/auth';
-import { auth } from '@/src/config/firebase';
+import { getFirebaseAuth } from '@/src/config/firebase';
 import { useAuthStore } from '@/src/features/auth/auth.store';
 
 export default function DebugSignOut() {
@@ -14,7 +14,7 @@ export default function DebugSignOut() {
 
     (async () => {
       try {
-        await signOut(auth);
+        await signOut(getFirebaseAuth());
       } catch {
         // ignore errors during sign-out
       }
@@ -32,7 +32,7 @@ export default function DebugSignOut() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Signing out locally…</Text>
+      <Text style={styles.text}>Signing out locally...</Text>
     </View>
   );
 }

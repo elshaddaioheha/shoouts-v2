@@ -1,4 +1,4 @@
-import { auth } from '@/src/config/firebase';
+import { getFirebaseAuth } from '@/src/config/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useEffect } from 'react';
 import { useAuthStore } from './auth.store';
@@ -23,33 +23,42 @@ export function useAuthBootstrap() {
       settle();
     }, 5000);
 
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      (user) => {
-        clearTimeout(timeout);
+    let unsubscribe: (() => void) | undefined;
 
-        if (user) {
-          setSession({
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-          });
-        } else {
+    try {
+      unsubscribe = onAuthStateChanged(
+        getFirebaseAuth(),
+        (user) => {
+          clearTimeout(timeout);
+
+          if (user) {
+            setSession({
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName,
+            });
+          } else {
+            clearSession();
+          }
+
+          settle();
+        },
+        () => {
+          clearTimeout(timeout);
           clearSession();
+          settle();
         }
-
-        settle();
-      },
-      () => {
-        clearTimeout(timeout);
-        clearSession();
-        settle();
-      }
-    );
+      );
+    } catch (error) {
+      console.warn('[auth] Firebase auth bootstrap failed.', error);
+      clearTimeout(timeout);
+      clearSession();
+      settle();
+    }
 
     return () => {
       clearTimeout(timeout);
-      unsubscribe();
+      unsubscribe?.();
     };
   }, [clearSession, setReady, setSession]);
 
