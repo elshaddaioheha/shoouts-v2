@@ -1,3 +1,4 @@
+import { brandAssets } from '@/src/assets/brand';
 import { useThemeTokens } from '@/src/theme';
 import { fontFamily } from '@/src/theme/fonts';
 import { useAppTheme } from '@/src/hooks/use-app-theme';
@@ -8,6 +9,7 @@ import React, { useRef, useState } from 'react';
 import { SocialButton } from '@/src/features/auth/components/SocialButton';
 import {
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -90,7 +92,10 @@ export function LoginScreen() {
           </View>
 
           <View style={styles.logoContainer}>
-            <Text style={[styles.logoText, isLightMode && { color: lightText }]}>Shoouts</Text>
+            <View style={styles.logoRow}>
+              <Image source={brandAssets.mark} style={styles.logoMark} resizeMode="contain" />
+              <Text style={[styles.logoText, isLightMode && { color: lightText }]}>Shoouts</Text>
+            </View>
           </View>
 
           <Text style={[styles.title, isLightMode && { color: lightText }]}>Welcome Back</Text>
@@ -217,10 +222,20 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     },
     logoContainer: {
       width: 256,
-      height: 56,
+      minHeight: 64,
       marginBottom: 15,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    logoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 12,
+    },
+    logoMark: {
+      width: 36,
+      height: 36,
     },
     logoText: {
       color: theme.colors.textPrimary,

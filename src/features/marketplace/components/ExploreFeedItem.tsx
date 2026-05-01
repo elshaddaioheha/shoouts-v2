@@ -5,8 +5,8 @@ import { router } from 'expo-router';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import {
   formatExplorePrice,
-  type MockExploreItem,
-} from '../data/mockExploreItems';
+  type ExploreFeedItemModel,
+} from '../marketplace.types';
 import { ExploreActionRail } from './ExploreActionRail';
 
 const ARTWORK_SIZE = 140;
@@ -17,7 +17,7 @@ const DISC_WIDTH = 265;
 const DISC_HEIGHT = 286;
 
 type ExploreFeedItemProps = {
-  item: MockExploreItem;
+  item: ExploreFeedItemModel;
   pageHeight: number;
 };
 

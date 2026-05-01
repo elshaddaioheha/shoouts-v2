@@ -5,6 +5,11 @@ import {
   fetchSellerListings,
   fetchSellerProfile,
 } from './marketplace.api';
+import type {
+  ExploreFeedItemModel,
+  ExploreFeedTab,
+  MarketplaceListing,
+} from './marketplace.types';
 
 export function useMarketplaceListings(limitCount = 24) {
   return useQuery({
@@ -35,4 +40,36 @@ export function useSellerListings(sellerId: string | null, limitCount = 12) {
     enabled: Boolean(sellerId),
     queryFn: () => fetchSellerListings(sellerId!, limitCount),
   });
+}
+
+export function useExploreFeed(tab: ExploreFeedTab, limitCount = 24) {
+  const listingsQuery = useMarketplaceListings(limitCount);
+
+  const data: ExploreFeedItemModel[] =
+    tab === 'forYou'
+      ? (listingsQuery.data ?? []).map(mapListingToExploreItem)
+      : [];
+
+  return {
+    ...listingsQuery,
+    data,
+    hasFollowingSupport: false,
+  };
+}
+
+function mapListingToExploreItem(listing: MarketplaceListing): ExploreFeedItemModel {
+  return {
+    id: listing.id,
+    listingId: listing.id,
+    sellerId: listing.sellerId,
+    title: listing.title,
+    artist: listing.artist,
+    price: listing.price,
+    currency: listing.currency,
+    likesLabel: null,
+    genre: listing.genre,
+    bpm: listing.bpm,
+    key: listing.key,
+    artworkLabel: listing.genre ?? listing.title.split(' ')[0] ?? 'Beat',
+  };
 }

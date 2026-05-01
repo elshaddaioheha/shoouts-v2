@@ -30,6 +30,23 @@ export type SellerProfile = {
   payoutsEnabled: boolean;
 };
 
+export type ExploreFeedTab = 'following' | 'forYou';
+
+export type ExploreFeedItemModel = {
+  id: string;
+  listingId: string;
+  sellerId: string;
+  title: string;
+  artist: string;
+  price: number;
+  currency: string;
+  likesLabel?: string | null;
+  genre?: string | null;
+  bpm?: number | null;
+  key?: string | null;
+  artworkLabel?: string | null;
+};
+
 export function formatMarketplacePrice(
   listing: Pick<MarketplaceListing, 'price' | 'currency'>
 ) {
@@ -45,4 +62,10 @@ export function formatMarketplacePrice(
   }
 
   return `$${listing.price.toFixed(2)}`;
+}
+
+export function formatExplorePrice(
+  item: Pick<ExploreFeedItemModel, 'price' | 'currency'>
+) {
+  return formatMarketplacePrice(item);
 }

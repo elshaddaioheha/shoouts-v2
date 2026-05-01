@@ -14,6 +14,7 @@ type AppShellProps = {
   showSwitcher?: boolean;
   showBottomBar?: boolean;
   reserveBottomBarSpace?: boolean;
+  showBottomBarBackdrop?: boolean;
 };
 
 export function AppShell({
@@ -21,6 +22,7 @@ export function AppShell({
   showSwitcher = true,
   showBottomBar = true,
   reserveBottomBarSpace = true,
+  showBottomBarBackdrop = true,
 }: AppShellProps) {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
@@ -60,6 +62,22 @@ export function AppShell({
         {children}
       </View>
 
+      {showBottomBar && showBottomBarBackdrop ? (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.bottomBarBackdrop,
+            {
+              height:
+                layout.bottomBarHeight +
+                layout.bottomBarOffset +
+                insets.bottom +
+                theme.spacing.lg,
+            },
+          ]}
+        />
+      ) : null}
+
       {showBottomBar ? <BottomPillBar /> : null}
     </View>
   );
@@ -73,6 +91,13 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     },
     content: {
       flex: 1,
+    },
+    bottomBarBackdrop: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: theme.colors.background,
     },
   });
 }

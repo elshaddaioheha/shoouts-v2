@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "shoout-v2",
+    "name": "Shoouts",
     "slug": "shoout-v2",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -32,12 +32,12 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
+          "image": "./assets/images/android-icon-foreground.png",
+          "imageWidth": 160,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#E6F4FE",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#0B1220"
           }
         }
       ],

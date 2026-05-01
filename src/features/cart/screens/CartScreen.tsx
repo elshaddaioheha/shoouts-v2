@@ -1,7 +1,10 @@
-import { AppShell } from '@/src/features/navigation/components/AppShell';
+import { AppIcon } from '@/src/components/ui/AppIcon';
+import { AppText } from '@/src/components/ui/AppText';
 import { useCartStore } from '@/src/features/cart/cart.store';
+import { AppShell } from '@/src/features/navigation/components/AppShell';
 import { useThemeTokens } from '@/src/theme';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 export function CartScreen() {
   const items = useCartStore((state) => state.items);
@@ -12,33 +15,64 @@ export function CartScreen() {
   const styles = createStyles(theme);
 
   function handleCheckout() {
-    Alert.alert('Checkout coming soon', 'Payments will be connected after marketplace and player are stable.');
+    Alert.alert(
+      'Checkout coming soon',
+      'Payments stay pinned until marketplace reads and library flows are fully stable.'
+    );
   }
 
   return (
     <AppShell>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.eyebrow}>Cart</Text>
-        <Text style={styles.title}>Your selected beats</Text>
+        <AppText variant="eyebrow" tone="accent">
+          Cart
+        </AppText>
+        <AppText variant="pageHeading">Your selected beats</AppText>
+        <AppText variant="bodySmall" tone="secondary" style={styles.subtitle}>
+          This is the buyer review step before checkout is connected.
+        </AppText>
 
         {items.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>Your cart is empty</Text>
-            <Text style={styles.emptyText}>Add beats from the marketplace to see them here.</Text>
+            <AppText variant="sectionHeading">Your cart is empty</AppText>
+            <AppText variant="bodySmall" tone="secondary" style={styles.emptyText}>
+              Add beats from Explore or Home to review them here before payments go live.
+            </AppText>
+            <Pressable
+              style={styles.secondaryButton}
+              onPress={() => router.push('/(tabs)/marketplace' as any)}
+            >
+              <AppText variant="button">Browse Explore</AppText>
+            </Pressable>
           </View>
         ) : (
           <View style={styles.list}>
             {items.map((item) => (
               <View key={item.id} style={styles.item}>
-                <View style={styles.artwork} />
-                <View style={styles.itemInfo}>
-                  <Text style={styles.itemTitle}>{item.title}</Text>
-                  <Text style={styles.itemArtist}>{item.artist}</Text>
-                  <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
+                <View style={styles.itemLeading}>
+                  <View style={styles.artwork}>
+                    <AppIcon name="cart" size="sm" tone="accent" stroke="regular" />
+                  </View>
+                  <View style={styles.itemInfo}>
+                    <AppText variant="title" numberOfLines={1}>
+                      {item.title}
+                    </AppText>
+                    <AppText variant="bodySmall" tone="secondary" numberOfLines={1}>
+                      {item.artist}
+                    </AppText>
+                    <AppText variant="bodySmall" tone="accent">
+                      ${item.price.toFixed(2)}
+                    </AppText>
+                  </View>
                 </View>
 
-                <Pressable onPress={() => removeItem(item.id)}>
-                  <Text style={styles.remove}>Remove</Text>
+                <Pressable
+                  style={styles.removeButton}
+                  onPress={() => removeItem(item.id)}
+                >
+                  <AppText variant="button" tone="danger">
+                    Remove
+                  </AppText>
                 </Pressable>
               </View>
             ))}
@@ -47,17 +81,34 @@ export function CartScreen() {
 
         <View style={styles.summary}>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Total</Text>
-            <Text style={styles.total}>${total.toFixed(2)}</Text>
+            <AppText variant="bodySmall" tone="secondary">
+              Items
+            </AppText>
+            <AppText variant="title">{items.length}</AppText>
           </View>
 
-          <Pressable style={styles.checkoutButton} onPress={handleCheckout} disabled={items.length === 0}>
-            <Text style={styles.checkoutText}>Checkout coming soon</Text>
+          <View style={styles.summaryRow}>
+            <AppText variant="bodySmall" tone="secondary">
+              Total
+            </AppText>
+            <AppText variant="sectionHeading">${total.toFixed(2)}</AppText>
+          </View>
+
+          <Pressable
+            style={[styles.checkoutButton, items.length === 0 && styles.checkoutButtonDisabled]}
+            onPress={handleCheckout}
+            disabled={items.length === 0}
+          >
+            <AppText variant="button" style={styles.checkoutText}>
+              Checkout coming soon
+            </AppText>
           </Pressable>
 
           {items.length > 0 ? (
             <Pressable style={styles.clearButton} onPress={clearCart}>
-              <Text style={styles.clearText}>Clear cart</Text>
+              <AppText variant="button" tone="secondary">
+                Clear cart
+              </AppText>
             </Pressable>
           ) : null}
         </View>
@@ -73,115 +124,100 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       paddingTop: theme.spacing.lg,
       paddingBottom: 120,
       backgroundColor: theme.colors.background,
+      gap: theme.spacing.lg,
     },
-    eyebrow: {
-      ...theme.typography.eyebrow,
-      color: theme.colors.accent,
-      marginBottom: theme.spacing.sm,
-    },
-    title: {
-      color: theme.colors.textPrimary,
-      fontSize: 30,
-      fontWeight: '900',
-      marginBottom: theme.spacing.xl,
+    subtitle: {
+      marginTop: -theme.spacing.sm,
     },
     emptyCard: {
-      borderRadius: theme.radius.xxl,
-      backgroundColor: theme.colors.card,
+      borderRadius: theme.radius.xl,
+      backgroundColor: theme.colors.surfaceElevated,
       borderWidth: 1,
-      borderColor: theme.colors.cardBorder,
-      padding: theme.spacing.xl,
-    },
-    emptyTitle: {
-      color: theme.colors.textPrimary,
-      fontSize: 18,
-      fontWeight: '800',
-      marginBottom: 6,
+      borderColor: theme.colors.borderStrong,
+      padding: theme.spacing.lg,
+      gap: theme.spacing.md,
     },
     emptyText: {
-      color: theme.colors.textSecondary,
       lineHeight: 20,
+    },
+    secondaryButton: {
+      minHeight: theme.layout.minTouchTarget,
+      borderRadius: theme.radius.lg,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: theme.spacing.lg,
     },
     list: {
       gap: theme.spacing.md,
     },
     item: {
+      borderRadius: theme.radius.xl,
+      backgroundColor: theme.colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      padding: theme.spacing.md,
+      gap: theme.spacing.md,
+    },
+    itemLeading: {
       flexDirection: 'row',
       alignItems: 'center',
-      borderRadius: theme.radius.xl,
-      backgroundColor: theme.colors.card,
-      borderWidth: 1,
-      borderColor: theme.colors.cardBorder,
-      padding: theme.spacing.md,
       gap: theme.spacing.md,
     },
     artwork: {
       width: 54,
       height: 54,
       borderRadius: theme.radius.lg,
-      backgroundColor: theme.colors.accentSoftDark,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
     },
     itemInfo: {
       flex: 1,
+      minWidth: 0,
+      gap: theme.spacing.xs,
     },
-    itemTitle: {
-      color: theme.colors.textPrimary,
-      fontWeight: '800',
-      fontSize: 15,
-    },
-    itemArtist: {
-      color: theme.colors.textSecondary,
-      marginTop: 3,
-    },
-    itemPrice: {
-      color: theme.colors.accent,
-      fontWeight: '800',
-      marginTop: 5,
-    },
-    remove: {
-      color: theme.colors.error,
-      fontWeight: '800',
-      fontSize: 12,
+    removeButton: {
+      alignSelf: 'flex-end',
+      minHeight: 34,
+      justifyContent: 'center',
     },
     summary: {
-      marginTop: theme.spacing.xxl,
-      borderRadius: theme.radius.xxl,
-      backgroundColor: theme.colors.card,
+      borderRadius: theme.radius.xl,
+      backgroundColor: theme.colors.surfaceElevated,
       borderWidth: 1,
-      borderColor: theme.colors.cardBorder,
+      borderColor: theme.colors.borderStrong,
       padding: theme.spacing.lg,
+      gap: theme.spacing.md,
     },
     summaryRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginBottom: 14,
-    },
-    summaryLabel: {
-      color: theme.colors.textSecondary,
-      fontWeight: '700',
-    },
-    total: {
-      color: theme.colors.textPrimary,
-      fontWeight: '900',
-      fontSize: 18,
+      alignItems: 'center',
     },
     checkoutButton: {
+      minHeight: theme.layout.minTouchTarget,
       backgroundColor: theme.colors.accent,
       borderRadius: theme.radius.lg,
-      paddingVertical: 14,
       alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: theme.spacing.lg,
+    },
+    checkoutButtonDisabled: {
+      backgroundColor: theme.colors.surfacePressed,
     },
     checkoutText: {
-      color: theme.colors.textPrimary,
-      fontWeight: '900',
+      color: theme.colors.textOnAccent,
     },
     clearButton: {
-      paddingVertical: 12,
+      minHeight: 36,
       alignItems: 'center',
-    },
-    clearText: {
-      color: theme.colors.textSecondary,
-      fontWeight: '700',
+      justifyContent: 'center',
     },
   });
 }

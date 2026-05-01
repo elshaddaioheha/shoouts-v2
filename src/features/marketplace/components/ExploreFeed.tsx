@@ -1,10 +1,12 @@
+import { LoadingState } from '@/src/components/ui/LoadingState';
+import { ErrorState } from '@/src/components/ui/ErrorState';
 import { useMemo } from 'react';
-import { FlatList, StyleSheet, useWindowDimensions } from 'react-native';
+import { FlatList, StyleSheet, useWindowDimensions, View } from 'react-native';
 import {
-  getExploreItemsByTab,
+  type ExploreFeedItemModel,
   type ExploreFeedTab,
-  type MockExploreItem,
-} from '../data/mockExploreItems';
+} from '../marketplace.types';
+import { useExploreFeed } from '../marketplace.hooks';
 import { ExploreFeedItem } from './ExploreFeedItem';
 
 type ExploreFeedProps = {
@@ -12,11 +14,54 @@ type ExploreFeedProps = {
 };
 
 export function ExploreFeed({ activeTab }: ExploreFeedProps) {
-  const data = useMemo(() => getExploreItemsByTab(activeTab), [activeTab]);
+  const feedQuery = useExploreFeed(activeTab, 24);
+  const data = useMemo(() => feedQuery.data ?? [], [feedQuery.data]);
   const { height } = useWindowDimensions();
 
+  if (feedQuery.isLoading) {
+    return (
+      <View style={styles.state}>
+        <LoadingState label="Loading Explore..." />
+      </View>
+    );
+  }
+
+  if (feedQuery.isError) {
+    return (
+      <View style={styles.state}>
+        <ErrorState
+          title="Couldn't load Explore"
+          message="Please check Firestore access and try again."
+          onAction={() => feedQuery.refetch()}
+        />
+      </View>
+    );
+  }
+
+  if (activeTab === 'following' && !feedQuery.hasFollowingSupport) {
+    return (
+      <View style={styles.state}>
+        <ErrorState
+          title="No followed creators yet"
+          message="Following becomes active once creator-follow relationships are connected."
+        />
+      </View>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <View style={styles.state}>
+        <ErrorState
+          title="No public uploads yet"
+          message="Explore will fill in as soon as published uploads are available."
+        />
+      </View>
+    );
+  }
+
   return (
-    <FlatList<MockExploreItem>
+    <FlatList<ExploreFeedItemModel>
       data={data}
       key={height}
       keyExtractor={(item) => item.id}
@@ -38,6 +83,9 @@ export function ExploreFeed({ activeTab }: ExploreFeedProps) {
 
 const styles = StyleSheet.create({
   list: {
+    flex: 1,
+  },
+  state: {
     flex: 1,
   },
 });

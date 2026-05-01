@@ -2,10 +2,10 @@ import { AppIcon } from '@/src/components/ui/AppIcon';
 import { AppText } from '@/src/components/ui/AppText';
 import { useThemeTokens } from '@/src/theme';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
-import type { MockExploreItem } from '../data/mockExploreItems';
+import type { ExploreFeedItemModel } from '../marketplace.types';
 
 type ExploreActionRailProps = {
-  item: MockExploreItem;
+  item: ExploreFeedItemModel;
   bottomOffset?: number;
   onMorePress: () => void;
 };
@@ -51,7 +51,7 @@ export function ExploreActionRail({
       <Pressable style={styles.action} onPress={handleLike}>
         <AppIcon name="like" size="xl" tone="inverse" stroke="bold" />
         <AppText variant="caption" style={styles.actionLabel}>
-          {item.likes}
+          {item.likesLabel ?? 'Like'}
         </AppText>
       </Pressable>
 

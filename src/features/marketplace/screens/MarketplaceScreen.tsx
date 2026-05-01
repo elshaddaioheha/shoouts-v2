@@ -5,14 +5,18 @@ import { ExploreFeed } from '../components/ExploreFeed';
 import { ExploreHeader } from '../components/ExploreHeader';
 import { ExploreTabs } from '../components/ExploreTabs';
 import { SearchMarketplaceModal } from '../components/SearchMarketplaceModal';
-import type { ExploreFeedTab } from '../data/mockExploreItems';
+import type { ExploreFeedTab } from '../marketplace.types';
 
 export function MarketplaceScreen() {
   const [activeTab, setActiveTab] = useState<ExploreFeedTab>('forYou');
   const [searchOpen, setSearchOpen] = useState(false);
 
   return (
-    <AppShell showSwitcher={false} reserveBottomBarSpace={false}>
+    <AppShell
+      showSwitcher={false}
+      reserveBottomBarSpace={false}
+      showBottomBarBackdrop={false}
+    >
       <View style={styles.container}>
         <ExploreFeed activeTab={activeTab} />
         <ExploreHeader onSearchPress={() => setSearchOpen(true)} />

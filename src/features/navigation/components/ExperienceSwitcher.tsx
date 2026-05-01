@@ -1,5 +1,6 @@
 import { AppIcon } from '@/src/components/ui/AppIcon';
 import { AppText } from '@/src/components/ui/AppText';
+import { brandAssets } from '@/src/assets/brand';
 import {
   canAccessExperience,
   canPreviewExperience,
@@ -22,7 +23,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const experiences: AppExperience[] = ['shoouts', 'vault', 'studio', 'hybrid'];
-const appIconAsset = require('@/assets/images/icon.png');
 
 const experienceDescriptions: Record<AppExperience, string> = {
   shoouts: 'Marketplace listening and buying.',
@@ -74,7 +74,7 @@ export function ExperienceSwitcher() {
               pressed ? styles.triggerPressed : undefined,
             ]}
           >
-            <Image source={appIconAsset} style={styles.logo} resizeMode="cover" />
+            <Image source={brandAssets.mark} style={styles.logo} resizeMode="contain" />
 
             <View style={styles.triggerTextWrap}>
               <AppText variant="navItem" style={styles.triggerText}>
@@ -303,9 +303,8 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       backgroundColor: theme.colors.card,
     },
     logo: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
+      width: 26,
+      height: 26,
       flexShrink: 0,
     },
     triggerTextWrap: {
