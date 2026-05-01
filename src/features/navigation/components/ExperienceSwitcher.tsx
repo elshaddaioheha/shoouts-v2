@@ -9,11 +9,12 @@ import type { AppExperience } from '@/src/features/access/access.types';
 import { updateAccountActiveExperience } from '@/src/features/account/account.api';
 import { useAccountStore } from '@/src/features/account/account.store';
 import { useAuthStore } from '@/src/features/auth/auth.store';
+import { openExperienceWelcome } from '@/src/features/navigation/experienceWelcome';
 import { deriveExperienceFromPathname } from '@/src/features/navigation/navigation.helpers';
 import { EXPERIENCE_NAVIGATION } from '@/src/features/navigation/navigation.config';
 import { useExperienceNavigationStore } from '@/src/features/navigation/navigation.store';
 import { layout, useThemeTokens } from '@/src/theme';
-import { router, usePathname } from 'expo-router';
+import { usePathname } from 'expo-router';
 import { useState } from 'react';
 import {
   Image,
@@ -57,7 +58,10 @@ export function ExperienceSwitcher() {
     setActiveExperience(experience);
     setAccountActiveExperience(experience);
     setActiveSheet(null);
-    router.replace(EXPERIENCE_NAVIGATION[experience].defaultRoute as any);
+    openExperienceWelcome({
+      experience,
+      nextRoute: EXPERIENCE_NAVIGATION[experience].defaultRoute,
+    });
 
     if (user) {
       try {
