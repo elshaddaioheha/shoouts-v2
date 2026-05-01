@@ -1,6 +1,7 @@
 import { AppText } from '@/src/components/ui/AppText';
 import { ErrorState } from '@/src/components/ui/ErrorState';
 import { LoadingState } from '@/src/components/ui/LoadingState';
+import { ListingArtwork } from '@/src/features/marketplace/components/ListingArtwork';
 import {
   useSellerListings,
   useSellerProfile,
@@ -66,6 +67,19 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: theme.spacing.md,
+    },
+    listingLeading: {
+      flex: 1,
+      minWidth: 0,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+    },
+    listingArt: {
+      width: 52,
+      height: 52,
+      borderRadius: theme.radius.lg,
+      flexShrink: 0,
     },
     listingMeta: {
       flex: 1,
@@ -209,13 +223,21 @@ export function ProfileScreen() {
                   } as any)
                 }
               >
-                <View style={styles.listingMeta}>
-                  <AppText variant="title" numberOfLines={1}>
-                    {listing.title}
-                  </AppText>
-                  <AppText variant="bodySmall" tone="secondary" numberOfLines={1}>
-                    {listing.genre ?? 'Marketplace'}
-                  </AppText>
+                <View style={styles.listingLeading}>
+                  <ListingArtwork
+                    coverUrl={listing.coverUrl}
+                    label={listing.genre ?? 'Beat'}
+                    style={styles.listingArt}
+                  />
+
+                  <View style={styles.listingMeta}>
+                    <AppText variant="title" numberOfLines={1}>
+                      {listing.title}
+                    </AppText>
+                    <AppText variant="bodySmall" tone="secondary" numberOfLines={1}>
+                      {listing.genre ?? 'Marketplace'}
+                    </AppText>
+                  </View>
                 </View>
 
                 <AppText variant="button" tone="accent">

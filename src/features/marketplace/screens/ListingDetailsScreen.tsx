@@ -1,6 +1,7 @@
 import { ErrorState } from '@/src/components/ui/ErrorState';
 import { LoadingState } from '@/src/components/ui/LoadingState';
 import { useCartStore } from '@/src/features/cart/cart.store';
+import { ListingArtwork } from '@/src/features/marketplace/components/ListingArtwork';
 import {
   useMarketplaceListingDetail,
 } from '@/src/features/marketplace/marketplace.hooks';
@@ -32,17 +33,27 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     hero: {
       height: 220,
       borderRadius: theme.radius.xxl,
-      backgroundColor: theme.colors.accentSoft,
       borderWidth: 1,
       borderColor: theme.colors.cardBorder,
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: theme.spacing.xl,
     },
+    heroContent: {
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.lg,
+    },
     heroText: {
-      color: theme.colors.textPrimary,
+      color: theme.colors.textOnMedia,
       fontSize: 32,
       fontWeight: '900',
+      textAlign: 'center',
+    },
+    heroSubtext: {
+      color: theme.colors.textOnMediaMuted,
+      fontSize: 13,
+      fontWeight: '800',
     },
     eyebrow: {
       ...theme.typography.eyebrow,
@@ -251,9 +262,23 @@ export function ListingDetailsScreen() {
           <Text style={styles.back}>Back</Text>
         </Pressable>
 
-        <View style={styles.hero}>
-          <Text style={styles.heroText}>{listingData.genre ?? 'Beat'}</Text>
-        </View>
+        <ListingArtwork
+          coverUrl={listingData.coverUrl}
+          label={listingData.genre ?? 'Beat'}
+          overlay={Boolean(listingData.coverUrl)}
+          style={styles.hero}
+        >
+          {listingData.coverUrl ? (
+            <View style={styles.heroContent}>
+              <Text style={styles.heroText}>{listingData.genre ?? 'Beat'}</Text>
+              {listingData.listenCount > 0 ? (
+                <Text style={styles.heroSubtext}>
+                  {listingData.listenCount.toLocaleString()} plays
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
+        </ListingArtwork>
 
         <Text style={styles.eyebrow}>Marketplace Listing</Text>
         <Text style={styles.title}>{listingData.title}</Text>

@@ -6,6 +6,7 @@ import { useCartStore } from '@/src/features/cart/cart.store';
 import {
   useMarketplaceListings,
 } from '@/src/features/marketplace/marketplace.hooks';
+import { ListingArtwork } from '@/src/features/marketplace/components/ListingArtwork';
 import {
   formatMarketplacePrice,
   type MarketplaceListing,
@@ -132,7 +133,12 @@ export function HomeScreen() {
               ItemSeparatorComponent={() => <View style={{ width: theme.spacing.md }} />}
               contentContainerStyle={styles.horizontalList}
               renderItem={({ item }) => (
-                <View style={[styles.featuredCard, { backgroundColor: item.color }]}>
+                <ListingArtwork
+                  coverUrl={item.coverUrl}
+                  fallbackColor={item.color}
+                  overlay={Boolean(item.coverUrl)}
+                  style={styles.featuredCard}
+                >
                   <Pressable style={styles.featuredTapArea} onPress={() => openListing(item.id)}>
                     <View style={styles.featuredMeta}>
                       <AppText variant="title" style={styles.whiteText} numberOfLines={2}>
@@ -146,7 +152,7 @@ export function HomeScreen() {
                   <Pressable style={styles.playButton} onPress={() => handlePlay(item)}>
                     <AppIcon name="play" size="sm" tone="inverse" stroke="bold" />
                   </Pressable>
-                </View>
+                </ListingArtwork>
               )}
             />
 
@@ -165,7 +171,12 @@ export function HomeScreen() {
               contentContainerStyle={styles.horizontalList}
               renderItem={({ item }) => (
                 <Pressable style={styles.releaseCard} onPress={() => openListing(item.id)}>
-                  <View style={[styles.releaseVisual, { backgroundColor: item.color }]} />
+                  <ListingArtwork
+                    coverUrl={item.coverUrl}
+                    fallbackColor={item.color}
+                    label={item.genre ?? 'Beat'}
+                    style={styles.releaseVisual}
+                  />
                   <AppText variant="title" numberOfLines={1}>
                     {item.title}
                   </AppText>
@@ -195,7 +206,12 @@ export function HomeScreen() {
               renderItem={({ item }) => (
                 <View style={styles.freeCard}>
                   <Pressable style={styles.freeTapArea} onPress={() => openListing(item.id)}>
-                    <View style={[styles.freeVisual, { backgroundColor: item.color }]} />
+                    <ListingArtwork
+                      coverUrl={item.coverUrl}
+                      fallbackColor={item.color}
+                      label={item.genre ?? 'Free'}
+                      style={styles.freeVisual}
+                    />
                     <AppText variant="title" numberOfLines={1}>
                       {item.title}
                     </AppText>
@@ -224,7 +240,12 @@ export function HomeScreen() {
                 return (
                   <View key={`popular-${track.id}-${index}`} style={styles.popularRow}>
                     <Pressable style={styles.popularTapArea} onPress={() => openListing(track.id)}>
-                      <View style={[styles.popularArt, { backgroundColor: track.color }]} />
+                      <ListingArtwork
+                        coverUrl={track.coverUrl}
+                        fallbackColor={track.color}
+                        label={track.genre ?? 'Beat'}
+                        style={styles.popularArt}
+                      />
 
                       <View style={styles.popularMeta}>
                         <AppText variant="title" numberOfLines={1}>

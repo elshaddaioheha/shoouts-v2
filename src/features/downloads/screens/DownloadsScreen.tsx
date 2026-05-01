@@ -3,6 +3,7 @@ import { AppText } from '@/src/components/ui/AppText';
 import { ErrorState } from '@/src/components/ui/ErrorState';
 import { LoadingState } from '@/src/components/ui/LoadingState';
 import { useAuthStore } from '@/src/features/auth/auth.store';
+import { ListingArtwork } from '@/src/features/marketplace/components/ListingArtwork';
 import { AppShell } from '@/src/features/navigation/components/AppShell';
 import { useThemeTokens } from '@/src/theme';
 import { router } from 'expo-router';
@@ -90,9 +91,17 @@ export function DownloadsScreen() {
             {purchases.map((purchase) => (
               <View key={purchase.id} style={styles.itemCard}>
                 <View style={styles.itemLeading}>
-                  <View style={styles.artwork}>
-                    <AppIcon name="downloads" size="sm" tone="accent" stroke="regular" />
-                  </View>
+                  <ListingArtwork
+                    coverUrl={purchase.coverUrl}
+                    label="Library"
+                    style={styles.artwork}
+                  >
+                    {purchase.coverUrl ? (
+                      <View />
+                    ) : (
+                      <AppIcon name="downloads" size="sm" tone="accent" stroke="regular" />
+                    )}
+                  </ListingArtwork>
                   <View style={styles.itemMeta}>
                     <AppText variant="title" numberOfLines={1}>
                       {purchase.title}

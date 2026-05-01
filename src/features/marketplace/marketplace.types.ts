@@ -3,21 +3,32 @@ import type { UserRole } from '@/src/features/access/access.types';
 
 export type MarketplaceListing = {
   id: string;
+  sourcePath?: string;
   sellerId: string;
   title: string;
   artist: string;
+  uploaderName?: string | null;
   price: number;
   currency: string;
+  audioUrl?: string | null;
+  artworkUrl?: string | null;
   coverUrl?: string | null;
   genre?: string | null;
+  assetType?: string | null;
+  category?: string | null;
   bpm?: number | null;
   key?: string | null;
   description?: string | null;
+  listenCount: number;
+  lifecycleStatus?: string | null;
+  isPublic: boolean;
   isFree: boolean;
   tags: string[];
   isPublished: boolean;
   createdAt: string | null;
   updatedAt: string | null;
+  publishedAtMs: number;
+  createdAtMs: number;
 };
 
 export type SellerProfile = {
@@ -40,6 +51,7 @@ export type ExploreFeedItemModel = {
   artist: string;
   price: number;
   currency: string;
+  coverUrl?: string | null;
   likesLabel?: string | null;
   genre?: string | null;
   bpm?: number | null;

@@ -8,6 +8,7 @@ import {
   type ExploreFeedItemModel,
 } from '../marketplace.types';
 import { ExploreActionRail } from './ExploreActionRail';
+import { ListingArtwork } from './ListingArtwork';
 
 const ARTWORK_SIZE = 140;
 const ARTWORK_RADIUS = ARTWORK_SIZE / 2;
@@ -56,10 +57,21 @@ export function ExploreFeedItem({ item, pageHeight }: ExploreFeedItemProps) {
         </View>
 
         <View style={styles.artworkAnchor}>
-          <Pressable style={styles.artwork} onPress={handleArtworkPress}>
-            <AppText variant="title" style={styles.artworkText}>
-              {item.artworkLabel ?? item.genre ?? 'Beat'}
-            </AppText>
+          <Pressable style={styles.artworkPressable} onPress={handleArtworkPress}>
+            <ListingArtwork
+              coverUrl={item.coverUrl}
+              label={item.artworkLabel ?? item.genre ?? 'Beat'}
+              overlay={Boolean(item.coverUrl)}
+              style={styles.artwork}
+            >
+              {item.coverUrl ? (
+                <View style={styles.artworkPill}>
+                  <AppText variant="caption" style={styles.artworkPillText}>
+                    {item.genre ?? 'Beat'}
+                  </AppText>
+                </View>
+              ) : null}
+            </ListingArtwork>
           </Pressable>
         </View>
 
@@ -133,23 +145,38 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>, pageHeight: numb
       height: 0,
       transform: [{ translateY: ARTWORK_CENTER_OFFSET }],
     },
-    artwork: {
+    artworkPressable: {
       position: 'absolute',
       width: ARTWORK_SIZE,
       height: ARTWORK_SIZE,
       borderRadius: ARTWORK_RADIUS,
       left: -ARTWORK_RADIUS,
       top: -ARTWORK_RADIUS,
-      backgroundColor: theme.colors.accentSoft,
+    },
+    artwork: {
+      width: '100%',
+      height: '100%',
+      borderRadius: ARTWORK_RADIUS,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
       borderColor: 'rgba(255,255,255,0.2)',
     },
-    artworkText: {
+    artworkPill: {
+      position: 'absolute',
+      left: theme.spacing.sm,
+      right: theme.spacing.sm,
+      bottom: theme.spacing.sm,
+      minHeight: 24,
+      borderRadius: theme.radius.pill,
+      backgroundColor: 'rgba(0,0,0,0.42)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: theme.spacing.sm,
+    },
+    artworkPillText: {
       color: theme.colors.textOnMedia,
       textAlign: 'center',
-      paddingHorizontal: theme.spacing.sm,
     },
     meta: {
       position: 'absolute',

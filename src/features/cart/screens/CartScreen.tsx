@@ -1,6 +1,7 @@
 import { AppIcon } from '@/src/components/ui/AppIcon';
 import { AppText } from '@/src/components/ui/AppText';
 import { useCartStore } from '@/src/features/cart/cart.store';
+import { ListingArtwork } from '@/src/features/marketplace/components/ListingArtwork';
 import { AppShell } from '@/src/features/navigation/components/AppShell';
 import { useThemeTokens } from '@/src/theme';
 import { router } from 'expo-router';
@@ -50,9 +51,17 @@ export function CartScreen() {
             {items.map((item) => (
               <View key={item.id} style={styles.item}>
                 <View style={styles.itemLeading}>
-                  <View style={styles.artwork}>
-                    <AppIcon name="cart" size="sm" tone="accent" stroke="regular" />
-                  </View>
+                  <ListingArtwork
+                    coverUrl={item.coverUrl}
+                    label="Cart"
+                    style={styles.artwork}
+                  >
+                    {item.coverUrl ? (
+                      <View />
+                    ) : (
+                      <AppIcon name="cart" size="sm" tone="accent" stroke="regular" />
+                    )}
+                  </ListingArtwork>
                   <View style={styles.itemInfo}>
                     <AppText variant="title" numberOfLines={1}>
                       {item.title}

@@ -3,6 +3,7 @@ import type { MarketplaceListing } from '@/src/features/marketplace/marketplace.
 import { useThemeTokens } from '@/src/theme';
 import { Music2, Play, ShoppingCart } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { ListingArtwork } from './ListingArtwork';
 
 type MarketplaceListingCardProps = {
   listing: MarketplaceListing;
@@ -34,21 +35,35 @@ export function MarketplaceListingCard({
         pressed ? styles.cardPressed : undefined,
       ]}
     >
-      <View style={styles.artwork}>
+      <ListingArtwork
+        coverUrl={listing.coverUrl}
+        label={listing.genre ?? 'Beat'}
+        overlay={Boolean(listing.coverUrl)}
+        style={styles.artwork}
+      >
         <View style={styles.artworkBadge}>
           <Music2 size={20} color={theme.colors.accent} />
         </View>
 
         <View style={styles.artworkMeta}>
-          <AppText variant="caption" tone="accent" numberOfLines={1}>
+          <AppText
+            variant="caption"
+            tone={listing.coverUrl ? 'primary' : 'accent'}
+            style={listing.coverUrl ? styles.artworkTextOnMedia : undefined}
+            numberOfLines={1}
+          >
             {listing.genre ?? 'Beat'}
           </AppText>
 
-          <AppText variant="pageHeading" numberOfLines={2}>
+          <AppText
+            variant="pageHeading"
+            style={listing.coverUrl ? styles.artworkTextOnMedia : undefined}
+            numberOfLines={2}
+          >
             {listing.title}
           </AppText>
         </View>
-      </View>
+      </ListingArtwork>
 
       <View style={styles.cardBody}>
         <View style={styles.titleBlock}>
@@ -153,6 +168,9 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     artworkMeta: {
       gap: theme.spacing.sm,
       maxWidth: 420,
+    },
+    artworkTextOnMedia: {
+      color: theme.colors.textOnMedia,
     },
     cardBody: {
       padding: theme.spacing.lg,
