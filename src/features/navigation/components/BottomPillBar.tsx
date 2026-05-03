@@ -45,26 +45,40 @@ export function BottomPillBar() {
   const [labelWidths, setLabelWidths] = useState<LabelMeasurements>({});
   const [barWidth, setBarWidth] = useState(0);
 
-  const activeIndex = useMemo(
-    () =>
-      tabs.findIndex(
-        (item) => {
-          const normalizedRoute = normalizeNavigationPath(item.route);
-          if (normalizedRoute === '/') {
-            return normalizedPathname === '/';
-          }
-          return (
-            normalizedPathname === normalizedRoute ||
-            normalizedPathname.startsWith(`${normalizedRoute}/`)
-          );
-        }
-      ),
-    [normalizedPathname, tabs]
-  );
-  const selectedIndex = activeIndex >= 0 ? activeIndex : 0;
-  const selectedTab = tabs[selectedIndex];
-  const selectedTabLayout = tabLayouts[selectedTab.key];
-  const selectedLabelWidth = labelWidths[selectedTab.key] ?? 0;
+  const activeIndex = useMemo(() => {
+    const exactIndex = tabs.findIndex((item) => {
+      const normalizedRoute = normalizeNavigationPath(item.route);
+      return normalizedPathname === normalizedRoute;
+    });
+
+    if (exactIndex >= 0) {
+      return exactIndex;
+    }
+
+    let bestPrefixMatchIndex = -1;
+    let bestPrefixLength = -1;
+
+    tabs.forEach((item, index) => {
+      const normalizedRoute = normalizeNavigationPath(item.route);
+      if (normalizedRoute === '/') return;
+
+      if (
+        normalizedPathname.startsWith(`${normalizedRoute}/`) &&
+        normalizedRoute.length > bestPrefixLength
+      ) {
+        bestPrefixLength = normalizedRoute.length;
+        bestPrefixMatchIndex = index;
+      }
+    });
+
+    return bestPrefixMatchIndex;
+  }, [normalizedPathname, tabs]);
+  // When no tab matches (for example a detail route outside this tab set),
+  // keep the active index empty instead of forcing index 0.
+  const selectedIndex = activeIndex >= 0 ? activeIndex : -1;
+  const selectedTab = selectedIndex >= 0 ? tabs[selectedIndex] : tabs[0];
+  const selectedTabLayout = selectedIndex >= 0 ? tabLayouts[selectedTab.key] : undefined;
+  const selectedLabelWidth = selectedIndex >= 0 ? (labelWidths[selectedTab.key] ?? 0) : 0;
   const measuredLabelWidth = Math.max(20, Math.ceil(selectedLabelWidth || 0));
 
   const indicatorX = useSharedValue(0);
@@ -74,9 +88,13 @@ export function BottomPillBar() {
   useEffect(() => {
     const layoutForActive = selectedTabLayout;
 
-    if (!layoutForActive) return;
+    // No matching tab — hide the indicator cleanly.
+    if (!layoutForActive || selectedIndex < 0) {
+      indicatorOpacity.value = withTiming(0, { duration: 150 });
+      return;
+    }
 
-    const iconWidth = 18;
+    const iconWidth = theme.iconSizes.sm;
     const horizontalInset = pillHorizontalInset;
     const contentWidth = Math.max(44, iconWidth, measuredLabelWidth) + horizontalInset * 2;
     const maxWidthInsideCell = Math.max(44, layoutForActive.width - theme.spacing.xs * 2);
@@ -112,6 +130,7 @@ export function BottomPillBar() {
     tabLayouts,
     tabs,
     theme.spacing.xs,
+    theme.iconSizes.sm,
     barWidth,
     pillHorizontalInset,
   ]);
@@ -173,10 +192,9 @@ export function BottomPillBar() {
         style={[styles.container, { paddingHorizontal: barHorizontalPadding }]}
         onLayout={(event) => setBarWidth(event.nativeEvent.layout.width)}
       >
-        <View pointerEvents="none" style={styles.topBorder} />
         <Animated.View pointerEvents="none" style={[styles.activePill, indicatorStyle]} />
         {tabs.map((item) => {
-          const active = tabs[selectedIndex]?.key === item.key;
+          const active = selectedIndex >= 0 && tabs[selectedIndex]?.key === item.key;
           return (
             <Pressable
               key={item.key}
@@ -244,9 +262,6 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
   return StyleSheet.create({
     wrapper: {
       position: 'absolute',
-      left: theme.spacing.lg,
-      right: theme.spacing.lg,
-      bottom: layout.bottomBarOffset,
       alignItems: 'center',
     },
     container: {
@@ -263,16 +278,6 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       paddingHorizontal: theme.spacing.sm,
       paddingVertical: theme.spacing.sm,
       ...theme.shadows.md,
-    },
-    topBorder: {
-      position: 'absolute',
-      left: theme.spacing.md,
-      right: theme.spacing.md,
-      top: 0,
-      height: StyleSheet.hairlineWidth,
-      backgroundColor: theme.colors.borderStrong,
-      opacity: 0.72,
-      zIndex: 2,
     },
     activePill: {
       position: 'absolute',

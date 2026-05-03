@@ -4,10 +4,19 @@ import { HeaderWithGradient } from './HeaderWithGradient';
 import { deriveExperienceFromPathname } from '@/src/features/navigation/navigation.helpers';
 import { useExperienceNavigationStore } from '@/src/features/navigation/navigation.store';
 import { layout, useThemeTokens } from '@/src/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 import { usePathname } from 'expo-router';
 import { ReactNode, useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+/** Appends an 8-bit alpha hex suffix to a 6-digit hex color string. */
+function withAlpha(hex: string, alphaHex: string) {
+  if (hex.startsWith('#') && hex.length === 7) {
+    return `${hex}${alphaHex}`;
+  }
+  return hex;
+}
 
 type AppShellProps = {
   children: ReactNode;
@@ -28,16 +37,16 @@ export function AppShell({
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
+  const routeExperience = deriveExperienceFromPathname(pathname);
   const activeExperience = useExperienceNavigationStore((state) => state.activeExperience);
   const setActiveExperience = useExperienceNavigationStore((state) => state.setActiveExperience);
+  const bottomBarThemeKey = `${theme.mode}:${routeExperience}`;
 
   useEffect(() => {
-    const routeExperience = deriveExperienceFromPathname(pathname);
-
     if (routeExperience !== activeExperience) {
       setActiveExperience(routeExperience);
     }
-  }, [activeExperience, pathname, setActiveExperience]);
+  }, [activeExperience, routeExperience, setActiveExperience]);
 
   return (
     <View style={styles.container}>
@@ -63,8 +72,17 @@ export function AppShell({
       </View>
 
       {showBottomBar && showBottomBarBackdrop ? (
-        <View
+        <LinearGradient
+          key={`bottom-backdrop:${bottomBarThemeKey}`}
           pointerEvents="none"
+          // Transparent at the top → opaque at the bottom so the pill floats
+          // freely instead of sitting on a solid shelf.
+          colors={[
+            withAlpha(theme.colors.background, '00'),
+            withAlpha(theme.colors.background, 'CC'),
+            withAlpha(theme.colors.background, 'FF'),
+          ]}
+          locations={[0, 0.55, 1]}
           style={[
             styles.bottomBarBackdrop,
             {
@@ -72,13 +90,13 @@ export function AppShell({
                 layout.bottomBarHeight +
                 layout.bottomBarOffset +
                 insets.bottom +
-                theme.spacing.lg,
+                theme.spacing.xxxl,
             },
           ]}
         />
       ) : null}
 
-      {showBottomBar ? <BottomPillBar /> : null}
+      {showBottomBar ? <BottomPillBar key={`bottom-bar:${bottomBarThemeKey}`} /> : null}
     </View>
   );
 }
@@ -97,7 +115,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: theme.colors.background,
+      // No backgroundColor — the gradient itself provides all coloring.
     },
   });
 }
