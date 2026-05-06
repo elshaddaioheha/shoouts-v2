@@ -222,5 +222,5 @@ export function HybridMoreScreen() {
 }
 
 function formatStatus(value: string) {
-  return value.replace('_', ' ').toUpperCase();
+  return value.replace(/_/g, ' ').toUpperCase();
 }

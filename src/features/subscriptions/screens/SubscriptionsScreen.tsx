@@ -7,8 +7,8 @@ import {
 } from '@/src/features/access/access.helpers';
 import type { AppExperience, UserRole } from '@/src/features/access/access.types';
 import { useAccountStore } from '@/src/features/account/account.store';
-import { openExperienceWelcome } from '@/src/features/navigation/experienceWelcome';
 import { AppShell } from '@/src/features/navigation/components/AppShell';
+import { openExperienceWelcome } from '@/src/features/navigation/experienceWelcome';
 import { experienceTokens, useThemeTokens } from '@/src/theme';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -167,6 +167,10 @@ export function SubscriptionsScreen() {
   const toneMode = theme.isDark ? 'dark' : 'light';
 
   function openExperience(experience: AppExperience) {
+    if (activeExperience === experience) {
+      return;
+    }
+
     openExperienceWelcome({
       experience,
       nextRoute: `/settings/subscriptions?experience=${experience}`,
@@ -174,7 +178,7 @@ export function SubscriptionsScreen() {
   }
 
   return (
-    <AppShell>
+    <AppShell showSwitcher={false} showBottomBar={false} reserveBottomBarSpace={false}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <AppText variant="button" tone="secondary">
@@ -353,7 +357,7 @@ function normalizeExperience(value: unknown): AppExperience | null {
 }
 
 function formatLabel(value: string) {
-  return value.replace('_', ' ').toUpperCase();
+  return value.replace(/_/g, ' ').toUpperCase();
 }
 
 function createStyles(theme: ReturnType<typeof useThemeTokens>) {
@@ -361,7 +365,9 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     content: {
       paddingHorizontal: theme.spacing.lg,
       paddingTop: theme.spacing.lg,
-      paddingBottom: 130,
+      // Extra safe-area padding is not needed here — AppShell no longer
+      // reserves bottom bar space for this screen.
+      paddingBottom: theme.spacing.xxxl,
       gap: theme.spacing.lg,
       backgroundColor: theme.colors.background,
     },

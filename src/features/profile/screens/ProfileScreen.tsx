@@ -21,7 +21,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     scrollContent: {
       paddingHorizontal: theme.spacing.lg,
       paddingTop: theme.spacing.lg,
-      paddingBottom: 120,
+      paddingBottom: theme.spacing.xxl,
       gap: theme.spacing.lg,
     },
     back: {
@@ -166,8 +166,8 @@ export function ProfileScreen() {
     .map((part) => part[0])
     .join('')
     .toUpperCase() || 'C';
-  const roleLabel = profile.role.replace('_', ' ').toUpperCase();
-  const verificationLabel = profile.verificationStatus.replace('_', ' ');
+  const roleLabel = profile.role.replace(/_/g, ' ').toUpperCase();
+  const verificationLabel = profile.verificationStatus.replace(/_/g, ' ');
 
   return (
     <AppShell>

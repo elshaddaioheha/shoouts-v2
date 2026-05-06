@@ -179,11 +179,11 @@ function getInitials(name: string) {
 }
 
 function formatPlanLabel(value: string) {
-  return value.replace('_', ' ').toUpperCase();
+  return value.replace(/_/g, ' ').toUpperCase();
 }
 
 function formatStatusLabel(value: string) {
-  return value.replace('_', ' ').toUpperCase();
+  return value.replace(/_/g, ' ').toUpperCase();
 }
 
 function createStyles(theme: ReturnType<typeof useThemeTokens>) {

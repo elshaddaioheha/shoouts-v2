@@ -3,9 +3,10 @@ import { AppText } from '@/src/components/ui/AppText';
 import { deriveExperienceFromPathname, normalizeNavigationPath } from '@/src/features/navigation/navigation.helpers';
 import { EXPERIENCE_NAVIGATION } from '@/src/features/navigation/navigation.config';
 import { layout, useThemeTokens } from '@/src/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, usePathname } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -20,8 +21,6 @@ type TabLayout = {
   width: number;
 };
 
-type LabelMeasurements = Record<string, number>;
-
 function clamp(value: number, min: number, max: number) {
   'worklet';
   return Math.min(Math.max(value, min), max);
@@ -30,6 +29,7 @@ function clamp(value: number, min: number, max: number) {
 export function BottomPillBar() {
   const theme = useThemeTokens();
   const insets = useSafeAreaInsets();
+  const { width: viewportWidth } = useWindowDimensions();
   const styles = createStyles(theme);
   const pathname = usePathname();
   const normalizedPathname = normalizeNavigationPath(pathname);
@@ -37,13 +37,16 @@ export function BottomPillBar() {
   const config = EXPERIENCE_NAVIGATION[routeExperience];
   const tabs = config.tabs;
   const isDenseLayout = tabs.length >= 5;
-  const barEdgeInset = isDenseLayout ? theme.spacing.sm : theme.spacing.md;
+  const isNativeLargeScreen = Platform.OS !== 'web' && viewportWidth >= 768;
+  const responsiveBarWidth = Math.min(
+    isNativeLargeScreen ? 420 : 335,
+    Math.max(240, viewportWidth - (isNativeLargeScreen ? 44 : 28))
+  );
   const barHorizontalPadding = theme.spacing.xs;
   const tabHorizontalPadding = isDenseLayout ? theme.spacing.xs : theme.spacing.sm;
-  const pillHorizontalInset = isDenseLayout ? theme.spacing.sm : theme.spacing.md;
   const [tabLayouts, setTabLayouts] = useState<Record<string, TabLayout>>({});
-  const [labelWidths, setLabelWidths] = useState<LabelMeasurements>({});
   const [barWidth, setBarWidth] = useState(0);
+  const hasInitializedIndicatorRef = useRef(false);
 
   const activeIndex = useMemo(() => {
     const exactIndex = tabs.findIndex((item) => {
@@ -78,8 +81,6 @@ export function BottomPillBar() {
   const selectedIndex = activeIndex >= 0 ? activeIndex : -1;
   const selectedTab = selectedIndex >= 0 ? tabs[selectedIndex] : tabs[0];
   const selectedTabLayout = selectedIndex >= 0 ? tabLayouts[selectedTab.key] : undefined;
-  const selectedLabelWidth = selectedIndex >= 0 ? (labelWidths[selectedTab.key] ?? 0) : 0;
-  const measuredLabelWidth = Math.max(20, Math.ceil(selectedLabelWidth || 0));
 
   const indicatorX = useSharedValue(0);
   const indicatorWidth = useSharedValue(0);
@@ -94,17 +95,24 @@ export function BottomPillBar() {
       return;
     }
 
-    const iconWidth = theme.iconSizes.sm;
-    const horizontalInset = pillHorizontalInset;
-    const contentWidth = Math.max(44, iconWidth, measuredLabelWidth) + horizontalInset * 2;
-    const maxWidthInsideCell = Math.max(44, layoutForActive.width - theme.spacing.xs * 2);
-    const targetWidth = Math.min(contentWidth, maxWidthInsideCell);
+    const targetWidth = Math.max(
+      theme.layout.minTouchTarget,
+      layoutForActive.width - theme.spacing.xs * 2
+    );
     const targetX = layoutForActive.x + (layoutForActive.width - targetWidth) / 2;
     const minX = theme.spacing.xs;
     const maxX = barWidth
       ? Math.max(minX, barWidth - targetWidth - theme.spacing.xs)
       : Math.max(minX, targetX);
     const clampedX = clamp(targetX, minX, maxX);
+
+    if (!hasInitializedIndicatorRef.current) {
+      hasInitializedIndicatorRef.current = true;
+      indicatorX.value = clampedX;
+      indicatorWidth.value = targetWidth;
+      indicatorOpacity.value = 1;
+      return;
+    }
 
     indicatorX.value = withTiming(clampedX, {
       duration: 220,
@@ -124,15 +132,13 @@ export function BottomPillBar() {
     indicatorOpacity,
     indicatorWidth,
     indicatorX,
-    measuredLabelWidth,
     selectedIndex,
     selectedTabLayout,
-    tabLayouts,
-    tabs,
-    theme.spacing.xs,
-    theme.iconSizes.sm,
     barWidth,
-    pillHorizontalInset,
+    theme.layout.minTouchTarget,
+    theme.spacing.xs,
+    tabs,
+    tabLayouts,
   ]);
 
   const indicatorStyle = useAnimatedStyle(() => ({
@@ -160,21 +166,12 @@ export function BottomPillBar() {
       Haptics.selectionAsync().catch(() => null);
     }
 
-    router.replace(route as any);
-  }
+    const normalizedRoute = normalizeNavigationPath(route);
+    if (normalizedPathname === normalizedRoute) {
+      return;
+    }
 
-  function handleLabelLayout(tabKey: string, width: number) {
-    setLabelWidths((current) => {
-      const nextWidth = Math.ceil(width);
-      if (!nextWidth || current[tabKey] === nextWidth) {
-        return current;
-      }
-
-      return {
-        ...current,
-        [tabKey]: nextWidth,
-      };
-    });
+    router.navigate(route as any);
   }
 
   return (
@@ -182,16 +179,35 @@ export function BottomPillBar() {
       style={[
         styles.wrapper,
         {
-          left: barEdgeInset,
-          right: barEdgeInset,
+          left: 0,
+          right: 0,
           bottom: layout.bottomBarOffset + insets.bottom,
         },
       ]}
     >
       <View
-        style={[styles.container, { paddingHorizontal: barHorizontalPadding }]}
+        style={[
+          styles.container,
+          {
+            width: responsiveBarWidth,
+            paddingHorizontal: barHorizontalPadding,
+          },
+        ]}
         onLayout={(event) => setBarWidth(event.nativeEvent.layout.width)}
       >
+        <LinearGradient
+          pointerEvents="none"
+          colors={
+            theme.isDark
+              ? ['rgba(255,255,255,0.14)', 'rgba(255,255,255,0.03)', 'rgba(255,255,255,0)']
+              : ['rgba(255,255,255,0.8)', 'rgba(255,255,255,0.26)', 'rgba(255,255,255,0)']
+          }
+          locations={[0, 0.36, 1]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.containerGlass}
+        />
+        <View pointerEvents="none" style={styles.topSheen} />
         <Animated.View pointerEvents="none" style={[styles.activePill, indicatorStyle]} />
         {tabs.map((item) => {
           const active = selectedIndex >= 0 && tabs[selectedIndex]?.key === item.key;
@@ -199,18 +215,22 @@ export function BottomPillBar() {
             <Pressable
               key={item.key}
               onPress={() => handleTabPress(item.route)}
+              android_ripple={{ color: theme.colors.accentSoft, borderless: false }}
               onLayout={(event) => {
                 const { x, width } = event.nativeEvent.layout;
                 handleTabLayout(item.key, x, width);
               }}
-              style={[styles.item, { paddingHorizontal: tabHorizontalPadding }]}
+              style={({ pressed }) => [
+                styles.item,
+                { paddingHorizontal: tabHorizontalPadding },
+                pressed ? styles.itemPressed : undefined,
+              ]}
             >
               <BottomTabItem
                 icon={item.icon}
                 label={item.label}
                 active={active}
                 styles={styles}
-                onLabelLayout={(width) => handleLabelLayout(item.key, width)}
               />
             </Pressable>
           );
@@ -225,13 +245,11 @@ function BottomTabItem({
   label,
   active,
   styles,
-  onLabelLayout,
 }: {
   icon: Parameters<typeof AppIcon>[0]['name'];
   label: string;
   active: boolean;
   styles: ReturnType<typeof createStyles>;
-  onLabelLayout: (width: number) => void;
 }) {
   return (
     <View style={styles.itemContent}>
@@ -248,7 +266,6 @@ function BottomTabItem({
           variant="bodySmall"
           tone={active ? 'primary' : 'secondary'}
           numberOfLines={1}
-          onLayout={(event) => onLabelLayout(event.nativeEvent.layout.width)}
           style={[styles.labelText, active ? styles.activeLabel : undefined]}
         >
           {label}
@@ -272,12 +289,26 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       borderWidth: 1,
       borderColor: theme.colors.borderStrong,
       position: 'relative',
+      overflow: 'hidden',
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: theme.spacing.sm,
       paddingVertical: theme.spacing.sm,
       ...theme.shadows.md,
+    },
+    containerGlass: {
+      ...StyleSheet.absoluteFillObject,
+      borderRadius: theme.radius.pill,
+    },
+    topSheen: {
+      position: 'absolute',
+      top: 0,
+      left: theme.spacing.md,
+      right: theme.spacing.md,
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.isDark ? 'rgba(255,255,255,0.32)' : 'rgba(255,255,255,0.82)',
+      zIndex: 0,
     },
     activePill: {
       position: 'absolute',
@@ -295,6 +326,10 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       paddingHorizontal: theme.spacing.sm,
       zIndex: 1,
       overflow: 'visible',
+    },
+    itemPressed: {
+      opacity: 0.9,
+      transform: [{ scale: 0.985 }],
     },
     itemContent: {
       flexDirection: 'column',

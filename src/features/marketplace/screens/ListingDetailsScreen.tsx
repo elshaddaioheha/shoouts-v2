@@ -16,7 +16,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     content: {
       paddingHorizontal: theme.spacing.lg,
       paddingTop: theme.spacing.lg,
-      paddingBottom: 130,
+      paddingBottom: theme.spacing.xxl,
       backgroundColor: theme.colors.background,
     },
     center: {

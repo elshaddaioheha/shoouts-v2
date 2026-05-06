@@ -195,7 +195,7 @@ export function WorkspaceShellScreen({
 }
 
 function formatLabel(value: string) {
-  return value.replace('_', ' ').toUpperCase();
+  return value.replace(/_/g, ' ').toUpperCase();
 }
 
 function getCardStatusLabel(status: WorkspaceCardStatus = 'shell') {
@@ -227,7 +227,10 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     content: {
       paddingHorizontal: theme.spacing.lg,
       paddingTop: theme.spacing.lg,
-      paddingBottom: 130,
+      // AppShell.content already reserves bottomBarHeight + bottomBarOffset +
+      // insets.bottom + spacing.lg via reserveBottomBarSpace. This padding adds
+      // a little extra visual breathing room below the last card.
+      paddingBottom: theme.spacing.xxl,
       gap: theme.spacing.md,
     },
     subtitle: {
