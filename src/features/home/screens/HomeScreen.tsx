@@ -1,4 +1,5 @@
 import { AppIcon } from '@/src/components/ui/AppIcon';
+import { InterimFeatureSheet } from '@/src/components/ui/InterimFeatureSheet';
 import { AppText } from '@/src/components/ui/AppText';
 import { ErrorState } from '@/src/components/ui/ErrorState';
 import { LoadingState } from '@/src/components/ui/LoadingState';
@@ -14,11 +15,18 @@ import {
 import { AppShell } from '@/src/features/navigation/components/AppShell';
 import { useThemeTokens } from '@/src/theme';
 import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 type HomeTrack = MarketplaceListing & {
   color: string;
+};
+
+type HomeFeatureNotice = {
+  title: string;
+  message: string;
+  actionLabel?: string;
+  onAction?: () => void;
 };
 
 const HOME_CARD_COLORS = ['#8B7355', '#6C6F8F', '#6C7E62', '#5E615D', '#685452', '#4D5C70'];
@@ -44,6 +52,7 @@ export function HomeScreen() {
     const nextSlice = tracks.slice(1, 5);
     return nextSlice.length > 0 ? nextSlice : tracks.slice(0, 4);
   }, [tracks]);
+  const [featureNotice, setFeatureNotice] = useState<HomeFeatureNotice | null>(null);
 
   function openListing(trackId: string) {
     router.push({
@@ -73,7 +82,21 @@ export function HomeScreen() {
   }
 
   function handlePlay(track: HomeTrack) {
-    Alert.alert('Playback next', `Audio player for "${track.title}" lands in the next phase.`);
+    setFeatureNotice({
+      title: 'Preview player is next',
+      message: `Playback for "${track.title}" will be connected in the next phase.`,
+      actionLabel: 'Open listing',
+      onAction: () => openListing(track.id),
+    });
+  }
+
+  function handleTrackOptions(track: HomeTrack) {
+    setFeatureNotice({
+      title: 'More actions are next',
+      message: `Extended actions for "${track.title}" will be connected in the next phase.`,
+      actionLabel: 'Open listing',
+      onAction: () => openListing(track.id),
+    });
   }
 
   if (listingsQuery.isLoading) {
@@ -271,9 +294,7 @@ export function HomeScreen() {
                       </Pressable>
                       <Pressable
                         style={styles.rowIconButton}
-                        onPress={() =>
-                          Alert.alert('Options', `More actions for "${track.title}" will be wired next.`)
-                        }
+                        onPress={() => handleTrackOptions(track)}
                       >
                         <AppIcon name="more" size="sm" tone="secondary" stroke="medium" />
                       </Pressable>
@@ -287,6 +308,19 @@ export function HomeScreen() {
           </>
         )}
       </ScrollView>
+
+      <InterimFeatureSheet
+        visible={Boolean(featureNotice)}
+        title={featureNotice?.title ?? ''}
+        message={featureNotice?.message ?? ''}
+        primaryLabel={featureNotice?.actionLabel}
+        onPrimaryPress={() => {
+          const action = featureNotice?.onAction;
+          setFeatureNotice(null);
+          action?.();
+        }}
+        onClose={() => setFeatureNotice(null)}
+      />
     </AppShell>
   );
 }

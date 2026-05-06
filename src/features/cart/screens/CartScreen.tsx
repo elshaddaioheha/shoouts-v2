@@ -1,11 +1,13 @@
 import { AppIcon } from '@/src/components/ui/AppIcon';
+import { InterimFeatureSheet } from '@/src/components/ui/InterimFeatureSheet';
 import { AppText } from '@/src/components/ui/AppText';
 import { useCartStore } from '@/src/features/cart/cart.store';
 import { ListingArtwork } from '@/src/features/marketplace/components/ListingArtwork';
 import { AppShell } from '@/src/features/navigation/components/AppShell';
 import { useThemeTokens } from '@/src/theme';
 import { router } from 'expo-router';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 export function CartScreen() {
   const items = useCartStore((state) => state.items);
@@ -14,12 +16,10 @@ export function CartScreen() {
   const total = useCartStore((state) => state.total());
   const theme = useThemeTokens();
   const styles = createStyles(theme);
+  const [showCheckoutNotice, setShowCheckoutNotice] = useState(false);
 
   function handleCheckout() {
-    Alert.alert(
-      'Checkout coming soon',
-      'Payments stay pinned until marketplace reads and library flows are fully stable.'
-    );
+    setShowCheckoutNotice(true);
   }
 
   return (
@@ -122,6 +122,18 @@ export function CartScreen() {
           ) : null}
         </View>
       </ScrollView>
+
+      <InterimFeatureSheet
+        visible={showCheckoutNotice}
+        title="Checkout is next"
+        message="Payments stay pinned until marketplace reads and library flows are fully stable."
+        primaryLabel="Review downloads"
+        onPrimaryPress={() => {
+          setShowCheckoutNotice(false);
+          router.push('/downloads' as any);
+        }}
+        onClose={() => setShowCheckoutNotice(false)}
+      />
     </AppShell>
   );
 }

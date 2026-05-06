@@ -1,3 +1,4 @@
+import { InterimFeatureSheet } from '@/src/components/ui/InterimFeatureSheet';
 import { ErrorState } from '@/src/components/ui/ErrorState';
 import { LoadingState } from '@/src/components/ui/LoadingState';
 import { useCartStore } from '@/src/features/cart/cart.store';
@@ -9,7 +10,15 @@ import { formatMarketplacePrice } from '@/src/features/marketplace/marketplace.t
 import { AppShell } from '@/src/features/navigation/components/AppShell';
 import { useThemeTokens } from '@/src/theme';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+
+type ListingFeatureNotice = {
+  title: string;
+  message: string;
+  actionLabel?: string;
+  onAction?: () => void;
+};
 
 function createStyles(theme: ReturnType<typeof useThemeTokens>) {
   return StyleSheet.create({
@@ -188,6 +197,7 @@ export function ListingDetailsScreen() {
   const listingQuery = useMarketplaceListingDetail(listingId);
   const addItem = useCartStore((state) => state.addItem);
   const isInCart = useCartStore((state) => state.isInCart);
+  const [featureNotice, setFeatureNotice] = useState<ListingFeatureNotice | null>(null);
 
   if (listingQuery.isLoading) {
     return (
@@ -230,7 +240,10 @@ export function ListingDetailsScreen() {
   const inCart = isInCart(listingData.id);
 
   function handlePreview() {
-    Alert.alert('Player coming soon', `Preview playback for ${listingData.title} will be added later.`);
+    setFeatureNotice({
+      title: 'Preview player is next',
+      message: `Playback for "${listingData.title}" will be connected in the next phase.`,
+    });
   }
 
   function handleAddToCart() {
@@ -245,7 +258,22 @@ export function ListingDetailsScreen() {
   }
 
   function handleBuyNow() {
-    Alert.alert('Checkout coming soon', 'Direct purchase will be connected after payment integration.');
+    if (listingData.price <= 0) {
+      setFeatureNotice({
+        title: 'Secure free delivery is next',
+        message: 'Free download delivery will be connected with entitlement checks in the next phase.',
+        actionLabel: 'Open downloads',
+        onAction: () => router.push('/downloads' as any),
+      });
+      return;
+    }
+
+    setFeatureNotice({
+      title: 'Checkout is next',
+      message: 'Direct purchase will be connected after payment integration is finalized.',
+      actionLabel: 'Open cart',
+      onAction: () => router.push('/(tabs)/cart' as any),
+    });
   }
 
   function handleOpenArtist() {
@@ -341,6 +369,19 @@ export function ListingDetailsScreen() {
           </Text>
         </Pressable>
       </ScrollView>
+
+      <InterimFeatureSheet
+        visible={Boolean(featureNotice)}
+        title={featureNotice?.title ?? ''}
+        message={featureNotice?.message ?? ''}
+        primaryLabel={featureNotice?.actionLabel}
+        onPrimaryPress={() => {
+          const action = featureNotice?.onAction;
+          setFeatureNotice(null);
+          action?.();
+        }}
+        onClose={() => setFeatureNotice(null)}
+      />
     </AppShell>
   );
 }

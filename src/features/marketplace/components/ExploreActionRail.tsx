@@ -1,13 +1,20 @@
 import { AppIcon } from '@/src/components/ui/AppIcon';
+import { InterimFeatureSheet } from '@/src/components/ui/InterimFeatureSheet';
 import { AppText } from '@/src/components/ui/AppText';
 import { useThemeTokens } from '@/src/theme';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import type { ExploreFeedItemModel } from '../marketplace.types';
 
 type ExploreActionRailProps = {
   item: ExploreFeedItemModel;
   bottomOffset?: number;
   onMorePress: () => void;
+};
+
+type ExploreFeatureNotice = {
+  title: string;
+  message: string;
 };
 
 export function ExploreActionRail({
@@ -17,20 +24,27 @@ export function ExploreActionRail({
 }: ExploreActionRailProps) {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
+  const [featureNotice, setFeatureNotice] = useState<ExploreFeatureNotice | null>(null);
 
   function handleFollow() {
-    Alert.alert('Follow coming soon', `Follow ${item.artist} later.`);
+    setFeatureNotice({
+      title: 'Follow is next',
+      message: `Follow "${item.artist}" will be connected once creator-follow relationships are enabled.`,
+    });
   }
 
   function handleLike() {
-    Alert.alert(
-      'Liked',
-      'This will become a recommendation signal for the For You feed.'
-    );
+    setFeatureNotice({
+      title: 'Like saved locally',
+      message: 'This interaction will become a recommendation signal for the For You feed.',
+    });
   }
 
   function handleShare() {
-    Alert.alert('Share coming soon', 'Share links will be added later.');
+    setFeatureNotice({
+      title: 'Share is next',
+      message: 'Share links will be connected once public listing links are finalized.',
+    });
   }
 
   return (
@@ -65,6 +79,13 @@ export function ExploreActionRail({
       <Pressable style={styles.moreAction} onPress={onMorePress}>
         <AppIcon name="more" size="md" tone="inverse" stroke="bold" />
       </Pressable>
+
+      <InterimFeatureSheet
+        visible={Boolean(featureNotice)}
+        title={featureNotice?.title ?? ''}
+        message={featureNotice?.message ?? ''}
+        onClose={() => setFeatureNotice(null)}
+      />
     </View>
   );
 }
