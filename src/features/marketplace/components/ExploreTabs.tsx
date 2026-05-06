@@ -2,7 +2,7 @@ import { AppText } from '@/src/components/ui/AppText';
 import { useThemeTokens } from '@/src/theme';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { ExploreFeedTab } from '../data/mockExploreItems';
+import type { ExploreFeedTab } from '../marketplace.types';
 
 type ExploreTabsProps = {
   activeTab: ExploreFeedTab;

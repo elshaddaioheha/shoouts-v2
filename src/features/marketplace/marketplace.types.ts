@@ -43,6 +43,14 @@ export type SellerProfile = {
 
 export type ExploreFeedTab = 'following' | 'forYou';
 
+export type ExplorePriceFilter = 'all' | 'free' | 'paid';
+
+export type ExploreFeedFilters = {
+  query: string;
+  genre: string | null;
+  price: ExplorePriceFilter;
+};
+
 export type ExploreFeedItemModel = {
   id: string;
   listingId: string;
@@ -56,6 +64,7 @@ export type ExploreFeedItemModel = {
   genre?: string | null;
   bpm?: number | null;
   key?: string | null;
+  tags: string[];
   artworkLabel?: string | null;
 };
 

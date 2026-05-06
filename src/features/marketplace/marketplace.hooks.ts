@@ -6,6 +6,7 @@ import {
   fetchSellerProfile,
 } from './marketplace.api';
 import type {
+  ExploreFeedFilters,
   ExploreFeedItemModel,
   ExploreFeedTab,
   MarketplaceListing,
@@ -42,12 +43,19 @@ export function useSellerListings(sellerId: string | null, limitCount = 12) {
   });
 }
 
-export function useExploreFeed(tab: ExploreFeedTab, limitCount = 24) {
+export function useExploreFeed(
+  tab: ExploreFeedTab,
+  limitCount = 24,
+  filters?: ExploreFeedFilters
+) {
   const listingsQuery = useMarketplaceListings(limitCount);
 
   const data: ExploreFeedItemModel[] =
     tab === 'forYou'
-      ? (listingsQuery.data ?? []).map(mapListingToExploreItem)
+      ? applyExploreFilters(
+          (listingsQuery.data ?? []).map(mapListingToExploreItem),
+          filters
+        )
       : [];
 
   return {
@@ -71,6 +79,54 @@ function mapListingToExploreItem(listing: MarketplaceListing): ExploreFeedItemMo
     genre: listing.genre,
     bpm: listing.bpm,
     key: listing.key,
+    tags: listing.tags,
     artworkLabel: listing.genre ?? listing.title.split(' ')[0] ?? 'Beat',
   };
+}
+
+function applyExploreFilters(
+  items: ExploreFeedItemModel[],
+  filters?: ExploreFeedFilters
+) {
+  if (!filters) {
+    return items;
+  }
+
+  const normalizedQuery = filters.query.trim().toLowerCase();
+  const normalizedGenre = filters.genre?.trim().toLowerCase() ?? null;
+
+  return items.filter((item) => {
+    if (filters.price === 'free' && item.price > 0) {
+      return false;
+    }
+
+    if (filters.price === 'paid' && item.price <= 0) {
+      return false;
+    }
+
+    if (normalizedGenre) {
+      const itemGenre = item.genre?.trim().toLowerCase() ?? '';
+      if (itemGenre !== normalizedGenre) {
+        return false;
+      }
+    }
+
+    if (normalizedQuery.length > 0) {
+      const haystack = [
+        item.title,
+        item.artist,
+        item.genre ?? '',
+        item.key ?? '',
+        ...item.tags,
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      if (!haystack.includes(normalizedQuery)) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 }

@@ -3,6 +3,7 @@ import { ErrorState } from '@/src/components/ui/ErrorState';
 import { useMemo } from 'react';
 import { FlatList, StyleSheet, useWindowDimensions, View } from 'react-native';
 import {
+  type ExploreFeedFilters,
   type ExploreFeedItemModel,
   type ExploreFeedTab,
 } from '../marketplace.types';
@@ -11,10 +12,11 @@ import { ExploreFeedItem } from './ExploreFeedItem';
 
 type ExploreFeedProps = {
   activeTab: ExploreFeedTab;
+  filters: ExploreFeedFilters;
 };
 
-export function ExploreFeed({ activeTab }: ExploreFeedProps) {
-  const feedQuery = useExploreFeed(activeTab, 24);
+export function ExploreFeed({ activeTab, filters }: ExploreFeedProps) {
+  const feedQuery = useExploreFeed(activeTab, 24, filters);
   const data = useMemo(() => feedQuery.data ?? [], [feedQuery.data]);
   const { height } = useWindowDimensions();
 
@@ -50,11 +52,20 @@ export function ExploreFeed({ activeTab }: ExploreFeedProps) {
   }
 
   if (data.length === 0) {
+    const hasActiveFilters =
+      filters.query.trim().length > 0 ||
+      filters.genre !== null ||
+      filters.price !== 'all';
+
     return (
       <View style={styles.state}>
         <ErrorState
-          title="No public uploads yet"
-          message="Explore will fill in as soon as published uploads are available."
+          title={hasActiveFilters ? 'No results for current filters' : 'No public uploads yet'}
+          message={
+            hasActiveFilters
+              ? 'Try clearing query, genre, or price filters to broaden results.'
+              : 'Explore will fill in as soon as published uploads are available.'
+          }
         />
       </View>
     );
