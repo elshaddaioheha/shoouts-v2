@@ -1,7 +1,8 @@
 import { getFirebaseDb } from '@/src/config/firebase';
 import {
-  canPreviewExperience,
+  canAccessExperience,
   getDefaultExperience,
+  getRoleConfig,
   normalizeRole,
 } from '@/src/features/access/access.helpers';
 import type {
@@ -11,13 +12,27 @@ import type {
 } from '@/src/features/access/access.types';
 import type { AuthUser } from '@/src/features/auth/auth.types';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
-import type { AccountProfile, SellerVerificationStatus } from './account.types';
+import type {
+  AccountDataHealth,
+  AccountDocumentState,
+  AccountProfile,
+  SellerVerificationStatus,
+} from './account.types';
 
 const USERS_COLLECTION = 'users';
 const SUBSCRIPTION_COLLECTION = 'subscription';
 const CURRENT_SUBSCRIPTION_DOCUMENT = 'current';
 
-export function buildFallbackAccountProfile(user: AuthUser): AccountProfile {
+type SubscriptionDocumentResult = {
+  exists: boolean;
+  data: Record<string, unknown>;
+  note?: string;
+};
+
+export function buildFallbackAccountProfile(
+  user: AuthUser,
+  healthOverrides?: Partial<AccountDataHealth>
+): AccountProfile {
   const role: UserRole = 'shoouts';
 
   return {
@@ -44,6 +59,13 @@ export function buildFallbackAccountProfile(user: AuthUser): AccountProfile {
       vaultStorageUsedBytes: 0,
       vaultUploadCount: 0,
     },
+    dataHealth: {
+      profileSource: healthOverrides?.profileSource ?? 'fallback',
+      userDocState: healthOverrides?.userDocState ?? 'missing',
+      subscriptionDocState: healthOverrides?.subscriptionDocState ?? 'missing',
+      missingFields: healthOverrides?.missingFields ?? ['users/{uid}'],
+      notes: healthOverrides?.notes ?? ['Account is using auth-only fallback data.'],
+    },
   };
 }
 
@@ -53,45 +75,113 @@ export async function fetchAccountProfile(user: AuthUser): Promise<AccountProfil
   const snapshot = await getDoc(userRef);
 
   if (!snapshot.exists()) {
-    return buildFallbackAccountProfile(user);
+    const subscriptionResult = await fetchCurrentSubscriptionDoc(user.uid);
+    const subscriptionStatus = normalizeSubscriptionStatus(subscriptionResult.data.status);
+    const subscriptionTier = resolveSubscriptionTier(
+      subscriptionResult.data.tier,
+      null,
+      null,
+      null
+    );
+    const fallbackRole = isEntitledSubscriptionStatus(subscriptionStatus)
+      ? subscriptionTier
+      : 'shoouts';
+    const fallbackProfile = buildFallbackAccountProfile(user, {
+      subscriptionDocState: normalizeDocumentState(
+        subscriptionResult.exists,
+        subscriptionResult.exists ? [] : ['subscription/current']
+      ),
+      notes: [
+        'users/{uid} is missing. Using auth session defaults until the profile document is created.',
+        ...(subscriptionResult.note ? [subscriptionResult.note] : []),
+      ],
+      missingFields: ['users/{uid}'],
+    });
+
+    return {
+      ...fallbackProfile,
+      role: fallbackRole,
+      activeExperience: getDefaultExperience(fallbackRole),
+      subscriptionStatus,
+      subscriptionTier,
+      isSubscribed: isEntitledSubscriptionStatus(subscriptionStatus),
+      onboarding: {
+        ...fallbackProfile.onboarding,
+        selectedRole: fallbackRole === 'shoouts' ? null : fallbackRole,
+      },
+    };
   }
 
   const raw = snapshot.data();
-  const subscriptionRaw = await fetchCurrentSubscriptionDoc(user.uid);
+  const subscriptionResult = await fetchCurrentSubscriptionDoc(user.uid);
   const onboarding = asRecord(raw.onboarding);
   const seller = asRecord(raw.seller);
   const usage = asRecord(raw.usage);
   const embeddedSubscription = asRecord(raw.subscription);
   const subscription = {
     ...embeddedSubscription,
-    ...subscriptionRaw,
+    ...subscriptionResult.data,
   };
-  const role = normalizeRole(
-    asString(raw.role) ??
-      asString(onboarding.selectedRole) ??
-      asString(subscription.tier) ??
-      'shoouts'
-  );
-  const subscriptionTier = normalizeRole(
-    asString(subscription.tier) ??
-      asString(raw.subscriptionTier) ??
-      asString(raw.plan) ??
-      asString(raw.role) ??
-      'shoouts'
-  );
   const selectedRole = normalizeOptionalRole(
     onboarding.selectedRole ?? raw.selectedRole ?? raw.role
   );
+  const subscriptionStatus = normalizeSubscriptionStatus(
+    subscription.status ?? raw.subscriptionStatus
+  );
+  const subscriptionTier = resolveSubscriptionTier(
+    subscription.tier,
+    raw.subscriptionTier,
+    raw.plan,
+    selectedRole
+  );
+  const declaredRole = normalizeOptionalRole(raw.role);
+  const role = resolveEffectiveRole({
+    declaredRole,
+    selectedRole,
+    subscriptionTier,
+    subscriptionStatus,
+  });
   const requestedExperience = normalizeExperience(
     raw.activeExperience ?? raw.lastExperience ?? raw.workspace,
     getDefaultExperience(role)
   );
-  const activeExperience = canPreviewExperience(role, requestedExperience)
+  const activeExperience = canAccessExperience(role, requestedExperience)
     ? requestedExperience
     : getDefaultExperience(role);
-  const subscriptionStatus = normalizeSubscriptionStatus(
-    raw.subscriptionStatus ?? subscription.status
-  );
+  const missingFields = collectMissingAccountFields({
+    raw,
+    onboarding,
+    seller,
+    usage,
+    declaredRole,
+    selectedRole,
+    activeExperience,
+    subscriptionStatus,
+    subscriptionTier,
+  });
+  const notes: string[] = [];
+
+  if (!declaredRole && selectedRole) {
+    notes.push('Account role was inferred from onboarding selection.');
+  }
+
+  if (
+    declaredRole &&
+    getRoleConfig(declaredRole).isPaid &&
+    isRestrictedSubscriptionStatus(subscriptionStatus)
+  ) {
+    notes.push(
+      `Paid role "${declaredRole}" is paired with "${subscriptionStatus}" subscription status.`
+    );
+  }
+
+  if (!subscriptionResult.exists) {
+    notes.push(
+      'users/{uid}/subscription/current is missing, so subscription precedence falls back to embedded account fields.'
+    );
+  } else if (subscriptionResult.note) {
+    notes.push(subscriptionResult.note);
+  }
 
   return {
     uid: user.uid,
@@ -127,6 +217,16 @@ export async function fetchAccountProfile(user: AuthUser): Promise<AccountProfil
     usage: {
       vaultStorageUsedBytes: asNumber(usage.vaultStorageUsedBytes ?? raw.vaultStorageUsedBytes) ?? 0,
       vaultUploadCount: asNumber(usage.vaultUploadCount ?? raw.vaultUploadCount) ?? 0,
+    },
+    dataHealth: {
+      profileSource: 'firestore',
+      userDocState: normalizeDocumentState(true, missingFields),
+      subscriptionDocState: normalizeDocumentState(
+        subscriptionResult.exists,
+        subscriptionResult.exists ? [] : ['subscription/current']
+      ),
+      missingFields,
+      notes,
     },
   };
 }
@@ -171,7 +271,7 @@ export async function updateAccountActiveExperience(
   );
 }
 
-async function fetchCurrentSubscriptionDoc(uid: string): Promise<Record<string, unknown>> {
+async function fetchCurrentSubscriptionDoc(uid: string): Promise<SubscriptionDocumentResult> {
   try {
     const db = getFirebaseDb();
     const snapshot = await getDoc(
@@ -184,12 +284,158 @@ async function fetchCurrentSubscriptionDoc(uid: string): Promise<Record<string, 
       )
     );
 
-    return snapshot.exists() ? snapshot.data() : {};
+    return {
+      exists: snapshot.exists(),
+      data: snapshot.exists() ? snapshot.data() : {},
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown subscription read error';
     console.warn(`[account] users/${uid}/subscription/current unavailable: ${message}`);
-    return {};
+    return {
+      exists: false,
+      data: {},
+      note: 'Subscription document could not be read. Falling back to user profile subscription fields.',
+    };
   }
+}
+
+function resolveSubscriptionTier(
+  subscriptionTier: unknown,
+  rawSubscriptionTier: unknown,
+  rawPlan: unknown,
+  selectedRole: UserRole | null
+): UserRole {
+  const tier =
+    asString(subscriptionTier) ??
+    asString(rawSubscriptionTier) ??
+    asString(rawPlan) ??
+    (selectedRole ? String(selectedRole) : null) ??
+    'shoouts';
+
+  return normalizeRole(tier);
+}
+
+function resolveEffectiveRole({
+  declaredRole,
+  selectedRole,
+  subscriptionTier,
+  subscriptionStatus,
+}: {
+  declaredRole: UserRole | null;
+  selectedRole: UserRole | null;
+  subscriptionTier: UserRole;
+  subscriptionStatus: SubscriptionStatus;
+}): UserRole {
+  if (declaredRole) {
+    if (!getRoleConfig(declaredRole).isPaid) {
+      return declaredRole;
+    }
+
+    if (!isRestrictedSubscriptionStatus(subscriptionStatus)) {
+      return declaredRole;
+    }
+  }
+
+  if (isEntitledSubscriptionStatus(subscriptionStatus)) {
+    return subscriptionTier;
+  }
+
+  if (selectedRole) {
+    return getRoleConfig(selectedRole).isPaid ? 'shoouts' : selectedRole;
+  }
+
+  return 'shoouts';
+}
+
+function collectMissingAccountFields({
+  raw,
+  onboarding,
+  seller,
+  usage,
+  declaredRole,
+  selectedRole,
+  activeExperience,
+  subscriptionStatus,
+  subscriptionTier,
+}: {
+  raw: Record<string, unknown>;
+  onboarding: Record<string, unknown>;
+  seller: Record<string, unknown>;
+  usage: Record<string, unknown>;
+  declaredRole: UserRole | null;
+  selectedRole: UserRole | null;
+  activeExperience: AppExperience;
+  subscriptionStatus: SubscriptionStatus;
+  subscriptionTier: UserRole;
+}) {
+  const missingFields: string[] = [];
+
+  if (!declaredRole) {
+    missingFields.push('role');
+  }
+
+  if (!selectedRole) {
+    missingFields.push('onboarding.selectedRole');
+  }
+
+  if (!hasValue(raw.activeExperience) && !hasValue(raw.lastExperience) && !hasValue(raw.workspace)) {
+    missingFields.push('activeExperience');
+  } else if (activeExperience === getDefaultExperience(declaredRole ?? selectedRole ?? 'shoouts')) {
+    const requestedExperience = normalizeOptionalExperience(
+      raw.activeExperience ?? raw.lastExperience ?? raw.workspace
+    );
+    if (requestedExperience && requestedExperience !== activeExperience) {
+      missingFields.push('activeExperience.adjusted');
+    }
+  }
+
+  if (!hasValue(raw.subscriptionStatus) && !hasValue(asRecord(raw.subscription).status)) {
+    missingFields.push('subscriptionStatus');
+  } else if (
+    getRoleConfig(subscriptionTier).isPaid &&
+    isRestrictedSubscriptionStatus(subscriptionStatus)
+  ) {
+    missingFields.push(`subscriptionStatus:${subscriptionStatus}`);
+  }
+
+  if (
+    !hasValue(seller.verificationStatus) &&
+    !hasValue(raw.verificationStatus)
+  ) {
+    missingFields.push('seller.verificationStatus');
+  }
+
+  if (
+    !hasValue(usage.vaultStorageUsedBytes) &&
+    !hasValue(raw.vaultStorageUsedBytes)
+  ) {
+    missingFields.push('usage.vaultStorageUsedBytes');
+  }
+
+  if (!hasValue(usage.vaultUploadCount) && !hasValue(raw.vaultUploadCount)) {
+    missingFields.push('usage.vaultUploadCount');
+  }
+
+  return missingFields;
+}
+
+function normalizeDocumentState(
+  exists: boolean,
+  missingFields: string[]
+): AccountDocumentState {
+  if (!exists) {
+    return 'missing';
+  }
+
+  return missingFields.length > 0 ? 'partial' : 'ready';
+}
+
+function isEntitledSubscriptionStatus(status: SubscriptionStatus) {
+  return status === 'active' || status === 'trial';
+}
+
+function isRestrictedSubscriptionStatus(status: SubscriptionStatus) {
+  return status === 'cancelled' || status === 'expired' || status === 'past_due';
 }
 
 function normalizeSubscriptionStatus(value: unknown): SubscriptionStatus {
@@ -239,6 +485,27 @@ function normalizeOptionalRole(value: unknown): UserRole | null {
   return normalizeRole(String(value));
 }
 
+function normalizeOptionalExperience(value: unknown): AppExperience | null {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  const normalized = String(value)
+    .trim()
+    .toLowerCase();
+
+  if (
+    normalized === 'shoouts' ||
+    normalized === 'vault' ||
+    normalized === 'studio' ||
+    normalized === 'hybrid'
+  ) {
+    return normalized;
+  }
+
+  return null;
+}
+
 function normalizeVerificationStatus(value: unknown): SellerVerificationStatus {
   const normalized = String(value ?? '')
     .trim()
@@ -283,6 +550,18 @@ function asNumber(value: unknown): number | null {
 
 function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
+}
+
+function hasValue(value: unknown) {
+  if (value === null || value === undefined) {
+    return false;
+  }
+
+  if (typeof value === 'string') {
+    return value.trim().length > 0;
+  }
+
+  return true;
 }
 
 function toIsoString(value: unknown): string | null {

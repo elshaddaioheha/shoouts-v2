@@ -24,13 +24,13 @@ export function SavedScreen() {
         </AppText>
         <AppText variant="pageHeading">Saved & favourites</AppText>
         <AppText variant="bodySmall" tone="secondary">
-          Liked listings and followed creators will sync here as social features are enabled.
+          This stays a review shelf for now. Real likes and followed creators will sync here once social writes exist.
         </AppText>
 
         <View style={styles.card}>
           <AppText variant="sectionHeading">Feature state</AppText>
           <AppText variant="bodySmall" tone="secondary" style={styles.copy}>
-            This screen is now a valid route. Saved-content writes are next after follow and like backend paths.
+            This route is intentional, but it does not pretend saved-state persistence is live yet.
           </AppText>
         </View>
 

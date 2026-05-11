@@ -1,6 +1,8 @@
+import { getReadErrorCopy } from '@/src/config/backendStatus';
 import { LoadingState } from '@/src/components/ui/LoadingState';
 import { ErrorState } from '@/src/components/ui/ErrorState';
-import { useMemo } from 'react';
+import { useAuthStore } from '@/src/features/auth/auth.store';
+import { useCallback, useMemo } from 'react';
 import { FlatList, StyleSheet, useWindowDimensions, View } from 'react-native';
 import {
   type ExploreFeedFilters,
@@ -8,7 +10,7 @@ import {
   type ExploreFeedTab,
 } from '../marketplace.types';
 import { useExploreFeed } from '../marketplace.hooks';
-import { ExploreFeedItem } from './ExploreFeedItem';
+import { MemoExploreFeedItem } from './ExploreFeedItem';
 
 type ExploreFeedProps = {
   activeTab: ExploreFeedTab;
@@ -17,8 +19,16 @@ type ExploreFeedProps = {
 
 export function ExploreFeed({ activeTab, filters }: ExploreFeedProps) {
   const feedQuery = useExploreFeed(activeTab, 24, filters);
+  const startupStatus = useAuthStore((state) => state.startupStatus);
   const data = useMemo(() => feedQuery.data ?? [], [feedQuery.data]);
   const { height } = useWindowDimensions();
+  const renderItem = useCallback(
+    ({ item }: { item: ExploreFeedItemModel }) => (
+      <MemoExploreFeedItem item={item} pageHeight={height} />
+    ),
+    [height]
+  );
+  const keyExtractor = useCallback((item: ExploreFeedItemModel) => item.id, []);
 
   if (feedQuery.isLoading) {
     return (
@@ -29,11 +39,16 @@ export function ExploreFeed({ activeTab, filters }: ExploreFeedProps) {
   }
 
   if (feedQuery.isError) {
+    const errorCopy = getReadErrorCopy(feedQuery.error, {
+      subject: 'Explore',
+      startupStatus,
+    });
+
     return (
       <View style={styles.state}>
         <ErrorState
-          title="Couldn't load Explore"
-          message="Please check Firestore access and try again."
+          title={errorCopy.title}
+          message={errorCopy.message}
           onAction={() => feedQuery.refetch()}
         />
       </View>
@@ -75,12 +90,16 @@ export function ExploreFeed({ activeTab, filters }: ExploreFeedProps) {
     <FlatList<ExploreFeedItemModel>
       data={data}
       key={height}
-      keyExtractor={(item) => item.id}
-      renderItem={({ item }) => <ExploreFeedItem item={item} pageHeight={height} />}
+      keyExtractor={keyExtractor}
+      renderItem={renderItem}
       pagingEnabled
       showsVerticalScrollIndicator={false}
       snapToInterval={height}
       decelerationRate="fast"
+      windowSize={3}
+      initialNumToRender={2}
+      maxToRenderPerBatch={2}
+      removeClippedSubviews
       getItemLayout={(_, index) => ({
         length: height,
         offset: height * index,

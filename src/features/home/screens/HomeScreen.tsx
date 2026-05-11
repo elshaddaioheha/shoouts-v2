@@ -1,9 +1,12 @@
 import { AppIcon } from '@/src/components/ui/AppIcon';
 import { InterimFeatureSheet } from '@/src/components/ui/InterimFeatureSheet';
 import { AppText } from '@/src/components/ui/AppText';
+import { getReadErrorCopy } from '@/src/config/backendStatus';
 import { ErrorState } from '@/src/components/ui/ErrorState';
 import { LoadingState } from '@/src/components/ui/LoadingState';
+import { useAuthStore } from '@/src/features/auth/auth.store';
 import { useCartStore } from '@/src/features/cart/cart.store';
+import { usePlayerStore } from '@/src/features/player/player.store';
 import {
   useMarketplaceListings,
 } from '@/src/features/marketplace/marketplace.hooks';
@@ -34,8 +37,10 @@ const HOME_CARD_COLORS = ['#8B7355', '#6C6F8F', '#6C7E62', '#5E615D', '#685452',
 export function HomeScreen() {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
+  const startupStatus = useAuthStore((state) => state.startupStatus);
   const addItem = useCartStore((state) => state.addItem);
   const isInCart = useCartStore((state) => state.isInCart);
+  const loadTrack = usePlayerStore((state) => state.loadTrack);
   const listingsQuery = useMarketplaceListings(24);
   const tracks = useMemo<HomeTrack[]>(
     () =>
@@ -62,10 +67,10 @@ export function HomeScreen() {
   }
 
   function handleAddToCart(track: HomeTrack) {
-    const cartId = `${track.id}-basic`;
+    const cartId = track.id;
 
     if (isInCart(cartId)) {
-      Alert.alert('Already added', `${track.title} is already in your cart.`);
+      Alert.alert('Already in cart', `${track.title} is already in your review cart.`);
       return;
     }
 
@@ -75,16 +80,33 @@ export function HomeScreen() {
       title: track.title,
       artist: track.artist,
       price: track.price,
+      currency: track.currency,
+      accessType: track.price <= 0 ? 'free' : 'paid',
+      checkoutState: 'review_only',
       coverUrl: track.coverUrl ?? undefined,
     });
 
-    Alert.alert('Added to cart', `${track.title} is now in your cart.`);
+    Alert.alert('Added for review', `${track.title} is now in your review cart.`);
   }
 
   function handlePlay(track: HomeTrack) {
+    if (track.audioUrl) {
+      loadTrack({
+        id: track.id,
+        title: track.title,
+        artist: track.artist,
+        projectTitle: track.genre ?? 'Marketplace preview',
+        audioUrl: track.audioUrl,
+        coverUrl: track.coverUrl,
+        artworkGradient: theme.experience.mediaGradient ?? theme.experience.gradient,
+        surface: 'marketplace',
+      });
+      return;
+    }
+
     setFeatureNotice({
       title: 'Preview player is next',
-      message: `Playback for "${track.title}" will be connected in the next phase.`,
+      message: `"${track.title}" does not have preview audio attached yet.`,
       actionLabel: 'Open listing',
       onAction: () => openListing(track.id),
     });
@@ -108,11 +130,16 @@ export function HomeScreen() {
   }
 
   if (listingsQuery.isError) {
+    const errorCopy = getReadErrorCopy(listingsQuery.error, {
+      subject: 'Marketplace picks',
+      startupStatus,
+    });
+
     return (
       <AppShell>
         <ErrorState
-          title="Couldn't load marketplace picks"
-          message="Please check Firestore access and try again."
+          title={errorCopy.title}
+          message={errorCopy.message}
           onAction={() => listingsQuery.refetch()}
         />
       </AppShell>
@@ -256,7 +283,7 @@ export function HomeScreen() {
             />
             <View style={styles.popularList}>
               {popularTracks.map((track, index) => {
-                const cartId = `${track.id}-basic`;
+                const cartId = track.id;
                 const inCart = isInCart(cartId);
                 const isLast = index === popularTracks.length - 1;
 

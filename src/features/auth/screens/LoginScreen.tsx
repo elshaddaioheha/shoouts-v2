@@ -1,4 +1,5 @@
 import { brandAssets } from '@/src/assets/brand';
+import { getStartupStatusCopy } from '@/src/config/backendStatus';
 import { useThemeTokens } from '@/src/theme';
 import { fontFamily } from '@/src/theme/fonts';
 import { useAppTheme } from '@/src/hooks/use-app-theme';
@@ -7,6 +8,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { Eye, EyeOff } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
 import { SocialButton } from '@/src/features/auth/components/SocialButton';
+import { useAuthStore } from '@/src/features/auth/auth.store';
 import {
   Alert,
   Image,
@@ -35,13 +37,22 @@ export function LoginScreen() {
   const lightBorder = '#D8B9AD';
 
   const router = useRouter();
+  const startupStatus = useAuthStore((state) => state.startupStatus);
+  const startupMessage = useAuthStore((state) => state.startupMessage);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const passwordInputRef = useRef<TextInput>(null);
+  const startupCopy = getStartupStatusCopy(startupStatus, startupMessage);
+  const authAvailable = startupStatus === 'ready';
 
   const handleLogin = async () => {
+    if (!authAvailable) {
+      Alert.alert('Login unavailable', startupCopy?.message ?? 'Auth is temporarily unavailable.');
+      return;
+    }
+
     if (!email.trim() || !password) return;
 
     setSubmitting(true);
@@ -62,10 +73,20 @@ export function LoginScreen() {
   };
 
   const handleGoogleLogin = () => {
+    if (!authAvailable) {
+      Alert.alert('Login unavailable', startupCopy?.message ?? 'Auth is temporarily unavailable.');
+      return;
+    }
+
     Alert.alert('Coming soon', 'Google Sign-In will be added after the stable UI migration.');
   };
 
   const handleAppleLogin = () => {
+    if (!authAvailable) {
+      Alert.alert('Login unavailable', startupCopy?.message ?? 'Auth is temporarily unavailable.');
+      return;
+    }
+
     Alert.alert('Coming soon', 'Apple Sign-In will be added after the stable UI migration.');
   };
 
@@ -105,6 +126,17 @@ export function LoginScreen() {
 
           <Text style={[styles.title, isLightMode && { color: lightText }]}>Welcome Back</Text>
           <Text style={[styles.subtitle, isLightMode && { color: lightMutedText }]}>Log in to your account</Text>
+
+          {startupCopy ? (
+            <View style={[styles.noticeCard, isLightMode && { backgroundColor: lightSurface, borderColor: lightBorder }]}>
+              <Text style={[styles.noticeTitle, { color: appTheme.colors.primary }]}>
+                {startupCopy.title}
+              </Text>
+              <Text style={[styles.noticeText, isLightMode && { color: lightMutedText }]}>
+                {startupCopy.message}
+              </Text>
+            </View>
+          ) : null}
 
           <View style={styles.socialContainer}>
             {Platform.OS === 'ios' && (
@@ -163,9 +195,11 @@ export function LoginScreen() {
               onPress={handleLogin}
               style={[styles.loginButton, { backgroundColor: appTheme.colors.primary }]}
               activeOpacity={0.8}
-              disabled={submitting}
+              disabled={submitting || !authAvailable}
             >
-              <Text style={styles.loginButtonText}>{submitting ? 'Logging in...' : 'Login'}</Text>
+              <Text style={styles.loginButtonText}>
+                {!authAvailable ? 'Login unavailable' : submitting ? 'Logging in...' : 'Login'}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -264,6 +298,27 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       textAlign: 'center',
       letterSpacing: -0.5,
       marginBottom: 27,
+    },
+    noticeCard: {
+      width: '100%',
+      borderWidth: 1.5,
+      borderColor: theme.colors.accent,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      backgroundColor: theme.colors.surfaceElevated,
+      marginBottom: 18,
+      gap: 6,
+    },
+    noticeTitle: {
+      fontSize: 14,
+      fontFamily: fontFamily.interSemiBold,
+    },
+    noticeText: {
+      color: theme.colors.textSecondary,
+      fontSize: 13,
+      fontFamily: fontFamily.workSansRegular,
+      lineHeight: 19,
     },
     socialContainer: {
       width: '100%',

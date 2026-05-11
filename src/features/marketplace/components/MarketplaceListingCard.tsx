@@ -25,7 +25,7 @@ export function MarketplaceListingCard({
   const theme = useThemeTokens();
   const styles = createStyles(theme);
   const priceLabel = listing.price <= 0 ? 'Free' : `$${listing.price.toFixed(2)}`;
-  const buyLabel = listing.price <= 0 ? 'Download later' : 'Buy now';
+  const buyLabel = listing.price <= 0 ? 'Review access' : 'Review purchase';
 
   return (
     <Pressable

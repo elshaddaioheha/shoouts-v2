@@ -51,6 +51,13 @@ export type ExploreFeedFilters = {
   price: ExplorePriceFilter;
 };
 
+export type ExploreFilterPreset = {
+  id: string;
+  name: string;
+  filters: ExploreFeedFilters;
+  createdAt: number;
+};
+
 export type ExploreFeedItemModel = {
   id: string;
   listingId: string;
@@ -59,6 +66,7 @@ export type ExploreFeedItemModel = {
   artist: string;
   price: number;
   currency: string;
+  audioUrl?: string | null;
   coverUrl?: string | null;
   likesLabel?: string | null;
   genre?: string | null;

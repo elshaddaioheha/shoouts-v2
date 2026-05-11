@@ -1,7 +1,9 @@
 import { AppText } from '@/src/components/ui/AppText';
+import { usePlayerStore } from '@/src/features/player/player.store';
 import { useThemeTokens } from '@/src/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { memo } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import {
   formatExplorePrice,
@@ -12,20 +14,21 @@ import { ListingArtwork } from './ListingArtwork';
 
 const ARTWORK_SIZE = 140;
 const ARTWORK_RADIUS = ARTWORK_SIZE / 2;
-const ARTWORK_CENTER_OFFSET = 10;
-const BLUR_ORB_CENTER_OFFSET = -6;
-const DISC_WIDTH = 265;
-const DISC_HEIGHT = 286;
+const DISC_SIZE = 248;
+const DISC_RADIUS = DISC_SIZE / 2;
+const DISC_SCALE = 1.06;
+const DISC_CENTER_OFFSET = 10;
 
 type ExploreFeedItemProps = {
   item: ExploreFeedItemModel;
   pageHeight: number;
 };
 
-export function ExploreFeedItem({ item, pageHeight }: ExploreFeedItemProps) {
+function ExploreFeedItem({ item, pageHeight }: ExploreFeedItemProps) {
   const theme = useThemeTokens();
   const styles = createStyles(theme, pageHeight);
   const mediaGradient = theme.experience.mediaGradient ?? theme.experience.gradient;
+  const loadTrack = usePlayerStore((state) => state.loadTrack);
 
   function handleOpenListing() {
     router.push({
@@ -39,7 +42,21 @@ export function ExploreFeedItem({ item, pageHeight }: ExploreFeedItemProps) {
   }
 
   function handleArtworkPress() {
-    handleOpenListing();
+    if (item.audioUrl) {
+      loadTrack({
+        id: item.listingId,
+        title: item.title,
+        artist: item.artist,
+        projectTitle: item.genre ?? 'Marketplace preview',
+        audioUrl: item.audioUrl,
+        coverUrl: item.coverUrl,
+        artworkGradient: mediaGradient,
+        surface: 'marketplace',
+      });
+      return;
+    }
+
+    Alert.alert('Preview unavailable', 'This listing does not have preview audio attached yet.');
   }
 
   function handleMoreMetadata() {
@@ -97,7 +114,7 @@ export function ExploreFeedItem({ item, pageHeight }: ExploreFeedItemProps) {
 
             <Pressable style={styles.purchaseButton} onPress={handlePurchaseNow}>
               <AppText variant="caption" style={styles.purchaseText}>
-                Purchase Now
+                Review Purchase
               </AppText>
             </Pressable>
           </View>
@@ -124,18 +141,18 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>, pageHeight: numb
       left: '50%',
       width: 0,
       height: 0,
-      transform: [{ translateY: BLUR_ORB_CENTER_OFFSET }],
+      transform: [{ translateY: DISC_CENTER_OFFSET }],
     },
     blurOrb: {
       position: 'absolute',
-      width: DISC_WIDTH,
-      height: DISC_HEIGHT,
-      borderRadius: 143,
-      left: -(DISC_WIDTH / 2),
-      top: -(DISC_HEIGHT / 2),
+      width: DISC_SIZE,
+      height: DISC_SIZE,
+      borderRadius: DISC_RADIUS,
+      left: -DISC_RADIUS,
+      top: -DISC_RADIUS,
       backgroundColor: 'rgba(97,96,96,0.88)',
       opacity: 0.78,
-      transform: [{ scale: 1.05 }],
+      transform: [{ scale: DISC_SCALE }],
     },
     artworkAnchor: {
       position: 'absolute',
@@ -143,7 +160,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>, pageHeight: numb
       left: '50%',
       width: 0,
       height: 0,
-      transform: [{ translateY: ARTWORK_CENTER_OFFSET }],
+      transform: [{ translateY: DISC_CENTER_OFFSET }],
     },
     artworkPressable: {
       position: 'absolute',
@@ -214,3 +231,21 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>, pageHeight: numb
     },
   });
 }
+
+export const MemoExploreFeedItem = memo(
+  ExploreFeedItem,
+  (previous, next) =>
+    previous.pageHeight === next.pageHeight &&
+    previous.item.id === next.item.id &&
+    previous.item.coverUrl === next.item.coverUrl &&
+    previous.item.title === next.item.title &&
+    previous.item.artist === next.item.artist &&
+    previous.item.price === next.item.price &&
+    previous.item.currency === next.item.currency &&
+    previous.item.audioUrl === next.item.audioUrl &&
+    previous.item.genre === next.item.genre &&
+    previous.item.bpm === next.item.bpm &&
+    previous.item.key === next.item.key
+);
+
+export { ExploreFeedItem };

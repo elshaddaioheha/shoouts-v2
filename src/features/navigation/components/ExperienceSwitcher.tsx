@@ -44,6 +44,7 @@ export function ExperienceSwitcher() {
   const user = useAuthStore((state) => state.user);
   const role = useAccountStore((state) => state.role);
   const setAccountActiveExperience = useAccountStore((state) => state.setActiveExperience);
+  const setPreviewExperience = useAccountStore((state) => state.setPreviewExperience);
   const storedExperience = useExperienceNavigationStore((state) => state.activeExperience);
   const setActiveExperience = useExperienceNavigationStore((state) => state.setActiveExperience);
   const [activeSheet, setActiveSheet] = useState<ActiveSheet>(null);
@@ -56,14 +57,19 @@ export function ExperienceSwitcher() {
     if (!canPreviewExperience(role, experience)) return;
 
     setActiveExperience(experience);
-    setAccountActiveExperience(experience);
+    if (canAccessExperience(role, experience)) {
+      setAccountActiveExperience(experience);
+      setPreviewExperience(null);
+    } else {
+      setPreviewExperience(experience);
+    }
     setActiveSheet(null);
     openExperienceWelcome({
       experience,
       nextRoute: EXPERIENCE_NAVIGATION[experience].defaultRoute,
     });
 
-    if (user) {
+    if (user && canAccessExperience(role, experience)) {
       try {
         await updateAccountActiveExperience(user.uid, experience);
       } catch (error) {

@@ -1,5 +1,6 @@
 import { AppIcon } from '@/src/components/ui/AppIcon';
 import { AppText } from '@/src/components/ui/AppText';
+import { getReadErrorCopy } from '@/src/config/backendStatus';
 import { ErrorState } from '@/src/components/ui/ErrorState';
 import { LoadingState } from '@/src/components/ui/LoadingState';
 import { useAuthStore } from '@/src/features/auth/auth.store';
@@ -9,12 +10,13 @@ import { useThemeTokens } from '@/src/theme';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useUserPurchases } from '../downloads.hooks';
-import { formatLibraryPrice } from '../downloads.types';
+import { formatLibraryPrice, getLibraryPurchaseStateCopy } from '../downloads.types';
 
 export function DownloadsScreen() {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
   const user = useAuthStore((state) => state.user);
+  const startupStatus = useAuthStore((state) => state.startupStatus);
   const purchasesQuery = useUserPurchases(user?.uid ?? null, 24);
 
   if (!user) {
@@ -49,11 +51,16 @@ export function DownloadsScreen() {
   }
 
   if (purchasesQuery.isError) {
+    const errorCopy = getReadErrorCopy(purchasesQuery.error, {
+      subject: 'Your library',
+      startupStatus,
+    });
+
     return (
       <AppShell>
         <ErrorState
-          title="Couldn't load your library"
-          message="Please check Firestore access and try again."
+          title={errorCopy.title}
+          message={errorCopy.message}
           onAction={() => purchasesQuery.refetch()}
         />
       </AppShell>
@@ -70,14 +77,14 @@ export function DownloadsScreen() {
         </AppText>
         <AppText variant="pageHeading">Your library</AppText>
         <AppText variant="bodySmall" tone="secondary" style={styles.subtitle}>
-          Purchased and free-access items appear here first. Secure file delivery lands in a later phase.
+          Recorded access appears here first. Protected file delivery turns on after secure purchase and entitlement checks are live.
         </AppText>
 
         {purchases.length === 0 ? (
           <View style={styles.emptyCard}>
             <AppText variant="sectionHeading">No downloads yet</AppText>
             <AppText variant="bodySmall" tone="secondary" style={styles.emptyCopy}>
-              Once purchases are written by the backend, your library will show them here automatically.
+              Once your account has recorded access, items will appear here even before protected delivery is enabled.
             </AppText>
             <Pressable
               style={styles.secondaryButton}
@@ -88,62 +95,63 @@ export function DownloadsScreen() {
           </View>
         ) : (
           <View style={styles.list}>
-            {purchases.map((purchase) => (
-              <View key={purchase.id} style={styles.itemCard}>
-                <View style={styles.itemLeading}>
-                  <ListingArtwork
-                    coverUrl={purchase.coverUrl}
-                    label="Library"
-                    style={styles.artwork}
-                  >
-                    {purchase.coverUrl ? (
-                      <View />
-                    ) : (
-                      <AppIcon name="downloads" size="sm" tone="accent" stroke="regular" />
-                    )}
-                  </ListingArtwork>
-                  <View style={styles.itemMeta}>
-                    <AppText variant="title" numberOfLines={1}>
-                      {purchase.title}
+            {purchases.map((purchase) => {
+              const stateCopy = getLibraryPurchaseStateCopy(purchase);
+
+              return (
+                <View key={purchase.id} style={styles.itemCard}>
+                  <View style={styles.itemLeading}>
+                    <ListingArtwork
+                      coverUrl={purchase.coverUrl}
+                      label="Library"
+                      style={styles.artwork}
+                    >
+                      {purchase.coverUrl ? (
+                        <View />
+                      ) : (
+                        <AppIcon name="downloads" size="sm" tone="accent" stroke="regular" />
+                      )}
+                    </ListingArtwork>
+                    <View style={styles.itemMeta}>
+                      <AppText variant="title" numberOfLines={1}>
+                        {purchase.title}
+                      </AppText>
+                      <AppText variant="bodySmall" tone="secondary" numberOfLines={1}>
+                        {purchase.artist}
+                      </AppText>
+                      <AppText variant="caption" tone="muted">
+                        {stateCopy.badge} - {formatLibraryPrice(purchase)}
+                      </AppText>
+                      <AppText variant="caption" tone="secondary" style={styles.stateDetail}>
+                        {stateCopy.detail}
+                      </AppText>
+                    </View>
+                  </View>
+
+                  <View style={styles.itemActions}>
+                    <AppText variant="caption" tone="accent">
+                      {purchase.accessType === 'free' ? 'Free access' : 'Purchase record'}
                     </AppText>
-                    <AppText variant="bodySmall" tone="secondary" numberOfLines={1}>
-                      {purchase.artist}
-                    </AppText>
-                    <AppText variant="caption" tone="muted">
-                      {formatStatusLabel(purchase.status)} - {formatLibraryPrice(purchase)}
-                    </AppText>
+                    <Pressable
+                      style={styles.inlineButton}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/listing/[id]',
+                          params: { id: purchase.listingId },
+                        } as any)
+                      }
+                    >
+                      <AppText variant="button">View item</AppText>
+                    </Pressable>
                   </View>
                 </View>
-
-                <View style={styles.itemActions}>
-                  <AppText variant="caption" tone="accent">
-                    {purchase.accessType === 'free' ? 'Free access' : 'Purchased'}
-                  </AppText>
-                  <Pressable
-                    style={styles.inlineButton}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/listing/[id]',
-                        params: { id: purchase.listingId },
-                      } as any)
-                    }
-                  >
-                    <AppText variant="button">View item</AppText>
-                  </Pressable>
-                </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         )}
       </ScrollView>
     </AppShell>
   );
-}
-
-function formatStatusLabel(status: 'available' | 'processing' | 'restricted') {
-  if (status === 'processing') return 'Processing';
-  if (status === 'restricted') return 'Restricted';
-  return 'Available';
 }
 
 function createStyles(theme: ReturnType<typeof useThemeTokens>) {
@@ -206,6 +214,9 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       flex: 1,
       minWidth: 0,
       gap: theme.spacing.xs,
+    },
+    stateDetail: {
+      lineHeight: 18,
     },
     itemActions: {
       flexDirection: 'row',

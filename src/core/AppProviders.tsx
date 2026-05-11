@@ -1,7 +1,6 @@
-import { ErrorState } from '@/src/components/ui/ErrorState';
-import { getMissingEnvVars } from '@/src/config/env';
 import { queryClient } from '@/src/config/queryClient';
 import { useAccountProfileBootstrap } from '@/src/features/account/useAccountProfileBootstrap';
+import { GlobalPlayerHost } from '@/src/features/player/components/GlobalPlayerHost';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
@@ -14,23 +13,16 @@ type AppProvidersProps = {
 
 export function AppProviders({ children }: AppProvidersProps) {
   const colorScheme = useColorScheme();
-  const missingEnvVars = getMissingEnvVars();
-  const envError = missingEnvVars.length
-    ? `Missing required environment variables: ${missingEnvVars.join(', ')}`
-    : undefined;
 
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          {envError ? (
-            <ErrorState title="Configuration missing" message={envError} />
-          ) : (
-            <>
-              <AccountBootstrapBridge />
-              {children}
-            </>
-          )}
+          <>
+            <AccountBootstrapBridge />
+            {children}
+            <GlobalPlayerHost />
+          </>
         </ThemeProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

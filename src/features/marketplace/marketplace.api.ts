@@ -6,6 +6,7 @@ import {
   collection,
   collectionGroup,
   doc,
+  documentId,
   getDoc,
   getDocs,
   limit,
@@ -56,6 +57,29 @@ export async function fetchMarketplaceListingById(
       }
 
       logFirestoreFallback('fetchMarketplaceListingById top-level lookup', error);
+    }
+
+    try {
+      const nestedSnapshot = await getDocs(
+        query(
+          collectionGroup(db, UPLOADS_COLLECTION),
+          where(documentId(), '==', listingId),
+          limit(1)
+        )
+      );
+
+      if (!nestedSnapshot.empty) {
+        const listing = mapListingFromSnapshot(nestedSnapshot.docs[0]);
+        if (listing?.isPublished) {
+          return listing;
+        }
+      }
+    } catch (error) {
+      if (!isRecoverableFirestoreReadError(error)) {
+        throw error;
+      }
+
+      logFirestoreFallback('fetchMarketplaceListingById nested lookup', error);
     }
 
     const listings = await fetchPublishedUploads(300);
@@ -258,49 +282,116 @@ function mapListing(
   raw: Record<string, unknown>,
   documentPath?: string
 ): MarketplaceListing | null {
+  const metadata = asRecord(raw.metadata);
+  const details = asRecord(raw.details);
+  const seller = asRecord(raw.seller);
+  const uploader = asRecord(raw.uploader);
+  const owner = asRecord(raw.owner);
+  const createdBy = asRecord(raw.createdBy);
   const pricing = asRecord(raw.pricing);
+  const monetization = asRecord(raw.monetization);
+  const artwork = asRecord(raw.artwork);
+  const cover = asRecord(raw.cover);
+  const media = asRecord(raw.media);
+  const files = asRecord(raw.files);
+  const preview = asRecord(raw.preview);
+  const previewFile = asRecord(raw.previewFile);
+  const analytics = asRecord(raw.analytics);
+  const stats = asRecord(raw.stats);
+  const release = asRecord(raw.release);
   const title =
-    asString(raw.title) ??
-    asString(raw.name) ??
-    asString(raw.fileName) ??
-    asString(raw.originalName);
+    pickString(
+      raw.title,
+      metadata.title,
+      details.title,
+      raw.trackTitle,
+      raw.name,
+      metadata.name,
+      raw.fileName,
+      raw.originalName
+    ) ?? 'Untitled listing';
   const sellerId =
-    asString(raw.uploaderId) ??
-    asString(raw.sellerId) ??
-    asString(raw.ownerId) ??
-    asString(raw.userId) ??
-    asString(raw.uid) ??
-    inferOwnerIdFromPath(documentPath);
+    pickString(
+      raw.uploaderId,
+      raw.sellerId,
+      raw.ownerId,
+      raw.userId,
+      raw.uid,
+      uploader.id,
+      uploader.uid,
+      seller.id,
+      seller.uid,
+      owner.id,
+      owner.uid,
+      createdBy.uid
+    ) ?? inferOwnerIdFromPath(documentPath);
 
-  if (!title || !sellerId || !isPublishedListing(raw)) {
+  if (!sellerId || !isPublishedListing(raw)) {
     return null;
   }
 
-  const price =
-    asNumber(raw.price) ??
-    asNumber(pricing.amount) ??
-    asNumber(raw.amount) ??
-    0;
-  const uploaderName =
-    asNullableString(raw.uploaderName) ??
-    asNullableString(raw.artist) ??
-    asNullableString(raw.sellerName) ??
-    asNullableString(raw.creatorName);
-  const artworkUrl =
-    asNullableString(raw.artworkUrl) ??
-    asNullableString(raw.coverUrl) ??
-    asNullableString(raw.imageUrl) ??
-    asNullableString(raw.thumbnailUrl);
-  const audioUrl =
-    asNullableString(raw.audioUrl) ??
-    asNullableString(raw.url) ??
-    asNullableString(raw.previewUrl) ??
-    asNullableString(raw.streamingUrl) ??
-    asNullableString(raw.hlsUrl);
-  const category = asNullableString(raw.category);
-  const assetType = asNullableString(raw.assetType) ?? asNullableString(raw.type);
-  const createdAtMs = getTimestampMs(raw.createdAt);
-  const publishedAtMs = getTimestampMs(raw.publishedAt);
+  const price = resolveListingPrice(raw, pricing, monetization);
+  const uploaderName = pickNullableString(
+    raw.uploaderName,
+    raw.artist,
+    raw.sellerName,
+    raw.creatorName,
+    metadata.artist,
+    metadata.artistName,
+    seller.displayName,
+    seller.name,
+    uploader.displayName,
+    uploader.name,
+    owner.displayName,
+    owner.name
+  );
+  const artworkUrl = pickNullableString(
+    raw.artworkUrl,
+    raw.coverUrl,
+    raw.imageUrl,
+    raw.thumbnailUrl,
+    artwork.url,
+    artwork.downloadUrl,
+    cover.url,
+    cover.secureUrl,
+    media.artworkUrl,
+    media.coverUrl,
+    files.artworkUrl
+  );
+  const audioUrl = pickNullableString(
+    raw.audioUrl,
+    raw.url,
+    raw.previewUrl,
+    raw.streamingUrl,
+    raw.hlsUrl,
+    preview.url,
+    preview.streamingUrl,
+    media.audioUrl,
+    files.audioUrl,
+    files.previewUrl,
+    previewFile.url
+  );
+  const category = pickNullableString(raw.category, metadata.category, details.category);
+  const assetType = pickNullableString(raw.assetType, raw.type, metadata.type, details.type);
+  const tags = pickStringArray(raw.tags, metadata.tags, details.tags, raw.keywords);
+  const genre =
+    pickNullableString(raw.genre, metadata.genre, details.genre, category, assetType) ??
+    tags[0] ??
+    'Music';
+  const createdAtMs = pickTimestampMs(
+    raw.createdAt,
+    raw.uploadedAt,
+    raw.createdOn,
+    metadata.createdAt
+  );
+  const publishedAtMs = pickTimestampMs(
+    raw.publishedAt,
+    raw.releasedAt,
+    raw.liveAt,
+    release.publishedAt,
+    release.releasedAt,
+    release.liveAt
+  );
 
   return {
     id: listingId,
@@ -310,25 +401,45 @@ function mapListing(
     artist: uploaderName ?? 'Unknown creator',
     uploaderName,
     price,
-    currency: asString(raw.currency) ?? asString(pricing.currency) ?? 'USD',
+    currency:
+      normalizeCurrency(
+        pickString(raw.currency, pricing.currency, monetization.currency, asRecord(pricing.price).currency)
+      ) ?? 'USD',
     audioUrl,
     artworkUrl,
     coverUrl: artworkUrl,
-    genre:
-      asNullableString(raw.genre) ??
-      category ??
-      assetType ??
-      'Music',
+    genre,
     assetType,
     category,
-    bpm: asNumber(raw.bpm),
-    key: asNullableString(raw.key),
-    description: asNullableString(raw.description),
-    listenCount: asNumber(raw.listenCount) ?? 0,
-    lifecycleStatus: asNullableString(raw.lifecycleStatus),
+    bpm: pickNumber(raw.bpm, metadata.bpm, details.bpm),
+    key: pickNullableString(raw.key, raw.musicalKey, metadata.key, details.key),
+    description: pickNullableString(
+      raw.description,
+      details.description,
+      metadata.description,
+      raw.caption,
+      raw.summary,
+      raw.synopsis
+    ),
+    listenCount:
+      pickNumber(
+        raw.listenCount,
+        raw.playCount,
+        raw.plays,
+        analytics.listenCount,
+        analytics.playCount,
+        stats.listenCount,
+        stats.plays
+      ) ?? 0,
+    lifecycleStatus: pickNullableString(
+      raw.lifecycleStatus,
+      raw.publishState,
+      release.status,
+      raw.status
+    ),
     isPublic: isPublicListing(raw),
     isFree: price <= 0 || raw.isFree === true,
-    tags: asStringArray(raw.tags),
+    tags,
     isPublished: true,
     createdAt: toIsoString(raw.createdAt),
     updatedAt: toIsoString(raw.updatedAt),
@@ -402,7 +513,9 @@ function compareListingsByDate(a: MarketplaceListing, b: MarketplaceListing) {
 }
 
 function isPublishedListing(raw: Record<string, unknown>) {
-  const status = asString(raw.status)?.toLowerCase();
+  const release = asRecord(raw.release);
+  const status =
+    pickString(raw.status, raw.publishState, raw.state, release.status)?.toLowerCase();
 
   if (!isPublicListing(raw)) {
     return false;
@@ -416,8 +529,14 @@ function isPublishedListing(raw: Record<string, unknown>) {
     return false;
   }
 
-  const scheduledMs = getTimestampMs(raw.scheduledReleaseAt ?? raw.scheduledReleaseAtMs);
-  const lifecycleStatus = asString(raw.lifecycleStatus)?.toLowerCase();
+  const scheduledMs = pickTimestampMs(
+    raw.scheduledReleaseAt,
+    raw.scheduledReleaseAtMs,
+    release.scheduledAt,
+    release.releaseAt
+  );
+  const lifecycleStatus =
+    pickString(raw.lifecycleStatus, release.lifecycleStatus)?.toLowerCase();
 
   if (lifecycleStatus === 'upcoming' && (!scheduledMs || scheduledMs > Date.now())) {
     return false;
@@ -427,8 +546,10 @@ function isPublishedListing(raw: Record<string, unknown>) {
 }
 
 function isPublicListing(raw: Record<string, unknown>) {
-  const visibility = asString(raw.visibility)?.toLowerCase();
-  const status = asString(raw.status)?.toLowerCase();
+  const release = asRecord(raw.release);
+  const visibility =
+    pickString(raw.visibility, raw.access, raw.availability, release.visibility)?.toLowerCase();
+  const status = pickString(raw.status, raw.publishState, raw.state)?.toLowerCase();
 
   if (raw.isPublic === true || raw.public === true) {
     return true;
@@ -474,6 +595,90 @@ function normalizeVerificationStatus(value: unknown): SellerVerificationStatus {
   return 'not_started';
 }
 
+function resolveListingPrice(
+  raw: Record<string, unknown>,
+  pricing: Record<string, unknown>,
+  monetization: Record<string, unknown>
+) {
+  const directPrice = pickNumber(
+    raw.price,
+    pricing.amount,
+    pricing.value,
+    raw.amount,
+    monetization.amount
+  );
+
+  if (directPrice !== null) {
+    return directPrice;
+  }
+
+  const centsPrice = pickNumber(raw.priceCents, pricing.amountCents, monetization.amountCents);
+  if (centsPrice !== null) {
+    return centsPrice / 100;
+  }
+
+  return 0;
+}
+
+function normalizeCurrency(value: string | null) {
+  return value ? value.trim().toUpperCase() : null;
+}
+
+function pickString(...values: unknown[]) {
+  for (const value of values) {
+    const nextValue = asString(value);
+    if (nextValue) {
+      return nextValue;
+    }
+  }
+
+  return null;
+}
+
+function pickNullableString(...values: unknown[]) {
+  for (const value of values) {
+    const nextValue = asNullableString(value);
+    if (nextValue) {
+      return nextValue;
+    }
+  }
+
+  return null;
+}
+
+function pickNumber(...values: unknown[]) {
+  for (const value of values) {
+    const nextValue = asNumber(value);
+    if (nextValue !== null) {
+      return nextValue;
+    }
+  }
+
+  return null;
+}
+
+function pickTimestampMs(...values: unknown[]) {
+  for (const value of values) {
+    const nextValue = getTimestampMs(value);
+    if (nextValue > 0) {
+      return nextValue;
+    }
+  }
+
+  return 0;
+}
+
+function pickStringArray(...values: unknown[]) {
+  for (const value of values) {
+    const nextValue = asStringArray(value);
+    if (nextValue.length > 0) {
+      return nextValue;
+    }
+  }
+
+  return [];
+}
+
 function asString(value: unknown): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
 }
@@ -500,13 +705,20 @@ function asNumber(value: unknown): number | null {
 }
 
 function asStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter(Boolean);
   }
 
-  return value
-    .map((item) => (typeof item === 'string' ? item.trim() : ''))
-    .filter(Boolean);
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
 }
 
 function asRecord(value: unknown): Record<string, unknown> {

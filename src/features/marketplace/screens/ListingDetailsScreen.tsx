@@ -1,6 +1,8 @@
 import { InterimFeatureSheet } from '@/src/components/ui/InterimFeatureSheet';
+import { getReadErrorCopy } from '@/src/config/backendStatus';
 import { ErrorState } from '@/src/components/ui/ErrorState';
 import { LoadingState } from '@/src/components/ui/LoadingState';
+import { useAuthStore } from '@/src/features/auth/auth.store';
 import { useCartStore } from '@/src/features/cart/cart.store';
 import { ListingArtwork } from '@/src/features/marketplace/components/ListingArtwork';
 import {
@@ -8,6 +10,7 @@ import {
 } from '@/src/features/marketplace/marketplace.hooks';
 import { formatMarketplacePrice } from '@/src/features/marketplace/marketplace.types';
 import { AppShell } from '@/src/features/navigation/components/AppShell';
+import { usePlayerStore } from '@/src/features/player/player.store';
 import { useThemeTokens } from '@/src/theme';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -192,11 +195,13 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
 export function ListingDetailsScreen() {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
+  const startupStatus = useAuthStore((state) => state.startupStatus);
   const { id } = useLocalSearchParams<{ id: string }>();
   const listingId = typeof id === 'string' ? id : null;
   const listingQuery = useMarketplaceListingDetail(listingId);
   const addItem = useCartStore((state) => state.addItem);
   const isInCart = useCartStore((state) => state.isInCart);
+  const loadTrack = usePlayerStore((state) => state.loadTrack);
   const [featureNotice, setFeatureNotice] = useState<ListingFeatureNotice | null>(null);
 
   if (listingQuery.isLoading) {
@@ -208,11 +213,16 @@ export function ListingDetailsScreen() {
   }
 
   if (listingQuery.isError) {
+    const errorCopy = getReadErrorCopy(listingQuery.error, {
+      subject: 'Listing',
+      startupStatus,
+    });
+
     return (
       <AppShell>
         <ErrorState
-          title="Couldn't load listing"
-          message="Please check Firestore access and try again."
+          title={errorCopy.title}
+          message={errorCopy.message}
           onAction={() => listingQuery.refetch()}
         />
       </AppShell>
@@ -240,9 +250,23 @@ export function ListingDetailsScreen() {
   const inCart = isInCart(listingData.id);
 
   function handlePreview() {
+    if (listingData.audioUrl) {
+      loadTrack({
+        id: listingData.id,
+        title: listingData.title,
+        artist: listingData.artist,
+        projectTitle: listingData.genre ?? 'Marketplace preview',
+        audioUrl: listingData.audioUrl,
+        coverUrl: listingData.coverUrl,
+        artworkGradient: theme.experience.mediaGradient ?? theme.experience.gradient,
+        surface: 'marketplace',
+      });
+      return;
+    }
+
     setFeatureNotice({
-      title: 'Preview player is next',
-      message: `Playback for "${listingData.title}" will be connected in the next phase.`,
+      title: 'Preview unavailable',
+      message: `"${listingData.title}" does not have preview audio attached yet.`,
     });
   }
 
@@ -253,6 +277,9 @@ export function ListingDetailsScreen() {
       title: listingData.title,
       artist: listingData.artist,
       price: listingData.price,
+      currency: listingData.currency,
+      accessType: listingData.price <= 0 ? 'free' : 'paid',
+      checkoutState: 'review_only',
       coverUrl: listingData.coverUrl ?? undefined,
     });
   }
@@ -260,7 +287,7 @@ export function ListingDetailsScreen() {
   function handleBuyNow() {
     if (listingData.price <= 0) {
       setFeatureNotice({
-        title: 'Secure free delivery is next',
+        title: 'Secure library access is next',
         message: 'Free download delivery will be connected with entitlement checks in the next phase.',
         actionLabel: 'Open downloads',
         onAction: () => router.push('/downloads' as any),
@@ -269,8 +296,8 @@ export function ListingDetailsScreen() {
     }
 
     setFeatureNotice({
-      title: 'Checkout is next',
-      message: 'Direct purchase will be connected after payment integration is finalized.',
+      title: 'Secure purchase flow is next',
+      message: 'This screen stays in review mode until payment integration and entitlement checks are finalized.',
       actionLabel: 'Open cart',
       onAction: () => router.push('/(tabs)/cart' as any),
     });
@@ -365,7 +392,7 @@ export function ListingDetailsScreen() {
 
         <Pressable style={styles.buyButton} onPress={handleBuyNow}>
           <Text style={styles.buyText}>
-            {listingData.price <= 0 ? 'Download later' : 'Buy now'}
+            {listingData.price <= 0 ? 'Review access' : 'Review purchase'}
           </Text>
         </Pressable>
       </ScrollView>

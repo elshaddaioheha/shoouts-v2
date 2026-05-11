@@ -1,4 +1,5 @@
 import { AppText } from '@/src/components/ui/AppText';
+import { getStartupStatusCopy } from '@/src/config/backendStatus';
 import { useAccountStore } from '@/src/features/account/account.store';
 import { useAuthStore } from '@/src/features/auth/auth.store';
 import { AppShell } from '@/src/features/navigation/components/AppShell';
@@ -10,12 +11,18 @@ export function SettingsScreen() {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
   const user = useAuthStore((state) => state.user);
+  const startupStatus = useAuthStore((state) => state.startupStatus);
+  const startupMessage = useAuthStore((state) => state.startupMessage);
   const role = useAccountStore((state) => state.role);
   const profile = useAccountStore((state) => state.profile);
+  const previewExperience = useAccountStore((state) => state.previewExperience);
   const displayName = profile?.displayName?.trim() || user?.displayName || 'Creator';
   const emailLabel = user?.email ?? 'No email linked';
   const roleLabel = role.replace(/_/g, ' ').toUpperCase();
   const statusLabel = (profile?.subscriptionStatus ?? 'free').replace(/_/g, ' ').toUpperCase();
+  const startupCopy = getStartupStatusCopy(startupStatus, startupMessage);
+  const accountDocLabel = profile?.dataHealth.userDocState?.replace(/_/g, ' ').toUpperCase() ?? 'MISSING';
+  const previewLabel = previewExperience ? previewExperience.replace(/_/g, ' ').toUpperCase() : 'NONE';
 
   return (
     <AppShell>
@@ -40,6 +47,38 @@ export function SettingsScreen() {
           <AppText variant="caption" tone="muted">
             {roleLabel} - {statusLabel}
           </AppText>
+        </View>
+
+        <View style={styles.card}>
+          <AppText variant="sectionHeading">App state</AppText>
+          <View style={styles.row}>
+            <AppText variant="bodySmall">Startup mode</AppText>
+            <AppText variant="caption" tone="muted">
+              {startupStatus.replace(/_/g, ' ').toUpperCase()}
+            </AppText>
+          </View>
+          <View style={styles.row}>
+            <AppText variant="bodySmall">Account document</AppText>
+            <AppText variant="caption" tone="muted">
+              {accountDocLabel}
+            </AppText>
+          </View>
+          <View style={styles.row}>
+            <AppText variant="bodySmall">Preview workspace</AppText>
+            <AppText variant="caption" tone="muted">
+              {previewLabel}
+            </AppText>
+          </View>
+          {startupCopy ? (
+            <AppText variant="caption" tone="secondary" style={styles.helperCopy}>
+              {startupCopy.message}
+            </AppText>
+          ) : null}
+          {profile?.dataHealth.notes?.length ? (
+            <AppText variant="caption" tone="secondary" style={styles.helperCopy}>
+              {profile.dataHealth.notes[0]}
+            </AppText>
+          ) : null}
         </View>
 
         <View style={styles.card}>
@@ -117,6 +156,9 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: theme.spacing.lg,
+    },
+    helperCopy: {
+      lineHeight: 18,
     },
   });
 }

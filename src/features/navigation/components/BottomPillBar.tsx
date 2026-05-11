@@ -5,7 +5,7 @@ import { EXPERIENCE_NAVIGATION } from '@/src/features/navigation/navigation.conf
 import { layout, useThemeTokens } from '@/src/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, usePathname } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,9 +46,10 @@ export function BottomPillBar() {
   const tabHorizontalPadding = isDenseLayout ? theme.spacing.xs : theme.spacing.sm;
   const [tabLayouts, setTabLayouts] = useState<Record<string, TabLayout>>({});
   const [barWidth, setBarWidth] = useState(0);
+  const [pendingTabKey, setPendingTabKey] = useState<string | null>(null);
   const hasInitializedIndicatorRef = useRef(false);
 
-  const activeIndex = useMemo(() => {
+  const routeActiveIndex = useMemo(() => {
     const exactIndex = tabs.findIndex((item) => {
       const normalizedRoute = normalizeNavigationPath(item.route);
       return normalizedPathname === normalizedRoute;
@@ -76,6 +77,11 @@ export function BottomPillBar() {
 
     return bestPrefixMatchIndex;
   }, [normalizedPathname, tabs]);
+  const pendingIndex = useMemo(
+    () => (pendingTabKey ? tabs.findIndex((item) => item.key === pendingTabKey) : -1),
+    [pendingTabKey, tabs]
+  );
+  const activeIndex = pendingIndex >= 0 ? pendingIndex : routeActiveIndex;
   // When no tab matches (for example a detail route outside this tab set),
   // keep the active index empty instead of forcing index 0.
   const selectedIndex = activeIndex >= 0 ? activeIndex : -1;
@@ -147,7 +153,18 @@ export function BottomPillBar() {
     transform: [{ translateX: indicatorX.value }],
   }));
 
-  function handleTabLayout(tabKey: string, x: number, width: number) {
+  useEffect(() => {
+    if (!pendingTabKey) {
+      return;
+    }
+
+    const activeRouteKey = routeActiveIndex >= 0 ? tabs[routeActiveIndex]?.key : null;
+    if (activeRouteKey === pendingTabKey) {
+      setPendingTabKey(null);
+    }
+  }, [pendingTabKey, routeActiveIndex, tabs]);
+
+  const handleTabLayout = useCallback((tabKey: string, x: number, width: number) => {
     setTabLayouts((current) => {
       const previous = current[tabKey];
       if (previous && previous.x === x && previous.width === width) {
@@ -159,20 +176,22 @@ export function BottomPillBar() {
         [tabKey]: { x, width },
       };
     });
-  }
+  }, []);
 
-  function handleTabPress(route: string) {
+  const handleTabPress = useCallback((tabKey: string, route: string) => {
     if (Platform.OS !== 'web') {
       Haptics.selectionAsync().catch(() => null);
     }
 
     const normalizedRoute = normalizeNavigationPath(route);
     if (normalizedPathname === normalizedRoute) {
+      setPendingTabKey(null);
       return;
     }
 
+    setPendingTabKey(tabKey);
     router.navigate(route as any);
-  }
+  }, [normalizedPathname]);
 
   return (
     <View
@@ -214,7 +233,7 @@ export function BottomPillBar() {
           return (
             <Pressable
               key={item.key}
-              onPress={() => handleTabPress(item.route)}
+              onPress={() => handleTabPress(item.key, item.route)}
               android_ripple={{ color: theme.colors.accentSoft, borderless: false }}
               onLayout={(event) => {
                 const { x, width } = event.nativeEvent.layout;
@@ -226,7 +245,7 @@ export function BottomPillBar() {
                 pressed ? styles.itemPressed : undefined,
               ]}
             >
-              <BottomTabItem
+              <MemoBottomTabItem
                 icon={item.icon}
                 label={item.label}
                 active={active}
@@ -240,7 +259,7 @@ export function BottomPillBar() {
   );
 }
 
-function BottomTabItem({
+const BottomTabItem = ({
   icon,
   label,
   active,
@@ -250,7 +269,7 @@ function BottomTabItem({
   label: string;
   active: boolean;
   styles: ReturnType<typeof createStyles>;
-}) {
+}) => {
   return (
     <View style={styles.itemContent}>
       <AppIcon
@@ -273,7 +292,16 @@ function BottomTabItem({
       </View>
     </View>
   );
-}
+};
+
+const MemoBottomTabItem = memo(
+  BottomTabItem,
+  (previous, next) =>
+    previous.icon === next.icon &&
+    previous.label === next.label &&
+    previous.active === next.active &&
+    previous.styles === next.styles
+);
 
 function createStyles(theme: ReturnType<typeof useThemeTokens>) {
   return StyleSheet.create({

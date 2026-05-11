@@ -1,4 +1,5 @@
 import { AppText } from '@/src/components/ui/AppText';
+import { getReadErrorCopy } from '@/src/config/backendStatus';
 import { ErrorState } from '@/src/components/ui/ErrorState';
 import { LoadingState } from '@/src/components/ui/LoadingState';
 import { useAuthStore } from '@/src/features/auth/auth.store';
@@ -8,12 +9,16 @@ import { useThemeTokens } from '@/src/theme';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useUserPurchases } from '@/src/features/downloads/downloads.hooks';
-import { formatLibraryPrice } from '@/src/features/downloads/downloads.types';
+import {
+  formatLibraryPrice,
+  getLibraryPurchaseStateCopy,
+} from '@/src/features/downloads/downloads.types';
 
 export function PurchasesScreen() {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
   const user = useAuthStore((state) => state.user);
+  const startupStatus = useAuthStore((state) => state.startupStatus);
   const purchasesQuery = useUserPurchases(user?.uid ?? null, 40);
 
   if (!user) {
@@ -45,11 +50,16 @@ export function PurchasesScreen() {
   }
 
   if (purchasesQuery.isError) {
+    const errorCopy = getReadErrorCopy(purchasesQuery.error, {
+      subject: 'Purchases',
+      startupStatus,
+    });
+
     return (
       <AppShell>
         <ErrorState
-          title="Couldn't load purchases"
-          message="Please check Firestore access and try again."
+          title={errorCopy.title}
+          message={errorCopy.message}
           onAction={() => purchasesQuery.refetch()}
         />
       </AppShell>
@@ -72,14 +82,14 @@ export function PurchasesScreen() {
         </AppText>
         <AppText variant="pageHeading">Purchase history</AppText>
         <AppText variant="bodySmall" tone="secondary">
-          Your most recent transactions and listing access state.
+          Transaction records appear here before protected delivery is fully enabled.
         </AppText>
 
         {purchases.length === 0 ? (
           <View style={styles.card}>
             <AppText variant="sectionHeading">No purchases yet</AppText>
             <AppText variant="bodySmall" tone="secondary" style={styles.copy}>
-              Once checkout is connected, completed purchases will show here automatically.
+              When purchase writes or free-claim writes land, they will show here automatically.
             </AppText>
             <Pressable style={styles.secondaryButton} onPress={() => router.push('/(tabs)/marketplace' as any)}>
               <AppText variant="button">Browse Explore</AppText>
@@ -87,51 +97,56 @@ export function PurchasesScreen() {
           </View>
         ) : (
           <View style={styles.list}>
-            {purchases.map((purchase) => (
-              <View key={purchase.id} style={styles.itemCard}>
-                <View style={styles.itemLeading}>
-                  <ListingArtwork coverUrl={purchase.coverUrl} label="Purchase" style={styles.artwork} />
-                  <View style={styles.itemMeta}>
-                    <AppText variant="title" numberOfLines={1}>
-                      {purchase.title}
+            {purchases.map((purchase) => {
+              const stateCopy = getLibraryPurchaseStateCopy(purchase, 'history');
+
+              return (
+                <View key={purchase.id} style={styles.itemCard}>
+                  <View style={styles.itemLeading}>
+                    <ListingArtwork
+                      coverUrl={purchase.coverUrl}
+                      label="Purchase"
+                      style={styles.artwork}
+                    />
+                    <View style={styles.itemMeta}>
+                      <AppText variant="title" numberOfLines={1}>
+                        {purchase.title}
+                      </AppText>
+                      <AppText variant="bodySmall" tone="secondary" numberOfLines={1}>
+                        {purchase.artist}
+                      </AppText>
+                      <AppText variant="caption" tone="muted">
+                        {formatDate(purchase.purchasedAt)} - {stateCopy.badge}
+                      </AppText>
+                      <AppText variant="caption" tone="secondary" style={styles.stateDetail}>
+                        {stateCopy.detail}
+                      </AppText>
+                    </View>
+                  </View>
+                  <View style={styles.itemActions}>
+                    <AppText variant="button" tone="accent">
+                      {formatLibraryPrice(purchase)}
                     </AppText>
-                    <AppText variant="bodySmall" tone="secondary" numberOfLines={1}>
-                      {purchase.artist}
-                    </AppText>
-                    <AppText variant="caption" tone="muted">
-                      {formatDate(purchase.purchasedAt)} - {formatStatus(purchase.status)}
-                    </AppText>
+                    <Pressable
+                      style={styles.inlineButton}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/listing/[id]',
+                          params: { id: purchase.listingId },
+                        } as any)
+                      }
+                    >
+                      <AppText variant="button">Open</AppText>
+                    </Pressable>
                   </View>
                 </View>
-                <View style={styles.itemActions}>
-                  <AppText variant="button" tone="accent">
-                    {formatLibraryPrice(purchase)}
-                  </AppText>
-                  <Pressable
-                    style={styles.inlineButton}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/listing/[id]',
-                        params: { id: purchase.listingId },
-                      } as any)
-                    }
-                  >
-                    <AppText variant="button">Open</AppText>
-                  </Pressable>
-                </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         )}
       </ScrollView>
     </AppShell>
   );
-}
-
-function formatStatus(status: 'available' | 'processing' | 'restricted') {
-  if (status === 'processing') return 'Processing';
-  if (status === 'restricted') return 'Restricted';
-  return 'Available';
 }
 
 function formatDate(value: string | null) {
@@ -203,11 +218,15 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       minWidth: 0,
       gap: theme.spacing.xs,
     },
+    stateDetail: {
+      lineHeight: 18,
+    },
     itemActions: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
       gap: theme.spacing.md,
+      flexWrap: 'wrap',
     },
     primaryButton: {
       minHeight: theme.layout.minTouchTarget,

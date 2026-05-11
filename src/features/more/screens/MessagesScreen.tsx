@@ -1,4 +1,5 @@
 import { AppText } from '@/src/components/ui/AppText';
+import { getStartupStatusCopy } from '@/src/config/backendStatus';
 import { useAuthStore } from '@/src/features/auth/auth.store';
 import { AppShell } from '@/src/features/navigation/components/AppShell';
 import { useThemeTokens } from '@/src/theme';
@@ -24,6 +25,9 @@ export function MessagesScreen() {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
   const user = useAuthStore((state) => state.user);
+  const startupStatus = useAuthStore((state) => state.startupStatus);
+  const startupMessage = useAuthStore((state) => state.startupMessage);
+  const startupCopy = getStartupStatusCopy(startupStatus, startupMessage);
 
   if (!user) {
     return (
@@ -34,6 +38,11 @@ export function MessagesScreen() {
             <AppText variant="bodySmall" tone="secondary" style={styles.copy}>
               Conversation history and thread state are account-linked.
             </AppText>
+            {startupCopy ? (
+              <AppText variant="caption" tone="secondary" style={styles.copy}>
+                {startupCopy.message}
+              </AppText>
+            ) : null}
             <Pressable style={styles.primaryButton} onPress={() => router.replace('/(auth)/login' as any)}>
               <AppText variant="button" style={styles.primaryButtonText}>
                 Go to login
@@ -61,6 +70,16 @@ export function MessagesScreen() {
         <AppText variant="bodySmall" tone="secondary">
           Thread navigation is now live. Real-time messaging will be connected in a later phase.
         </AppText>
+        {startupCopy ? (
+          <View style={styles.noticeCard}>
+            <AppText variant="caption" tone="accent">
+              Limited mode
+            </AppText>
+            <AppText variant="bodySmall" tone="secondary" style={styles.copy}>
+              {startupCopy.message}
+            </AppText>
+          </View>
+        ) : null}
 
         <View style={styles.list}>
           {placeholderThreads.map((thread) => (
@@ -116,6 +135,14 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     },
     copy: {
       lineHeight: 20,
+    },
+    noticeCard: {
+      borderRadius: theme.radius.xl,
+      backgroundColor: theme.colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: theme.colors.accentBorder,
+      padding: theme.spacing.md,
+      gap: theme.spacing.xs,
     },
     list: {
       gap: theme.spacing.sm,

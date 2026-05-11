@@ -1,6 +1,8 @@
 import { AppText } from '@/src/components/ui/AppText';
+import { getReadErrorCopy } from '@/src/config/backendStatus';
 import { ErrorState } from '@/src/components/ui/ErrorState';
 import { LoadingState } from '@/src/components/ui/LoadingState';
+import { useAuthStore } from '@/src/features/auth/auth.store';
 import { ListingArtwork } from '@/src/features/marketplace/components/ListingArtwork';
 import {
   useSellerListings,
@@ -92,6 +94,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
 export function ProfileScreen() {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
+  const startupStatus = useAuthStore((state) => state.startupStatus);
   const { id } = useLocalSearchParams<{ id: string }>();
   const sellerId = typeof id === 'string' ? id : null;
   const profileQuery = useSellerProfile(sellerId);
@@ -106,11 +109,16 @@ export function ProfileScreen() {
   }
 
   if (profileQuery.isError || listingsQuery.isError) {
+    const errorCopy = getReadErrorCopy(profileQuery.error ?? listingsQuery.error, {
+      subject: 'Seller profile',
+      startupStatus,
+    });
+
     return (
       <AppShell>
         <ErrorState
-          title="Couldn't load seller profile"
-          message="Please check Firestore access and try again."
+          title={errorCopy.title}
+          message={errorCopy.message}
           onAction={() => {
             profileQuery.refetch();
             listingsQuery.refetch();

@@ -22,14 +22,14 @@ export function MarketplaceHeader() {
       <AppText variant="pageHeading">Discover beats</AppText>
 
       <AppText variant="body" tone="secondary" style={styles.subtitle}>
-        Stream previews, collect free beats, and purchase premium sounds from
+        Discover public uploads, collect free beats, and review premium listings from
         Studio creators.
       </AppText>
 
       <View style={styles.searchBar}>
         <Search size={16} color={theme.colors.textMuted} />
         <AppText variant="bodySmall" tone="muted" numberOfLines={1}>
-          Search and genre filters coming soon
+          Search titles, genres, and price
         </AppText>
       </View>
     </View>

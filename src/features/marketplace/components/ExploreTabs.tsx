@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { AppText } from '@/src/components/ui/AppText';
 import { useThemeTokens } from '@/src/theme';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -27,8 +28,17 @@ export function ExploreTabs({ activeTab, onChangeTab }: ExploreTabsProps) {
         return (
           <Pressable
             key={tab.key}
-            style={styles.tab}
-            onPress={() => onChangeTab(tab.key)}
+            style={({ pressed }) => [
+              styles.tab,
+              active ? styles.activeTab : undefined,
+              pressed ? styles.tabPressed : undefined,
+            ]}
+            onPress={() => {
+              if (!active) {
+                onChangeTab(tab.key);
+              }
+            }}
+            disabled={active}
           >
             <AppText
               variant="title"
@@ -60,6 +70,16 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       alignItems: 'center',
       justifyContent: 'center',
       minHeight: 30,
+      minWidth: 88,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 2,
+      borderRadius: theme.radius.pill,
+    },
+    activeTab: {
+      backgroundColor: 'rgba(255,255,255,0.08)',
+    },
+    tabPressed: {
+      opacity: 0.9,
     },
     label: {
       color: theme.colors.textOnMediaMuted,
@@ -76,3 +96,5 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     },
   });
 }
+
+export const MemoExploreTabs = memo(ExploreTabs);

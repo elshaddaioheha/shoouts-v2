@@ -1,3 +1,14 @@
+import {
+  formatCommercePrice,
+  getCommerceStateCopy,
+  type CommerceAccessType,
+  type CommerceAvailabilityStatus,
+  type CommerceDeliveryStatus,
+  type CommerceEntitlementStatus,
+  type CommercePaymentStatus,
+  type CommerceSurface,
+} from '@/src/features/commerce/transaction.types';
+
 export type LibraryPurchase = {
   id: string;
   listingId: string;
@@ -7,21 +18,28 @@ export type LibraryPurchase = {
   currency: string;
   purchasedAt: string | null;
   coverUrl?: string | null;
-  accessType: 'free' | 'paid';
-  status: 'available' | 'processing' | 'restricted';
+  deliveryUrl?: string | null;
+  accessType: CommerceAccessType;
+  availabilityStatus: CommerceAvailabilityStatus;
+  paymentStatus: CommercePaymentStatus;
+  entitlementStatus: CommerceEntitlementStatus;
+  deliveryStatus: CommerceDeliveryStatus;
 };
 
 export function formatLibraryPrice(purchase: Pick<LibraryPurchase, 'price' | 'currency'>) {
-  if (purchase.price <= 0) {
-    return 'Free';
-  }
+  return formatCommercePrice(purchase);
+}
 
-  if (purchase.currency.toUpperCase() === 'NGN') {
-    return `NGN ${purchase.price.toLocaleString('en-NG', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
-  }
-
-  return `$${purchase.price.toFixed(2)}`;
+export function getLibraryPurchaseStateCopy(
+  purchase: Pick<
+    LibraryPurchase,
+    | 'accessType'
+    | 'availabilityStatus'
+    | 'paymentStatus'
+    | 'entitlementStatus'
+    | 'deliveryStatus'
+  >,
+  surface: CommerceSurface = 'library'
+) {
+  return getCommerceStateCopy(purchase, surface);
 }

@@ -1,4 +1,5 @@
 import {
+  canAccessExperience,
   canPreviewExperience,
   getDefaultExperience,
 } from '@/src/features/access/access.helpers';
@@ -28,7 +29,7 @@ export const useAccountStore = create<AccountState>((set) => ({
   setProfile: (profile) => {
     const role = profile?.role ?? 'shoouts';
     const requestedExperience = profile?.activeExperience ?? getDefaultExperience(role);
-    const activeExperience = canPreviewExperience(role, requestedExperience)
+    const activeExperience = canAccessExperience(role, requestedExperience)
       ? requestedExperience
       : getDefaultExperience(role);
 
@@ -41,16 +42,56 @@ export const useAccountStore = create<AccountState>((set) => ({
         : null,
       role,
       activeExperience,
+      previewExperience: null,
     });
   },
 
   setRole: (role) =>
-    set({
-      role,
-      activeExperience: getDefaultExperience(role),
+    set((state) => {
+      const currentExperience = state.activeExperience;
+      const nextExperience = canAccessExperience(role, currentExperience)
+        ? currentExperience
+        : getDefaultExperience(role);
+
+      return {
+        role,
+        activeExperience: nextExperience,
+        previewExperience:
+          state.previewExperience && canPreviewExperience(role, state.previewExperience)
+            ? state.previewExperience
+            : null,
+        profile: state.profile
+          ? {
+              ...state.profile,
+              role,
+              activeExperience: canAccessExperience(role, nextExperience)
+                ? nextExperience
+                : getDefaultExperience(role),
+              subscriptionTier: role,
+            }
+          : null,
+      };
     }),
 
-  setActiveExperience: (activeExperience) => set({ activeExperience }),
+  setActiveExperience: (activeExperience) =>
+    set((state) => {
+      const nextExperience = canAccessExperience(state.role, activeExperience)
+        ? activeExperience
+        : getDefaultExperience(state.role);
+
+      return {
+        activeExperience: nextExperience,
+        previewExperience: null,
+        profile: state.profile
+          ? {
+              ...state.profile,
+              activeExperience: canAccessExperience(state.role, nextExperience)
+                ? nextExperience
+                : getDefaultExperience(state.role),
+            }
+          : null,
+      };
+    }),
 
   setPreviewExperience: (previewExperience) => set({ previewExperience }),
 

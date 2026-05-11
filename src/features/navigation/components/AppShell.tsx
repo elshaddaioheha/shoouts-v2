@@ -1,6 +1,14 @@
 import { BottomPillBar } from './BottomPillBar';
 import { ExperienceSwitcher } from './ExperienceSwitcher';
 import { HeaderWithGradient } from './HeaderWithGradient';
+import { AppText } from '@/src/components/ui/AppText';
+import { getStartupStatusCopy } from '@/src/config/backendStatus';
+import {
+  canAccessExperience,
+  canPreviewExperience,
+} from '@/src/features/access/access.helpers';
+import { useAccountStore } from '@/src/features/account/account.store';
+import { useAuthStore } from '@/src/features/auth/auth.store';
 import { deriveExperienceFromPathname } from '@/src/features/navigation/navigation.helpers';
 import { useExperienceNavigationStore } from '@/src/features/navigation/navigation.store';
 import { layout, useThemeTokens } from '@/src/theme';
@@ -24,6 +32,7 @@ type AppShellProps = {
   showBottomBar?: boolean;
   reserveBottomBarSpace?: boolean;
   showBottomBarBackdrop?: boolean;
+  showStartupNotice?: boolean;
 };
 
 export function AppShell({
@@ -32,21 +41,46 @@ export function AppShell({
   showBottomBar = true,
   reserveBottomBarSpace = true,
   showBottomBarBackdrop = true,
+  showStartupNotice = true,
 }: AppShellProps) {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
   const routeExperience = deriveExperienceFromPathname(pathname);
+  const accountRole = useAccountStore((state) => state.role);
+  const accountExperience = useAccountStore((state) => state.activeExperience);
+  const setAccountExperience = useAccountStore((state) => state.setActiveExperience);
+  const setPreviewExperience = useAccountStore((state) => state.setPreviewExperience);
   const activeExperience = useExperienceNavigationStore((state) => state.activeExperience);
   const setActiveExperience = useExperienceNavigationStore((state) => state.setActiveExperience);
+  const startupStatus = useAuthStore((state) => state.startupStatus);
+  const startupMessage = useAuthStore((state) => state.startupMessage);
   const bottomBarThemeKey = `${theme.mode}:${routeExperience}`;
+  const startupCopy = getStartupStatusCopy(startupStatus, startupMessage);
 
   useEffect(() => {
     if (routeExperience !== activeExperience) {
       setActiveExperience(routeExperience);
     }
   }, [activeExperience, routeExperience, setActiveExperience]);
+
+  useEffect(() => {
+    if (routeExperience === accountExperience) {
+      setPreviewExperience(null);
+      return;
+    }
+
+    if (canAccessExperience(accountRole, routeExperience)) {
+      setAccountExperience(routeExperience);
+      setPreviewExperience(null);
+      return;
+    }
+
+    if (canPreviewExperience(accountRole, routeExperience)) {
+      setPreviewExperience(routeExperience);
+    }
+  }, [accountExperience, accountRole, routeExperience, setAccountExperience, setPreviewExperience]);
 
   return (
     <View style={styles.container}>
@@ -68,6 +102,16 @@ export function AppShell({
           },
         ]}
       >
+        {showStartupNotice && startupCopy ? (
+          <View style={styles.startupNotice}>
+            <AppText variant="caption" tone="accent">
+              {startupCopy.title}
+            </AppText>
+            <AppText variant="bodySmall" tone="secondary" style={styles.startupNoticeText}>
+              {startupCopy.message}
+            </AppText>
+          </View>
+        ) : null}
         {children}
       </View>
 
@@ -109,6 +153,20 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     },
     content: {
       flex: 1,
+    },
+    startupNotice: {
+      marginHorizontal: theme.spacing.lg,
+      marginTop: theme.spacing.lg,
+      marginBottom: theme.spacing.sm,
+      borderRadius: theme.radius.xl,
+      backgroundColor: theme.colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: theme.colors.accentBorder,
+      padding: theme.spacing.md,
+      gap: theme.spacing.xs,
+    },
+    startupNoticeText: {
+      lineHeight: 18,
     },
     bottomBarBackdrop: {
       position: 'absolute',

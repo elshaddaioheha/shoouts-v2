@@ -10,6 +10,16 @@ export type SellerVerificationStatus =
   | 'verified'
   | 'rejected';
 
+export type AccountDocumentState = 'missing' | 'partial' | 'ready';
+
+export type AccountDataHealth = {
+  profileSource: 'fallback' | 'firestore';
+  userDocState: AccountDocumentState;
+  subscriptionDocState: AccountDocumentState;
+  missingFields: string[];
+  notes: string[];
+};
+
 export type AccountProfile = {
   uid: string;
   email: string | null;
@@ -38,4 +48,6 @@ export type AccountProfile = {
     vaultStorageUsedBytes: number;
     vaultUploadCount: number;
   };
+
+  dataHealth: AccountDataHealth;
 };

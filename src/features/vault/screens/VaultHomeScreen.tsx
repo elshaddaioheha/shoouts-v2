@@ -1,234 +1,415 @@
-import { getVaultLimits } from '@/src/features/access/access.helpers';
-import { useAccountStore } from '@/src/features/account/account.store';
+import { AppText } from '@/src/components/ui/AppText';
+import { InterimFeatureSheet } from '@/src/components/ui/InterimFeatureSheet';
+import { MiniPlayerBar } from '@/src/features/player/components/MiniPlayerBar';
+import { usePlayerStore } from '@/src/features/player/player.store';
+import type { PlayerTrack } from '@/src/features/player/player.types';
 import { AppShell } from '@/src/features/navigation/components/AppShell';
-import { WorkspaceShellScreen } from '@/src/features/navigation/components/WorkspaceShellScreen';
-import { Alert } from 'react-native';
+import { useThemeTokens } from '@/src/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import {
+  Bell,
+  FolderPlus,
+  MoreHorizontal,
+  AudioWaveform,
+  Pause,
+  Play,
+  Plus,
+  Search,
+  User,
+} from 'lucide-react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-function comingSoon(feature: string) {
-  Alert.alert('Coming soon', `${feature} will be connected after shell stabilization.`);
-}
+const VAULT_PLACEHOLDER_TRACK: PlayerTrack = {
+  id: 'vault-placeholder-flourish-spirit',
+  title: 'Flourish Spirit divine',
+  artist: 'yunnowobe',
+  projectTitle: 'untitled project',
+  audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+  artworkGradient: ['#E65AD4', '#FFB7D6'],
+  surface: 'vault',
+};
+
+type VaultMode = 'home' | 'folders' | 'record' | 'shared' | 'more';
+
+const MODE_COPY: Record<VaultMode, { title: string; eyebrow: string }> = {
+  home: { title: '[untitled]', eyebrow: 'Vault' },
+  folders: { title: '[folders]', eyebrow: 'New folder' },
+  record: { title: '[audio]', eyebrow: 'Audio' },
+  shared: { title: '[shared]', eyebrow: 'Link access' },
+  more: { title: '[settings]', eyebrow: 'Workspace' },
+};
 
 export function VaultHomeScreen() {
-  const profile = useAccountStore((state) => state.profile);
-  const role = useAccountStore((state) => state.role);
-  const limits = getVaultLimits(role);
-  const storageUsed = profile?.usage.vaultStorageUsedBytes ?? 0;
-  const uploadCount = profile?.usage.vaultUploadCount ?? 0;
-
-  return (
-    <AppShell>
-      <WorkspaceShellScreen
-        experience="vault"
-        eyebrow="Vault"
-        title="Private workspace"
-        subtitle="Capture ideas, keep files private, and prepare projects before publishing."
-        metrics={[
-          {
-            label: 'Storage used',
-            value: formatBytes(storageUsed),
-            helper: `${limits.vaultStorageGb} GB included`,
-          },
-          {
-            label: 'Private uploads',
-            value: `${uploadCount}`,
-            helper: `${limits.vaultMaxUploads} file limit`,
-          },
-        ]}
-        cards={[
-          {
-            title: 'Upload Audio',
-            description: 'Add private files to your Vault workspace.',
-            icon: 'upload',
-            status: 'shell',
-            onPress: () => comingSoon('Vault upload'),
-          },
-          {
-            title: 'Record Draft',
-            description: 'Capture quick takes and voice notes for ideas.',
-            icon: 'record',
-            status: 'shell',
-            onPress: () => comingSoon('Vault recording'),
-          },
-          {
-            title: 'Private Playback',
-            description: 'Preview private tracks before sharing or publishing.',
-            icon: 'play',
-            status: 'shell',
-            onPress: () => comingSoon('Private playback'),
-          },
-        ]}
-        workflow={[
-          {
-            title: 'Organize private files',
-            description: 'Folders and empty states are ready for private-library navigation.',
-            status: 'ready',
-          },
-          {
-            title: 'Add upload and recording actions',
-            description: 'Native file and microphone flows stay intentionally deferred.',
-            status: 'next',
-          },
-          {
-            title: 'Publish from Vault',
-            description: 'Secure promotion from private files into Studio comes after entitlement work.',
-            status: 'later',
-          },
-        ]}
-        notice={{
-          title: 'Storage limits',
-          description:
-            'Vault usage tracks storage, and Vault Pro appears when capacity gets low.',
-        }}
-      />
-    </AppShell>
-  );
+  return <VaultMinimalScreen mode="home" />;
 }
 
 export function VaultFoldersScreen() {
-  return (
-    <AppShell>
-      <WorkspaceShellScreen
-        experience="vault"
-        eyebrow="Vault"
-        title="Folders"
-        subtitle="Organize demos, beats, sessions, and references by project."
-        cards={[
-          {
-            title: 'Create Folder',
-            description: 'Start a clean folder for a new project or campaign.',
-            icon: 'folders',
-            status: 'shell',
-            onPress: () => comingSoon('Folder creation'),
-          },
-          {
-            title: 'Move Files',
-            description: 'Group audio by stage: draft, revise, final.',
-            icon: 'vault',
-            status: 'shell',
-            onPress: () => comingSoon('File organization'),
-          },
-        ]}
-        notice={{
-          title: 'Empty by design',
-          description:
-            'Folders stay shell-only until private uploads are connected, so users never see fake projects.',
-        }}
-      />
-    </AppShell>
-  );
+  return <VaultMinimalScreen mode="folders" />;
 }
 
 export function VaultRecordScreen() {
-  return (
-    <AppShell>
-      <WorkspaceShellScreen
-        experience="vault"
-        eyebrow="Vault"
-        title="Record"
-        subtitle="Record voice ideas and rough takes directly into your workspace."
-        cards={[
-          {
-            title: 'Quick Voice Note',
-            description: 'Start a short idea recording and save to Vault.',
-            icon: 'record',
-            status: 'locked',
-            onPress: () => comingSoon('Quick voice note'),
-          },
-          {
-            title: 'Session Recording',
-            description: 'Capture longer sessions for later editing.',
-            icon: 'record',
-            status: 'locked',
-            onPress: () => comingSoon('Session recording'),
-          },
-        ]}
-        notice={{
-          title: 'Native recorder deferred',
-          description:
-            'Recording needs permissions, background behavior, and file persistence before it can be trusted.',
-        }}
-      />
-    </AppShell>
-  );
+  return <VaultMinimalScreen mode="record" />;
 }
 
 export function VaultSharedScreen() {
-  return (
-    <AppShell>
-      <WorkspaceShellScreen
-        experience="vault"
-        eyebrow="Vault"
-        title="Shared"
-        subtitle="Share selected private files with collaborators while staying in control."
-        cards={[
-          {
-            title: 'Invite Collaborator',
-            description: 'Share specific files or folders with selected people.',
-            icon: 'shared',
-            status: 'locked',
-            onPress: () => comingSoon('Collaborator invites'),
-          },
-          {
-            title: 'Permission Levels',
-            description: 'Control who can view, comment, or download.',
-            icon: 'settings',
-            status: 'locked',
-            onPress: () => comingSoon('Share permissions'),
-          },
-        ]}
-        notice={{
-          title: 'Security first',
-          description:
-            'Sharing stays gated until signed access links and permission rules are in place.',
-        }}
-      />
-    </AppShell>
-  );
+  return <VaultMinimalScreen mode="shared" />;
 }
 
 export function VaultMoreScreen() {
+  return <VaultMinimalScreen mode="more" />;
+}
+
+function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
+  const theme = useThemeTokens();
+  const insets = useSafeAreaInsets();
+  const styles = createStyles(theme, insets.top, insets.bottom);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
+  const track = usePlayerStore((state) => state.track);
+  const visible = usePlayerStore((state) => state.visible);
+  const snapshot = usePlayerStore((state) => state.snapshot);
+  const loadTrack = usePlayerStore((state) => state.loadTrack);
+  const togglePlayback = usePlayerStore((state) => state.togglePlayback);
+  const openFullPlayer = usePlayerStore((state) => state.openFullPlayer);
+  const isVaultTrackActive = visible && track?.id === VAULT_PLACEHOLDER_TRACK.id;
+  const isPlaying = isVaultTrackActive && snapshot.isPlaying;
+  const modeCopy = MODE_COPY[mode];
+
+  function handleToggleProjectPlayback() {
+    if (!isVaultTrackActive) {
+      loadTrack(VAULT_PLACEHOLDER_TRACK, { autoPlay: true });
+      return;
+    }
+
+    togglePlayback();
+  }
+
+  function handleOpenProject() {
+    if (!isVaultTrackActive) {
+      loadTrack(VAULT_PLACEHOLDER_TRACK, { autoPlay: false });
+    }
+    openFullPlayer();
+  }
+
+  function handleAction(action: 'audio' | 'project' | 'folder') {
+    setMenuOpen(false);
+
+    if (action === 'audio') {
+      router.push('/vault/record' as any);
+      return;
+    }
+
+    if (action === 'folder') {
+      router.push('/vault/folders' as any);
+      return;
+    }
+
+    router.push('/vault' as any);
+    setNotice({
+      title: 'Project creation is next',
+      message: 'The Vault project surface is ready. Real project writes will connect after private storage rules are in place.',
+    });
+  }
+
   return (
-    <AppShell>
-      <WorkspaceShellScreen
-        experience="vault"
-        eyebrow="Vault"
-        title="More"
-        subtitle="Workspace settings, storage details, and account tools."
-        cards={[
-          {
-            title: 'Storage Usage',
-            description: 'View current usage and Vault Pro upgrade path.',
-            icon: 'vault',
-            status: 'available',
-            onPress: () => comingSoon('Storage metrics'),
-          },
-          {
-            title: 'Notifications',
-            description: 'Manage workspace alerts and updates.',
-            icon: 'notifications',
-            status: 'shell',
-            onPress: () => comingSoon('Vault notifications'),
-          },
-          {
-            title: 'Settings',
-            description: 'Tune workspace preferences and defaults.',
-            icon: 'settings',
-            status: 'shell',
-            onPress: () => comingSoon('Vault settings'),
-          },
-        ]}
+    <AppShell
+      showSwitcher={false}
+      showBottomBar={false}
+      reserveBottomBarSpace={false}
+      showStartupNotice={false}
+    >
+      <View style={styles.screen}>
+        <View style={styles.header}>
+          <View>
+            <AppText variant="eyebrow" style={styles.headerEyebrow}>
+              {modeCopy.eyebrow}
+            </AppText>
+            <AppText variant="pageHeading" style={styles.headerTitle}>
+              {modeCopy.title}
+            </AppText>
+          </View>
+
+          <View style={styles.headerActions}>
+            <Pressable
+              style={styles.headerIconButton}
+              onPress={() =>
+                setNotice({
+                  title: 'Vault notifications',
+                  message: 'Vault alerts stay local until private file writes and collaborator events are connected.',
+                })
+              }
+            >
+              <Bell size={23} color="#FFFFFF" fill="#FFFFFF" />
+            </Pressable>
+            <Pressable
+              style={styles.headerIconButton}
+              onPress={() =>
+                setNotice({
+                  title: 'Vault search',
+                  message: 'Search will index private projects after Vault documents are stored in Firestore.',
+                })
+              }
+            >
+              <Search size={24} color="#FFFFFF" strokeWidth={2.6} />
+            </Pressable>
+            <Pressable style={styles.headerIconButton} onPress={() => router.push('/vault/more' as any)}>
+              <User size={24} color="#FFFFFF" fill="#FFFFFF" />
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={styles.projectWrap}>
+          <Pressable style={styles.projectCard} onPress={handleOpenProject}>
+            <LinearGradient
+              colors={VAULT_PLACEHOLDER_TRACK.artworkGradient ?? theme.experience.gradient}
+              style={styles.projectArtwork}
+            >
+              <Pressable style={styles.projectPlayButton} onPress={handleToggleProjectPlayback}>
+                {isPlaying ? (
+                  <Pause size={22} color="#FFFFFF" fill="#FFFFFF" />
+                ) : (
+                  <Play size={24} color="#FFFFFF" fill="#FFFFFF" />
+                )}
+              </Pressable>
+            </LinearGradient>
+
+            <View style={styles.projectCopy}>
+              <AppText variant="sectionHeading" style={styles.projectTitle} numberOfLines={1}>
+                untitled project
+              </AppText>
+              <View style={styles.projectMetaRow}>
+                <AppText variant="bodySmall" style={styles.projectArtist} numberOfLines={1}>
+                  yunnowobe
+                </AppText>
+                <MoreHorizontal size={22} color="rgba(255,255,255,0.48)" />
+              </View>
+            </View>
+          </Pressable>
+        </View>
+
+        <View style={styles.bottomDock} pointerEvents="box-none">
+          {menuOpen ? (
+            <View style={[styles.quickMenu, isVaultTrackActive ? styles.quickMenuRaised : undefined]}>
+              <QuickAction
+                label="Audio"
+                icon={<AudioWaveform size={23} color="#FFFFFF" strokeWidth={2.4} />}
+                onPress={() => handleAction('audio')}
+              />
+              <QuickAction
+                label="New project"
+                icon={<Plus size={23} color="#FFFFFF" strokeWidth={2.4} />}
+                onPress={() => handleAction('project')}
+              />
+              <QuickAction
+                label="New folder"
+                icon={<FolderPlus size={23} color="#FFFFFF" strokeWidth={2.4} />}
+                onPress={() => handleAction('folder')}
+              />
+            </View>
+          ) : null}
+
+          <View style={isVaultTrackActive ? styles.playerActionRow : styles.actionOnlyRow}>
+            {isVaultTrackActive ? <MiniPlayerBar variant="vault" style={styles.vaultMiniPlayer} /> : null}
+            <Pressable
+              style={styles.floatingPlus}
+              onPress={() => setMenuOpen((current) => !current)}
+            >
+              <Plus size={27} color="#FFFFFF" strokeWidth={2.6} />
+            </Pressable>
+          </View>
+        </View>
+      </View>
+
+      <InterimFeatureSheet
+        visible={Boolean(notice)}
+        title={notice?.title ?? ''}
+        message={notice?.message ?? ''}
+        onClose={() => setNotice(null)}
       />
     </AppShell>
   );
 }
 
-function formatBytes(bytes: number) {
-  if (bytes <= 0) return '0 MB';
+function QuickAction({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onPress: () => void;
+}) {
+  const theme = useThemeTokens();
+  const styles = createStyles(theme, 0, 0);
 
-  const megabytes = bytes / (1024 * 1024);
-  if (megabytes < 1024) {
-    return `${megabytes.toFixed(1)} MB`;
-  }
+  return (
+    <Pressable style={styles.quickAction} onPress={onPress}>
+      <View style={styles.quickIcon}>{icon}</View>
+      <AppText variant="bodySmall" style={styles.quickLabel}>
+        {label}
+      </AppText>
+    </Pressable>
+  );
+}
 
-  return `${(megabytes / 1024).toFixed(2)} GB`;
+function createStyles(
+  theme: ReturnType<typeof useThemeTokens>,
+  topInset: number,
+  bottomInset: number
+) {
+  return StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+      paddingTop: Math.max(topInset, theme.spacing.lg),
+      paddingHorizontal: theme.spacing.lg,
+      paddingBottom: Math.max(bottomInset, theme.spacing.lg),
+    },
+    header: {
+      minHeight: 54,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: theme.spacing.md,
+    },
+    headerEyebrow: {
+      color: 'rgba(255,255,255,0.48)',
+      marginBottom: 1,
+    },
+    headerTitle: {
+      color: '#FFFFFF',
+      fontSize: 25,
+      lineHeight: 30,
+      letterSpacing: 0,
+    },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+    },
+    headerIconButton: {
+      width: 34,
+      height: 38,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    projectWrap: {
+      flex: 1,
+      alignItems: 'center',
+      paddingTop: theme.spacing.xxl,
+    },
+    projectCard: {
+      width: 190,
+      alignItems: 'center',
+      gap: theme.spacing.md,
+    },
+    projectArtwork: {
+      width: 158,
+      height: 158,
+      borderRadius: 18,
+      position: 'relative',
+    },
+    projectPlayButton: {
+      position: 'absolute',
+      right: -5,
+      bottom: -5,
+      width: 50,
+      height: 50,
+      borderRadius: 14,
+      backgroundColor: '#4A4A4A',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.06)',
+    },
+    projectCopy: {
+      width: '100%',
+      gap: theme.spacing.xs,
+    },
+    projectTitle: {
+      color: '#FFFFFF',
+      fontSize: 19,
+      lineHeight: 24,
+      letterSpacing: 0,
+      textAlign: 'left',
+    },
+    projectMetaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: theme.spacing.sm,
+    },
+    projectArtist: {
+      color: 'rgba(255,255,255,0.48)',
+      fontSize: 16,
+      lineHeight: 20,
+      flex: 1,
+    },
+    bottomDock: {
+      position: 'absolute',
+      left: theme.spacing.md,
+      right: theme.spacing.md,
+      bottom: Math.max(bottomInset, theme.spacing.md),
+      alignItems: 'flex-end',
+    },
+    actionOnlyRow: {
+      width: '100%',
+      alignItems: 'flex-end',
+    },
+    playerActionRow: {
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    vaultMiniPlayer: {
+      flex: 1,
+    },
+    floatingPlus: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: '#303030',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.05)',
+      ...theme.shadows.md,
+    },
+    quickMenu: {
+      position: 'absolute',
+      right: theme.spacing.xs,
+      bottom: 76,
+      width: 184,
+      borderRadius: 22,
+      backgroundColor: '#505050',
+      paddingVertical: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.lg,
+      gap: theme.spacing.lg,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.05)',
+      ...theme.shadows.md,
+    },
+    quickMenuRaised: {
+      bottom: 84,
+    },
+    quickAction: {
+      minHeight: 30,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+    },
+    quickIcon: {
+      width: 28,
+      alignItems: 'center',
+    },
+    quickLabel: {
+      color: '#FFFFFF',
+      fontSize: 18,
+      lineHeight: 23,
+    },
+  });
 }
