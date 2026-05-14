@@ -3,13 +3,24 @@ import { getPlayerProgress, usePlayerStore } from '@/src/features/player/player.
 import { useThemeTokens } from '@/src/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pause, Play, Share2 } from 'lucide-react-native';
-import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { useEffect, useMemo, useRef } from 'react';
+import {
+  Animated,
+  PanResponder,
+  Pressable,
+  StyleProp,
+  StyleSheet,
+  View,
+  ViewStyle,
+} from 'react-native';
 import { WaveformMeter } from './WaveformMeter';
 
 type MiniPlayerBarProps = {
   variant?: 'global' | 'vault';
   style?: StyleProp<ViewStyle>;
 };
+
+const SWIPE_HIDE_DISTANCE = 72;
 
 export function MiniPlayerBar({ variant = 'global', style }: MiniPlayerBarProps) {
   const theme = useThemeTokens();
@@ -19,6 +30,54 @@ export function MiniPlayerBar({ variant = 'global', style }: MiniPlayerBarProps)
   const snapshot = usePlayerStore((state) => state.snapshot);
   const togglePlayback = usePlayerStore((state) => state.togglePlayback);
   const openFullPlayer = usePlayerStore((state) => state.openFullPlayer);
+  const stop = usePlayerStore((state) => state.stop);
+  const dragY = useRef(new Animated.Value(0)).current;
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gesture) =>
+          gesture.dy > 6 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
+        onPanResponderMove: (_, gesture) => {
+          dragY.setValue(Math.max(0, gesture.dy));
+        },
+        onPanResponderRelease: (_, gesture) => {
+          if (gesture.dy > SWIPE_HIDE_DISTANCE || gesture.vy > 1.1) {
+            Animated.timing(dragY, {
+              toValue: 90,
+              duration: 140,
+              useNativeDriver: true,
+            }).start(() => {
+              dragY.setValue(0);
+              stop();
+            });
+            return;
+          }
+
+          Animated.spring(dragY, {
+            toValue: 0,
+            speed: 24,
+            bounciness: 0,
+            useNativeDriver: true,
+          }).start();
+        },
+        onPanResponderTerminate: () => {
+          Animated.spring(dragY, {
+            toValue: 0,
+            speed: 24,
+            bounciness: 0,
+            useNativeDriver: true,
+          }).start();
+        },
+      }),
+    [dragY, stop]
+  );
+
+  useEffect(() => {
+    if (!visible) {
+      dragY.setValue(0);
+    }
+  }, [dragY, visible]);
 
   if (!visible || !track) {
     return null;
@@ -29,50 +88,55 @@ export function MiniPlayerBar({ variant = 'global', style }: MiniPlayerBarProps)
   const subtitle = track.projectTitle ?? track.artist;
 
   return (
-    <Pressable
-      style={({ pressed }) => [styles.container, pressed ? styles.containerPressed : undefined, style]}
-      onPress={openFullPlayer}
+    <Animated.View
+      style={{ transform: [{ translateY: dragY }] }}
+      {...panResponder.panHandlers}
     >
-      <LinearGradient
-        colors={track.artworkGradient ?? theme.experience.gradient}
-        style={styles.playButton}
+      <Pressable
+        style={({ pressed }) => [styles.container, pressed ? styles.containerPressed : undefined, style]}
+        onPress={openFullPlayer}
       >
+        <LinearGradient
+          colors={track.artworkGradient ?? theme.experience.gradient}
+          style={styles.playButton}
+        >
+          <Pressable
+            style={styles.playButtonPressable}
+            onPress={(event) => {
+              event.stopPropagation?.();
+              togglePlayback();
+            }}
+          >
+            <PlayerIcon
+              size={variant === 'vault' ? 18 : 20}
+              color={theme.colors.textOnMedia}
+              fill={theme.colors.textOnMedia}
+            />
+          </Pressable>
+        </LinearGradient>
+
+        <View style={styles.copy}>
+          <AppText variant="button" style={styles.title} numberOfLines={1}>
+            {track.title}
+          </AppText>
+          <AppText variant="caption" style={styles.subtitle} numberOfLines={1}>
+            {subtitle}
+          </AppText>
+        </View>
+
+        <WaveformMeter progress={progress} compact onMedia />
+
         <Pressable
-          style={styles.playButtonPressable}
+          style={styles.shareButton}
           onPress={(event) => {
             event.stopPropagation?.();
-            togglePlayback();
+            openFullPlayer();
           }}
         >
-          <PlayerIcon
-            size={variant === 'vault' ? 18 : 20}
-            color={theme.colors.textOnMedia}
-            fill={theme.colors.textOnMedia}
-          />
+          <Share2 size={18} color={theme.colors.textOnMedia} strokeWidth={2.6} />
         </Pressable>
-      </LinearGradient>
-
-      <View style={styles.copy}>
-        <AppText variant="button" style={styles.title} numberOfLines={1}>
-          {track.title}
-        </AppText>
-        <AppText variant="caption" style={styles.subtitle} numberOfLines={1}>
-          {subtitle}
-        </AppText>
-      </View>
-
-      <WaveformMeter progress={progress} compact onMedia />
-
-      <Pressable
-        style={styles.shareButton}
-        onPress={(event) => {
-          event.stopPropagation?.();
-          openFullPlayer();
-        }}
-      >
-        <Share2 size={18} color={theme.colors.textOnMedia} strokeWidth={2.6} />
       </Pressable>
-    </Pressable>
+    </Animated.View>
   );
 }
 

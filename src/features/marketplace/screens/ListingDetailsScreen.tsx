@@ -255,6 +255,7 @@ export function ListingDetailsScreen() {
         id: listingData.id,
         title: listingData.title,
         artist: listingData.artist,
+        sellerId: listingData.sellerId,
         projectTitle: listingData.genre ?? 'Marketplace preview',
         audioUrl: listingData.audioUrl,
         coverUrl: listingData.coverUrl,

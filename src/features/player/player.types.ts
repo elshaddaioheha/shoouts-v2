@@ -4,6 +4,7 @@ export type PlayerTrack = {
   id: string;
   title: string;
   artist: string;
+  sellerId?: string | null;
   projectTitle?: string | null;
   audioUrl: string | null;
   coverUrl?: string | null;

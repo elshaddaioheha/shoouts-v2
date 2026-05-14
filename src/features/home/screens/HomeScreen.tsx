@@ -95,6 +95,7 @@ export function HomeScreen() {
         id: track.id,
         title: track.title,
         artist: track.artist,
+        sellerId: track.sellerId,
         projectTitle: track.genre ?? 'Marketplace preview',
         audioUrl: track.audioUrl,
         coverUrl: track.coverUrl,
