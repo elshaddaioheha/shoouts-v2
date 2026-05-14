@@ -14,7 +14,7 @@ import { deriveExperienceFromPathname } from '@/src/features/navigation/navigati
 import { EXPERIENCE_NAVIGATION } from '@/src/features/navigation/navigation.config';
 import { useExperienceNavigationStore } from '@/src/features/navigation/navigation.store';
 import { layout, useThemeTokens } from '@/src/theme';
-import { usePathname } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { useState } from 'react';
 import {
   Image,
@@ -34,7 +34,7 @@ const experienceDescriptions: Record<AppExperience, string> = {
   hybrid: 'Vault and Studio combined.',
 };
 
-type ActiveSheet = 'workspace' | 'messages' | 'notifications' | null;
+type ActiveSheet = 'workspace' | null;
 
 export function ExperienceSwitcher() {
   const theme = useThemeTokens();
@@ -116,11 +116,11 @@ export function ExperienceSwitcher() {
           <View style={styles.headerActions}>
             <HeaderActionButton
               icon="messages"
-              onPress={() => setActiveSheet('messages')}
+              onPress={() => router.push('/messages' as any)}
             />
             <HeaderActionButton
               icon="notifications"
-              onPress={() => setActiveSheet('notifications')}
+              onPress={() => router.push('/settings/updates' as any)}
             />
           </View>
         </View>
@@ -189,34 +189,6 @@ export function ExperienceSwitcher() {
               </Pressable>
             );
           })}
-        </View>
-      </SheetModal>
-
-      <SheetModal
-        visible={activeSheet === 'messages'}
-        onClose={() => setActiveSheet(null)}
-        title="Messages"
-        description="Conversation tools will land here once the shared header is stable."
-      >
-        <View style={styles.placeholderCard}>
-          <AppText variant="title">Messages are coming next</AppText>
-          <AppText variant="bodySmall" tone="secondary" style={styles.placeholderText}>
-            This placeholder lets us test the shared header interaction without adding route noise yet.
-          </AppText>
-        </View>
-      </SheetModal>
-
-      <SheetModal
-        visible={activeSheet === 'notifications'}
-        onClose={() => setActiveSheet(null)}
-        title="Notifications"
-        description="Updates and alerts will land here once the header shell is locked."
-      >
-        <View style={styles.placeholderCard}>
-          <AppText variant="title">Notifications are coming next</AppText>
-          <AppText variant="bodySmall" tone="secondary" style={styles.placeholderText}>
-            We can wire this into updates and activity after the home migration.
-          </AppText>
         </View>
       </SheetModal>
     </>

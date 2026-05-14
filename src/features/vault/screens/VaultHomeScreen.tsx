@@ -1,3 +1,4 @@
+import { AppIcon } from '@/src/components/ui/AppIcon';
 import { AppText } from '@/src/components/ui/AppText';
 import { InterimFeatureSheet } from '@/src/components/ui/InterimFeatureSheet';
 import { MiniPlayerBar } from '@/src/features/player/components/MiniPlayerBar';
@@ -8,15 +9,12 @@ import { useThemeTokens } from '@/src/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import {
-  Bell,
   FolderPlus,
   MoreHorizontal,
   AudioWaveform,
   Pause,
   Play,
   Plus,
-  Search,
-  User,
 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -35,11 +33,11 @@ const VAULT_PLACEHOLDER_TRACK: PlayerTrack = {
 type VaultMode = 'home' | 'folders' | 'record' | 'shared' | 'more';
 
 const MODE_COPY: Record<VaultMode, { title: string; eyebrow: string }> = {
-  home: { title: '[untitled]', eyebrow: 'Vault' },
-  folders: { title: '[folders]', eyebrow: 'New folder' },
-  record: { title: '[audio]', eyebrow: 'Audio' },
-  shared: { title: '[shared]', eyebrow: 'Link access' },
-  more: { title: '[settings]', eyebrow: 'Workspace' },
+  home: { title: 'Projects', eyebrow: 'Vault' },
+  folders: { title: 'Folders', eyebrow: 'Vault' },
+  record: { title: 'Audio', eyebrow: 'Vault' },
+  shared: { title: 'Shared', eyebrow: 'Vault' },
+  more: { title: 'Settings', eyebrow: 'Vault' },
 };
 
 export function VaultHomeScreen() {
@@ -65,7 +63,7 @@ export function VaultMoreScreen() {
 function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
   const theme = useThemeTokens();
   const insets = useSafeAreaInsets();
-  const styles = createStyles(theme, insets.top, insets.bottom);
+  const styles = createStyles(theme, insets.bottom);
   const [menuOpen, setMenuOpen] = useState(false);
   const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
   const track = usePlayerStore((state) => state.track);
@@ -117,7 +115,6 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
 
   return (
     <AppShell
-      showSwitcher={false}
       showBottomBar={false}
       reserveBottomBarSpace={false}
       showStartupNotice={false}
@@ -138,26 +135,18 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
               style={styles.headerIconButton}
               onPress={() =>
                 setNotice({
-                  title: 'Vault notifications',
-                  message: 'Vault alerts stay local until private file writes and collaborator events are connected.',
-                })
-              }
-            >
-              <Bell size={23} color="#FFFFFF" fill="#FFFFFF" />
-            </Pressable>
-            <Pressable
-              style={styles.headerIconButton}
-              onPress={() =>
-                setNotice({
                   title: 'Vault search',
                   message: 'Search will index private projects after Vault documents are stored in Firestore.',
                 })
               }
             >
-              <Search size={24} color="#FFFFFF" strokeWidth={2.6} />
+              <AppIcon name="market" size="md" tone="secondary" stroke="bold" />
             </Pressable>
-            <Pressable style={styles.headerIconButton} onPress={() => router.push('/vault/more' as any)}>
-              <User size={24} color="#FFFFFF" fill="#FFFFFF" />
+            <Pressable
+              style={styles.headerIconButton}
+              onPress={() => router.push('/settings/profile?source=vault' as any)}
+            >
+              <AppIcon name="profile" size="md" tone="secondary" stroke="bold" />
             </Pressable>
           </View>
         </View>
@@ -185,7 +174,7 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
                 <AppText variant="bodySmall" style={styles.projectArtist} numberOfLines={1}>
                   yunnowobe
                 </AppText>
-                <MoreHorizontal size={22} color="rgba(255,255,255,0.48)" />
+                <MoreHorizontal size={22} color={theme.colors.textMuted} />
               </View>
             </View>
           </Pressable>
@@ -201,17 +190,17 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
             >
               <QuickAction
                 label="Audio"
-                icon={<AudioWaveform size={23} color="#FFFFFF" strokeWidth={2.4} />}
+                icon={<AudioWaveform size={23} color={theme.colors.textPrimary} strokeWidth={2.4} />}
                 onPress={() => handleAction('audio')}
               />
               <QuickAction
                 label="New project"
-                icon={<Plus size={23} color="#FFFFFF" strokeWidth={2.4} />}
+                icon={<Plus size={23} color={theme.colors.textPrimary} strokeWidth={2.4} />}
                 onPress={() => handleAction('project')}
               />
               <QuickAction
                 label="New folder"
-                icon={<FolderPlus size={23} color="#FFFFFF" strokeWidth={2.4} />}
+                icon={<FolderPlus size={23} color={theme.colors.textPrimary} strokeWidth={2.4} />}
                 onPress={() => handleAction('folder')}
               />
             </View>
@@ -223,7 +212,7 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
               style={styles.floatingPlus}
               onPress={() => setMenuOpen((current) => !current)}
             >
-              <Plus size={27} color="#FFFFFF" strokeWidth={2.6} />
+              <Plus size={27} color={theme.colors.textPrimary} strokeWidth={2.6} />
             </Pressable>
           </View>
         </View>
@@ -249,7 +238,7 @@ function QuickAction({
   onPress: () => void;
 }) {
   const theme = useThemeTokens();
-  const styles = createStyles(theme, 0, 0);
+  const styles = createStyles(theme, 0);
 
   return (
     <Pressable style={styles.quickAction} onPress={onPress}>
@@ -263,14 +252,13 @@ function QuickAction({
 
 function createStyles(
   theme: ReturnType<typeof useThemeTokens>,
-  topInset: number,
   bottomInset: number
 ) {
   return StyleSheet.create({
     screen: {
       flex: 1,
       backgroundColor: theme.colors.background,
-      paddingTop: Math.max(topInset, theme.spacing.lg),
+      paddingTop: theme.spacing.lg,
       paddingHorizontal: theme.spacing.lg,
       paddingBottom: Math.max(bottomInset, theme.spacing.lg),
     },
@@ -282,11 +270,11 @@ function createStyles(
       gap: theme.spacing.md,
     },
     headerEyebrow: {
-      color: 'rgba(255,255,255,0.48)',
+      color: theme.colors.textMuted,
       marginBottom: 1,
     },
     headerTitle: {
-      color: '#FFFFFF',
+      color: theme.colors.textPrimary,
       fontSize: 25,
       lineHeight: 30,
       letterSpacing: 0,
@@ -325,18 +313,18 @@ function createStyles(
       width: 50,
       height: 50,
       borderRadius: 14,
-      backgroundColor: '#4A4A4A',
+      backgroundColor: theme.colors.surfaceElevated,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.06)',
+      borderColor: theme.colors.borderStrong,
     },
     projectCopy: {
       width: '100%',
       gap: theme.spacing.xs,
     },
     projectTitle: {
-      color: '#FFFFFF',
+      color: theme.colors.textPrimary,
       fontSize: 19,
       lineHeight: 24,
       letterSpacing: 0,
@@ -349,7 +337,7 @@ function createStyles(
       gap: theme.spacing.sm,
     },
     projectArtist: {
-      color: 'rgba(255,255,255,0.48)',
+      color: theme.colors.textMuted,
       fontSize: 16,
       lineHeight: 20,
       flex: 1,
@@ -378,11 +366,11 @@ function createStyles(
       width: 64,
       height: 64,
       borderRadius: 32,
-      backgroundColor: '#303030',
+      backgroundColor: theme.colors.surfaceElevated,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.05)',
+      borderColor: theme.colors.borderStrong,
       ...theme.shadows.md,
     },
     quickMenu: {
@@ -391,12 +379,12 @@ function createStyles(
       bottom: 76,
       width: 184,
       borderRadius: 22,
-      backgroundColor: '#505050',
+      backgroundColor: theme.colors.surfaceElevated,
       paddingVertical: theme.spacing.lg,
       paddingHorizontal: theme.spacing.lg,
       gap: theme.spacing.lg,
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.05)',
+      borderColor: theme.colors.borderStrong,
       ...theme.shadows.md,
     },
     quickMenuRaised: {
@@ -417,7 +405,7 @@ function createStyles(
       alignItems: 'center',
     },
     quickLabel: {
-      color: '#FFFFFF',
+      color: theme.colors.textPrimary,
       fontSize: 18,
       lineHeight: 23,
     },

@@ -1,15 +1,20 @@
 import { AppText } from '@/src/components/ui/AppText';
 import { getStartupStatusCopy } from '@/src/config/backendStatus';
+import { getVaultLimits } from '@/src/features/access/access.helpers';
+import type { AppExperience } from '@/src/features/access/access.types';
 import { useAccountStore } from '@/src/features/account/account.store';
 import { useAuthStore } from '@/src/features/auth/auth.store';
 import { AppShell } from '@/src/features/navigation/components/AppShell';
+import { deriveExperienceFromPathname } from '@/src/features/navigation/navigation.helpers';
 import { useThemeTokens } from '@/src/theme';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams, usePathname } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 export function SettingsScreen() {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
+  const pathname = usePathname();
+  const { source } = useLocalSearchParams<{ source?: string }>();
   const user = useAuthStore((state) => state.user);
   const startupStatus = useAuthStore((state) => state.startupStatus);
   const startupMessage = useAuthStore((state) => state.startupMessage);
@@ -23,6 +28,17 @@ export function SettingsScreen() {
   const startupCopy = getStartupStatusCopy(startupStatus, startupMessage);
   const accountDocLabel = profile?.dataHealth.userDocState?.replace(/_/g, ' ').toUpperCase() ?? 'MISSING';
   const previewLabel = previewExperience ? previewExperience.replace(/_/g, ' ').toUpperCase() : 'NONE';
+  const routeExperience = deriveExperienceFromPathname(pathname);
+  const settingsExperience = normalizeExperience(source) ?? routeExperience;
+  const isVaultContext = settingsExperience === 'vault';
+  const vaultLimits = getVaultLimits(profile?.subscriptionTier ?? role);
+  const storageUsedBytes = profile?.usage.vaultStorageUsedBytes ?? 0;
+  const storageUsedGb = storageUsedBytes / (1024 * 1024 * 1024);
+  const storageLimitGb = vaultLimits.vaultStorageGb;
+  const title = isVaultContext ? 'Vault settings' : 'Account settings';
+  const subtitle = isVaultContext
+    ? 'Manage Vault subscription, storage limits, and account preferences.'
+    : 'Manage account, preferences, and app state.';
 
   return (
     <AppShell>
@@ -36,7 +52,10 @@ export function SettingsScreen() {
         <AppText variant="eyebrow" tone="accent">
           Settings
         </AppText>
-        <AppText variant="pageHeading">Account settings</AppText>
+        <AppText variant="pageHeading">{title}</AppText>
+        <AppText variant="bodySmall" tone="secondary">
+          {subtitle}
+        </AppText>
 
         <View style={styles.card}>
           <AppText variant="sectionHeading">Profile</AppText>
@@ -81,6 +100,24 @@ export function SettingsScreen() {
           ) : null}
         </View>
 
+        {isVaultContext ? (
+          <View style={styles.card}>
+            <AppText variant="sectionHeading">Vault limits</AppText>
+            <View style={styles.row}>
+              <AppText variant="bodySmall">Storage used</AppText>
+              <AppText variant="caption" tone="muted">
+                {storageUsedGb.toFixed(2)} GB / {storageLimitGb.toFixed(2)} GB
+              </AppText>
+            </View>
+            <View style={styles.row}>
+              <AppText variant="bodySmall">Upload slots</AppText>
+              <AppText variant="caption" tone="muted">
+                {profile?.usage.vaultUploadCount ?? 0} / {vaultLimits.vaultMaxUploads}
+              </AppText>
+            </View>
+          </View>
+        ) : null}
+
         <View style={styles.card}>
           <AppText variant="sectionHeading">Preferences</AppText>
           <View style={styles.row}>
@@ -92,15 +129,26 @@ export function SettingsScreen() {
           <View style={styles.row}>
             <AppText variant="bodySmall">Notifications</AppText>
             <AppText variant="caption" tone="muted">
-              Next phase
+              Enabled
             </AppText>
           </View>
         </View>
 
         <View style={styles.card}>
           <AppText variant="sectionHeading">Actions</AppText>
-          <Pressable style={styles.inlineButton} onPress={() => router.push('/settings/subscriptions' as any)}>
+          <Pressable
+            style={styles.inlineButton}
+            onPress={() =>
+              router.push(`/settings/subscriptions?experience=${settingsExperience}` as any)
+            }
+          >
             <AppText variant="button">Manage subscriptions</AppText>
+          </Pressable>
+          <Pressable style={styles.inlineButton} onPress={() => router.push('/settings/profile' as any)}>
+            <AppText variant="button">Account profile</AppText>
+          </Pressable>
+          <Pressable style={styles.inlineButton} onPress={() => router.push('/settings/updates' as any)}>
+            <AppText variant="button">Updates & notifications</AppText>
           </Pressable>
           <Pressable style={styles.inlineButton} onPress={() => router.push('/debug/signout' as any)}>
             <AppText variant="button" tone="danger">
@@ -161,4 +209,17 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       lineHeight: 18,
     },
   });
+}
+
+function normalizeExperience(value: unknown): AppExperience | null {
+  if (
+    value === 'shoouts' ||
+    value === 'vault' ||
+    value === 'studio' ||
+    value === 'hybrid'
+  ) {
+    return value;
+  }
+
+  return null;
 }

@@ -1,5 +1,4 @@
 import { AppText } from '@/src/components/ui/AppText';
-import { usePlayerStore } from '@/src/features/player/player.store';
 import { useThemeTokens } from '@/src/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -28,7 +27,6 @@ function ExploreFeedItem({ item, pageHeight }: ExploreFeedItemProps) {
   const theme = useThemeTokens();
   const styles = createStyles(theme, pageHeight);
   const mediaGradient = theme.experience.mediaGradient ?? theme.experience.gradient;
-  const loadTrack = usePlayerStore((state) => state.loadTrack);
 
   function handleOpenListing() {
     router.push({
@@ -42,21 +40,7 @@ function ExploreFeedItem({ item, pageHeight }: ExploreFeedItemProps) {
   }
 
   function handleArtworkPress() {
-    if (item.audioUrl) {
-      loadTrack({
-        id: item.listingId,
-        title: item.title,
-        artist: item.artist,
-        projectTitle: item.genre ?? 'Marketplace preview',
-        audioUrl: item.audioUrl,
-        coverUrl: item.coverUrl,
-        artworkGradient: mediaGradient,
-        surface: 'marketplace',
-      });
-      return;
-    }
-
-    Alert.alert('Preview unavailable', 'This listing does not have preview audio attached yet.');
+    handleOpenListing();
   }
 
   function handleMoreMetadata() {

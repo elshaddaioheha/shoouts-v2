@@ -53,10 +53,10 @@ function createStyles(
     bar: {
       width: compact ? 2 : 3,
       borderRadius: theme.radius.pill,
-      backgroundColor: onMedia ? 'rgba(255,255,255,0.24)' : 'rgba(255,255,255,0.18)',
+      backgroundColor: onMedia ? theme.colors.textOnMediaMuted : theme.colors.textMuted,
     },
     activeBar: {
-      backgroundColor: onMedia ? 'rgba(255,255,255,0.78)' : 'rgba(255,255,255,0.68)',
+      backgroundColor: onMedia ? theme.colors.textOnMedia : theme.colors.textSecondary,
     },
     cursorBar: {
       width: compact ? 3 : 4,

@@ -44,7 +44,11 @@ export function MiniPlayerBar({ variant = 'global', style }: MiniPlayerBarProps)
             togglePlayback();
           }}
         >
-          <PlayerIcon size={variant === 'vault' ? 18 : 20} color="#FFFFFF" fill="#FFFFFF" />
+          <PlayerIcon
+            size={variant === 'vault' ? 18 : 20}
+            color={theme.colors.textOnMedia}
+            fill={theme.colors.textOnMedia}
+          />
         </Pressable>
       </LinearGradient>
 
@@ -66,7 +70,7 @@ export function MiniPlayerBar({ variant = 'global', style }: MiniPlayerBarProps)
           openFullPlayer();
         }}
       >
-        <Share2 size={18} color="#FFFFFF" strokeWidth={2.6} />
+        <Share2 size={18} color={theme.colors.textOnMedia} strokeWidth={2.6} />
       </Pressable>
     </Pressable>
   );
@@ -79,9 +83,9 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>, variant: 'global
     container: {
       minHeight: compactVault ? 64 : 66,
       borderRadius: theme.radius.pill,
-      backgroundColor: compactVault ? 'rgba(63,63,63,0.96)' : 'rgba(47,47,47,0.96)',
+      backgroundColor: compactVault ? theme.colors.surfaceElevated : theme.colors.surfaceElevated,
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.06)',
+      borderColor: theme.colors.borderStrong,
       flexDirection: 'row',
       alignItems: 'center',
       gap: compactVault ? theme.spacing.sm : theme.spacing.md,
@@ -112,12 +116,12 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>, variant: 'global
       maxWidth: compactVault ? 118 : 154,
     },
     title: {
-      color: '#FFFFFF',
+      color: theme.colors.textPrimary,
       fontSize: compactVault ? 13 : 14,
       lineHeight: compactVault ? 16 : 18,
     },
     subtitle: {
-      color: 'rgba(255,255,255,0.66)',
+      color: theme.colors.textSecondary,
       fontSize: compactVault ? 11 : 12,
       lineHeight: compactVault ? 14 : 15,
     },

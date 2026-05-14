@@ -1,4 +1,7 @@
-import { deriveExperienceFromPathname } from '@/src/features/navigation/navigation.helpers';
+import {
+  deriveExperienceFromPathname,
+  normalizeNavigationPath,
+} from '@/src/features/navigation/navigation.helpers';
 import { layout, useThemeTokens } from '@/src/theme';
 import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
 import { usePathname } from 'expo-router';
@@ -13,18 +16,24 @@ export function GlobalPlayerHost() {
   const theme = useThemeTokens();
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
+  const normalizedPath = normalizeNavigationPath(pathname);
   const { width } = useWindowDimensions();
   const routeExperience = deriveExperienceFromPathname(pathname);
   const track = usePlayerStore((state) => state.track);
   const visible = usePlayerStore((state) => state.visible);
+  const fullPlayerOpen = usePlayerStore((state) => state.fullPlayerOpen);
   const requestedPlaying = usePlayerStore((state) => state.requestedPlaying);
   const setSnapshot = usePlayerStore((state) => state.setSnapshot);
   const requestPause = usePlayerStore((state) => state.requestPause);
+  const stop = usePlayerStore((state) => state.stop);
   const player = useAudioPlayer(track?.audioUrl ?? null, {
     updateInterval: 250,
   });
   const status = useAudioPlayerStatus(player);
-  const showGlobalMiniPlayer = visible && routeExperience !== 'vault';
+  const shouldSuppressPlayer =
+    normalizedPath === '/marketplace' || normalizedPath.startsWith('/settings');
+  const showGlobalMiniPlayer =
+    visible && routeExperience !== 'vault' && !shouldSuppressPlayer;
   const miniPlayerWidth = Math.min(390, Math.max(280, width - theme.spacing.xl * 2));
 
   useEffect(() => {
@@ -63,6 +72,16 @@ export function GlobalPlayerHost() {
     status.playing,
     track?.audioUrl,
   ]);
+
+  useEffect(() => {
+    if (!shouldSuppressPlayer) {
+      return;
+    }
+
+    if (visible || fullPlayerOpen) {
+      stop();
+    }
+  }, [fullPlayerOpen, shouldSuppressPlayer, stop, visible]);
 
   useEffect(() => {
     if (!track?.audioUrl) {
@@ -109,7 +128,7 @@ export function GlobalPlayerHost() {
         </View>
       ) : null}
 
-      <FullPlayerModal />
+      {shouldSuppressPlayer ? null : <FullPlayerModal />}
     </>
   );
 }
