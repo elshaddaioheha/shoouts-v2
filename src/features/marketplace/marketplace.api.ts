@@ -22,6 +22,34 @@ const UPLOADS_COLLECTION = 'uploads';
 const USERS_COLLECTION = 'users';
 const SELLERS_COLLECTION = 'sellers';
 
+type ListingMapDropReason = 'not_published';
+
+type ListingMapDiagnostics = {
+  usedFallbackTitle: boolean;
+  usedFallbackArtist: boolean;
+  usedFallbackSellerId: boolean;
+  missingArtwork: boolean;
+  missingAudio: boolean;
+};
+
+type ListingMapResult = {
+  listing: MarketplaceListing | null;
+  dropReason: ListingMapDropReason | null;
+  diagnostics: ListingMapDiagnostics;
+};
+
+type ListingReadStats = {
+  scope: string;
+  total: number;
+  mapped: number;
+  droppedNotPublished: number;
+  fallbackTitle: number;
+  fallbackArtist: number;
+  fallbackSellerId: number;
+  missingArtwork: number;
+  missingAudio: number;
+};
+
 export async function fetchMarketplaceListings(limitCount = 24): Promise<MarketplaceListing[]> {
   try {
     const listings = await fetchPublishedUploads(Math.max(limitCount * 4, limitCount));
@@ -41,11 +69,13 @@ export async function fetchMarketplaceListingById(
       const topLevelSnapshot = await getDoc(doc(db, UPLOADS_COLLECTION, listingId));
 
       if (topLevelSnapshot.exists()) {
-        const listing = mapListing(
+        const mapped = mapListingWithDiagnostics(
           topLevelSnapshot.id,
           topLevelSnapshot.data(),
           topLevelSnapshot.ref.path
         );
+        const listing = mapped.listing;
+        logListingReadStats(buildListingStats('fetchMarketplaceListingById.top-level', [mapped]));
 
         if (listing?.isPublished) {
           return listing;
@@ -69,7 +99,13 @@ export async function fetchMarketplaceListingById(
       );
 
       if (!nestedSnapshot.empty) {
-        const listing = mapListingFromSnapshot(nestedSnapshot.docs[0]);
+        const mapped = mapListingWithDiagnostics(
+          nestedSnapshot.docs[0].id,
+          nestedSnapshot.docs[0].data(),
+          nestedSnapshot.docs[0].ref.path
+        );
+        const listing = mapped.listing;
+        logListingReadStats(buildListingStats('fetchMarketplaceListingById.nested', [mapped]));
         if (listing?.isPublished) {
           return listing;
         }
@@ -122,10 +158,13 @@ export async function fetchSellerListings(
           limit(Math.max(limitCount * 2, limitCount))
         )
       );
-      const directListings = directSnapshot.docs
-        .map((document) => mapListing(document.id, document.data(), document.ref.path))
+      const directMapped = directSnapshot.docs.map((document) =>
+        mapListingWithDiagnostics(document.id, document.data(), document.ref.path)
+      );
+      logListingReadStats(buildListingStats('fetchSellerListings.direct', directMapped));
+      const directListings = directMapped
+        .map((result) => result.listing)
         .filter((listing): listing is MarketplaceListing => listing !== null)
-        .filter((listing) => listing.isPublished)
         .sort(compareListingsByDate);
 
       if (directListings.length > 0) {
@@ -151,10 +190,13 @@ export async function fetchSellerListings(
         );
 
         if (!snapshot.empty) {
-          return snapshot.docs
-            .map((document) => mapListing(document.id, document.data(), document.ref.path))
+          const mappedListings = snapshot.docs.map((document) =>
+            mapListingWithDiagnostics(document.id, document.data(), document.ref.path)
+          );
+          logListingReadStats(buildListingStats(`fetchSellerListings.${field}`, mappedListings));
+          return mappedListings
+            .map((result) => result.listing)
             .filter((listing): listing is MarketplaceListing => listing !== null)
-            .filter((listing) => listing.isPublished)
             .sort(compareListingsByDate)
             .slice(0, limitCount);
         }
@@ -191,18 +233,35 @@ async function fetchPublishedUploads(scanLimit: number): Promise<MarketplaceList
     orderBy('listenCount', 'desc'),
     limit(scanLimit)
   );
+  const createdQuery = query(
+    collectionGroup(db, UPLOADS_COLLECTION),
+    where('isPublic', '==', true),
+    orderBy('createdAt', 'desc'),
+    limit(scanLimit)
+  );
 
-  const [recentSnapshot, rankedSnapshot] = await Promise.allSettled([
+  const [recentSnapshot, rankedSnapshot, createdSnapshot] = await Promise.allSettled([
     getDocs(recentQuery),
     getDocs(rankedQuery),
+    getDocs(createdQuery),
   ]);
-  const docs = [
-    ...(recentSnapshot.status === 'fulfilled' ? recentSnapshot.value.docs : []),
-    ...(rankedSnapshot.status === 'fulfilled' ? rankedSnapshot.value.docs : []),
-  ];
+  const docs: QueryDocumentSnapshot<DocumentData>[] = [];
+  if (recentSnapshot.status === 'fulfilled') {
+    docs.push(...recentSnapshot.value.docs);
+  }
+  if (rankedSnapshot.status === 'fulfilled') {
+    docs.push(...rankedSnapshot.value.docs);
+  }
+  if (createdSnapshot.status === 'fulfilled') {
+    docs.push(...createdSnapshot.value.docs);
+  }
 
   if (docs.length > 0) {
-    return sortAndDedupeListings(docs.map(mapListingFromSnapshot));
+    const mapped = docs.map((document) =>
+      mapListingWithDiagnostics(document.id, document.data(), document.ref.path)
+    );
+    logListingReadStats(buildListingStats('fetchPublishedUploads.primary', mapped));
+    return sortAndDedupeListings(mapped.map((result) => result.listing));
   }
 
   const primaryError =
@@ -210,6 +269,8 @@ async function fetchPublishedUploads(scanLimit: number): Promise<MarketplaceList
       ? recentSnapshot.reason
       : rankedSnapshot.status === 'rejected'
         ? rankedSnapshot.reason
+        : createdSnapshot.status === 'rejected'
+          ? createdSnapshot.reason
         : null;
 
   if (isMissingIndexError(primaryError)) {
@@ -227,12 +288,11 @@ async function fetchPublishedUploads(scanLimit: number): Promise<MarketplaceList
       limit(scanLimit)
     )
   );
-
-  return sortAndDedupeListings(fallbackSnapshot.docs.map(mapListingFromSnapshot));
-}
-
-function mapListingFromSnapshot(document: QueryDocumentSnapshot<DocumentData>) {
-  return mapListing(document.id, document.data(), document.ref.path);
+  const fallbackMapped = fallbackSnapshot.docs.map((document) =>
+    mapListingWithDiagnostics(document.id, document.data(), document.ref.path)
+  );
+  logListingReadStats(buildListingStats('fetchPublishedUploads.fallback', fallbackMapped));
+  return sortAndDedupeListings(fallbackMapped.map((result) => result.listing));
 }
 
 function sortAndDedupeListings(listings: (MarketplaceListing | null)[]) {
@@ -250,6 +310,85 @@ function sortAndDedupeListings(listings: (MarketplaceListing | null)[]) {
     });
 
   return Array.from(merged.values());
+}
+
+function buildListingStats(scope: string, mapped: ListingMapResult[]): ListingReadStats {
+  return mapped.reduce<ListingReadStats>(
+    (stats, result) => {
+      stats.total += 1;
+
+      if (result.listing) {
+        stats.mapped += 1;
+      }
+
+      if (result.dropReason === 'not_published') {
+        stats.droppedNotPublished += 1;
+      }
+
+      if (result.diagnostics.usedFallbackTitle) {
+        stats.fallbackTitle += 1;
+      }
+
+      if (result.diagnostics.usedFallbackArtist) {
+        stats.fallbackArtist += 1;
+      }
+
+      if (result.diagnostics.usedFallbackSellerId) {
+        stats.fallbackSellerId += 1;
+      }
+
+      if (result.diagnostics.missingArtwork) {
+        stats.missingArtwork += 1;
+      }
+
+      if (result.diagnostics.missingAudio) {
+        stats.missingAudio += 1;
+      }
+
+      return stats;
+    },
+    {
+      scope,
+      total: 0,
+      mapped: 0,
+      droppedNotPublished: 0,
+      fallbackTitle: 0,
+      fallbackArtist: 0,
+      fallbackSellerId: 0,
+      missingArtwork: 0,
+      missingAudio: 0,
+    }
+  );
+}
+
+function logListingReadStats(stats: ListingReadStats) {
+  if (stats.total === 0) {
+    return;
+  }
+
+  const sparseWarning =
+    stats.missingArtwork > 0 ||
+    stats.missingAudio > 0 ||
+    stats.fallbackArtist > 0 ||
+    stats.fallbackTitle > 0 ||
+    stats.fallbackSellerId > 0;
+  const dropWarning = stats.droppedNotPublished > 0;
+
+  if (!sparseWarning && !dropWarning) {
+    return;
+  }
+
+  const summary = [
+    `mapped=${stats.mapped}/${stats.total}`,
+    `dropped_not_published=${stats.droppedNotPublished}`,
+    `fallback_title=${stats.fallbackTitle}`,
+    `fallback_artist=${stats.fallbackArtist}`,
+    `fallback_seller=${stats.fallbackSellerId}`,
+    `missing_artwork=${stats.missingArtwork}`,
+    `missing_audio=${stats.missingAudio}`,
+  ].join(', ');
+
+  console.warn(`[marketplace] ${stats.scope} diagnostics: ${summary}`);
 }
 
 function logFirestoreReadError(scope: string, error: unknown) {
@@ -277,11 +416,11 @@ function logFirestoreFallback(scope: string, error: unknown) {
   console.warn(`[marketplace] ${scope} fell back (${code}): ${message}`);
 }
 
-function mapListing(
+function mapListingWithDiagnostics(
   listingId: string,
   raw: Record<string, unknown>,
   documentPath?: string
-): MarketplaceListing | null {
+): ListingMapResult {
   const metadata = asRecord(raw.metadata);
   const details = asRecord(raw.details);
   const seller = asRecord(raw.seller);
@@ -299,7 +438,7 @@ function mapListing(
   const analytics = asRecord(raw.analytics);
   const stats = asRecord(raw.stats);
   const release = asRecord(raw.release);
-  const title =
+  const titleCandidate =
     pickString(
       raw.title,
       metadata.title,
@@ -309,8 +448,9 @@ function mapListing(
       metadata.name,
       raw.fileName,
       raw.originalName
-    ) ?? 'Untitled listing';
-  const sellerId =
+    );
+  const title = titleCandidate ?? 'Untitled listing';
+  const sellerIdCandidate =
     pickString(
       raw.uploaderId,
       raw.sellerId,
@@ -324,10 +464,24 @@ function mapListing(
       owner.id,
       owner.uid,
       createdBy.uid
-    ) ?? inferOwnerIdFromPath(documentPath);
+    );
+  const inferredSellerId = inferOwnerIdFromPath(documentPath);
+  const sellerId =
+    sellerIdCandidate ?? inferredSellerId ?? `unknown-seller:${listingId}`;
+  const usedFallbackSellerId = !sellerIdCandidate && !inferredSellerId;
 
-  if (!sellerId || !isPublishedListing(raw)) {
-    return null;
+  if (!isPublishedListing(raw)) {
+    return {
+      listing: null,
+      dropReason: 'not_published',
+      diagnostics: {
+        usedFallbackTitle: titleCandidate === null,
+        usedFallbackArtist: false,
+        usedFallbackSellerId,
+        missingArtwork: false,
+        missingAudio: false,
+      },
+    };
   }
 
   const price = resolveListingPrice(raw, pricing, monetization);
@@ -393,7 +547,7 @@ function mapListing(
     release.liveAt
   );
 
-  return {
+  const listing: MarketplaceListing = {
     id: listingId,
     sourcePath: documentPath,
     sellerId,
@@ -445,6 +599,18 @@ function mapListing(
     updatedAt: toIsoString(raw.updatedAt),
     publishedAtMs,
     createdAtMs,
+  };
+
+  return {
+    listing,
+    dropReason: null,
+    diagnostics: {
+      usedFallbackTitle: titleCandidate === null,
+      usedFallbackArtist: uploaderName === null,
+      usedFallbackSellerId,
+      missingArtwork: !artworkUrl,
+      missingAudio: !audioUrl,
+    },
   };
 }
 
@@ -574,7 +740,13 @@ function isMissingIndexError(error: unknown) {
 function isRecoverableFirestoreReadError(error: unknown) {
   return (
     error instanceof FirebaseError &&
-    ['failed-precondition', 'permission-denied', 'unavailable'].includes(error.code)
+    [
+      'failed-precondition',
+      'permission-denied',
+      'unavailable',
+      'deadline-exceeded',
+      'resource-exhausted',
+    ].includes(error.code)
   );
 }
 
@@ -698,7 +870,41 @@ function asNumber(value: unknown): number | null {
 
   if (typeof value === 'string') {
     const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+
+    const normalized = value.replace(/[^0-9.+-]/g, '');
+    const parsedNormalized = Number(normalized);
+    return Number.isFinite(parsedNormalized) ? parsedNormalized : null;
+  }
+
+  return null;
+}
+
+function normalizeUnixTimestamp(value: number) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  if (value > 0 && value < 10_000_000_000) {
+    return Math.round(value * 1000);
+  }
+
+  return Math.round(value);
+}
+
+function getFirestoreSeconds(value: unknown): number | null {
+  if (typeof value !== 'object' || value === null) {
+    return null;
+  }
+
+  if ('seconds' in value && typeof (value as { seconds?: unknown }).seconds === 'number') {
+    return (value as { seconds: number }).seconds;
+  }
+
+  if ('_seconds' in value && typeof (value as { _seconds?: unknown })._seconds === 'number') {
+    return (value as { _seconds: number })._seconds;
   }
 
   return null;
@@ -741,23 +947,24 @@ function getTimestampMs(value: unknown): number {
   }
 
   if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
+    return normalizeUnixTimestamp(value);
   }
 
   if (typeof value === 'string') {
     const parsedNumber = Number(value);
     if (Number.isFinite(parsedNumber)) {
-      return parsedNumber;
+      return normalizeUnixTimestamp(parsedNumber);
     }
 
     const parsedDate = Date.parse(value);
-    return Number.isFinite(parsedDate) ? parsedDate : 0;
+    return Number.isFinite(parsedDate) ? normalizeUnixTimestamp(parsedDate) : 0;
   }
 
   if (typeof value === 'object') {
     if ('toMillis' in value && typeof (value as { toMillis?: unknown }).toMillis === 'function') {
       try {
-        return Number((value as { toMillis: () => unknown }).toMillis()) || 0;
+        const millis = Number((value as { toMillis: () => unknown }).toMillis()) || 0;
+        return normalizeUnixTimestamp(millis);
       } catch {
         return 0;
       }
@@ -766,14 +973,15 @@ function getTimestampMs(value: unknown): number {
     if ('toDate' in value && typeof (value as { toDate?: unknown }).toDate === 'function') {
       try {
         const date = (value as { toDate: () => unknown }).toDate();
-        return date instanceof Date ? date.getTime() : 0;
+        return date instanceof Date ? normalizeUnixTimestamp(date.getTime()) : 0;
       } catch {
         return 0;
       }
     }
 
-    if ('_seconds' in value && typeof (value as { _seconds?: unknown })._seconds === 'number') {
-      return Number((value as { _seconds: number })._seconds) * 1000;
+    const seconds = getFirestoreSeconds(value);
+    if (seconds !== null) {
+      return normalizeUnixTimestamp(seconds);
     }
   }
 

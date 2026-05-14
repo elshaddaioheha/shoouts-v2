@@ -305,6 +305,14 @@ export function ListingDetailsScreen() {
   }
 
   function handleOpenArtist() {
+    if (!listingData.sellerId || listingData.sellerId.startsWith('unknown-seller:')) {
+      setFeatureNotice({
+        title: 'Seller profile unavailable',
+        message: 'This listing is public, but the seller profile id is missing in source metadata.',
+      });
+      return;
+    }
+
     router.push({
       pathname: '/profile/[id]',
       params: { id: listingData.sellerId },
