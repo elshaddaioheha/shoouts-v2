@@ -8,6 +8,7 @@ import {
   Animated,
   PanResponder,
   Pressable,
+  Share,
   StyleProp,
   StyleSheet,
   View,
@@ -128,9 +129,15 @@ export function MiniPlayerBar({ variant = 'global', style }: MiniPlayerBarProps)
 
         <Pressable
           style={styles.shareButton}
-          onPress={(event) => {
+          onPress={async (event) => {
             event.stopPropagation?.();
-            openFullPlayer();
+            try {
+              await Share.share({
+                message: `Check out "${track.title}" by ${track.artist}.`,
+              });
+            } catch {
+              // Ignore share-sheet failures silently to keep mini controls lightweight.
+            }
           }}
         >
           <Share2 size={18} color={theme.colors.textOnMedia} strokeWidth={2.6} />

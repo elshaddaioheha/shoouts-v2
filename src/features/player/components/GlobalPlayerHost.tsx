@@ -23,6 +23,9 @@ export function GlobalPlayerHost() {
   const visible = usePlayerStore((state) => state.visible);
   const fullPlayerOpen = usePlayerStore((state) => state.fullPlayerOpen);
   const requestedPlaying = usePlayerStore((state) => state.requestedPlaying);
+  const repeatMode = usePlayerStore((state) => state.repeatMode);
+  const controlCommand = usePlayerStore((state) => state.controlCommand);
+  const clearControlCommand = usePlayerStore((state) => state.clearControlCommand);
   const setSnapshot = usePlayerStore((state) => state.setSnapshot);
   const requestPause = usePlayerStore((state) => state.requestPause);
   const stop = usePlayerStore((state) => state.stop);
@@ -57,12 +60,26 @@ export function GlobalPlayerHost() {
     });
 
     if (status.didJustFinish) {
+      if (repeatMode === 'one' && track?.audioUrl) {
+        player
+          .seekTo(0)
+          .then(() => {
+            if (requestedPlaying) {
+              player.play();
+            }
+          })
+          .catch(() => null);
+        return;
+      }
+
       requestPause();
       player.seekTo(0).catch(() => null);
     }
   }, [
+    repeatMode,
     player,
     requestPause,
+    requestedPlaying,
     setSnapshot,
     status.currentTime,
     status.didJustFinish,
@@ -71,6 +88,46 @@ export function GlobalPlayerHost() {
     status.isLoaded,
     status.playing,
     track?.audioUrl,
+  ]);
+
+  useEffect(() => {
+    if (!controlCommand) {
+      return;
+    }
+    const command: NonNullable<typeof controlCommand> = controlCommand;
+
+    async function runControlCommand() {
+      try {
+        if (command.type === 'seek_to_start') {
+          await player.seekTo(0);
+          return;
+        }
+
+        const currentTime = status.currentTime ?? 0;
+        const duration = status.duration ?? 0;
+        const unclampedTarget = currentTime + command.seconds;
+        const target =
+          duration > 0
+            ? Math.min(Math.max(unclampedTarget, 0), duration)
+            : Math.max(unclampedTarget, 0);
+        await player.seekTo(target);
+      } catch (error) {
+        setSnapshot({
+          errorMessage: error instanceof Error ? error.message : 'Seek command failed.',
+        });
+      } finally {
+        clearControlCommand(command.id);
+      }
+    }
+
+    runControlCommand().catch(() => null);
+  }, [
+    clearControlCommand,
+    controlCommand,
+    player,
+    setSnapshot,
+    status.currentTime,
+    status.duration,
   ]);
 
   useEffect(() => {

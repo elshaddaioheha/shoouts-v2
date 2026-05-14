@@ -1,4 +1,5 @@
 export type PlayerSurface = 'marketplace' | 'vault';
+export type PlayerRepeatMode = 'off' | 'one';
 
 export type PlayerTrack = {
   id: string;
@@ -10,6 +11,12 @@ export type PlayerTrack = {
   coverUrl?: string | null;
   artworkGradient?: readonly [string, string];
   surface: PlayerSurface;
+};
+
+export type PlayerLoadOptions = {
+  autoPlay?: boolean;
+  queue?: PlayerTrack[];
+  startIndex?: number;
 };
 
 export type PlayerSnapshot = {

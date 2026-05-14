@@ -7,6 +7,7 @@ import { LoadingState } from '@/src/components/ui/LoadingState';
 import { useAuthStore } from '@/src/features/auth/auth.store';
 import { useCartStore } from '@/src/features/cart/cart.store';
 import { usePlayerStore } from '@/src/features/player/player.store';
+import type { PlayerTrack } from '@/src/features/player/player.types';
 import {
   useMarketplaceListings,
 } from '@/src/features/marketplace/marketplace.hooks';
@@ -91,6 +92,24 @@ export function HomeScreen() {
 
   function handlePlay(track: HomeTrack) {
     if (track.audioUrl) {
+      const playlist: PlayerTrack[] = tracks
+        .filter((item) => item.audioUrl)
+        .map((item) => ({
+          id: item.id,
+          title: item.title,
+          artist: item.artist,
+          sellerId: item.sellerId,
+          projectTitle: item.genre ?? 'Marketplace preview',
+          audioUrl: item.audioUrl ?? null,
+          coverUrl: item.coverUrl,
+          artworkGradient: theme.experience.mediaGradient ?? theme.experience.gradient,
+          surface: 'marketplace',
+        }));
+      const startIndex = Math.max(
+        0,
+        playlist.findIndex((item) => item.id === track.id)
+      );
+
       loadTrack({
         id: track.id,
         title: track.title,
@@ -101,6 +120,10 @@ export function HomeScreen() {
         coverUrl: track.coverUrl,
         artworkGradient: theme.experience.mediaGradient ?? theme.experience.gradient,
         surface: 'marketplace',
+      }, {
+        autoPlay: true,
+        queue: playlist,
+        startIndex,
       });
       return;
     }

@@ -2,6 +2,7 @@ import { AppIcon } from '@/src/components/ui/AppIcon';
 import { AppText } from '@/src/components/ui/AppText';
 import type { AppIconKey } from '@/src/components/ui/appIcons';
 import { InterimFeatureSheet } from '@/src/components/ui/InterimFeatureSheet';
+import { useMarketplaceListings } from '@/src/features/marketplace/marketplace.hooks';
 import {
   formatPlayerTime,
   getPlayerProgress,
@@ -11,7 +12,7 @@ import { useThemeTokens } from '@/src/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import {
-  ChevronLeft,
+  ChevronDown,
   Link2,
   MoreVertical,
   Pause,
@@ -57,8 +58,16 @@ export function FullPlayerModal() {
   const fullPlayerOpen = usePlayerStore((state) => state.fullPlayerOpen);
   const snapshot = usePlayerStore((state) => state.snapshot);
   const togglePlayback = usePlayerStore((state) => state.togglePlayback);
+  const queue = usePlayerStore((state) => state.queue);
+  const repeatMode = usePlayerStore((state) => state.repeatMode);
+  const toggleRepeatMode = usePlayerStore((state) => state.toggleRepeatMode);
+  const requestSeekToStart = usePlayerStore((state) => state.requestSeekToStart);
+  const playNextTrack = usePlayerStore((state) => state.playNextTrack);
+  const playPreviousTrack = usePlayerStore((state) => state.playPreviousTrack);
   const closeFullPlayer = usePlayerStore((state) => state.closeFullPlayer);
+  const listingsQuery = useMarketplaceListings(72);
   const dragY = useRef(new Animated.Value(0)).current;
+  const lastSkipBackPressAt = useRef(0);
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [notice, setNotice] = useState<PlayerNotice | null>(null);
 
@@ -111,15 +120,34 @@ export function FullPlayerModal() {
     }
   }, [dragY, fullPlayerOpen]);
 
+  const randomPool = useMemo(
+    () =>
+      (listingsQuery.data ?? [])
+        .filter((listing) => listing.audioUrl)
+        .map((listing) => ({
+          id: listing.id,
+          title: listing.title,
+          artist: listing.artist,
+          sellerId: listing.sellerId,
+          projectTitle: listing.genre ?? 'Marketplace preview',
+          audioUrl: listing.audioUrl ?? null,
+          coverUrl: listing.coverUrl,
+          artworkGradient: theme.experience.mediaGradient ?? theme.experience.gradient,
+          surface: 'marketplace' as const,
+        })),
+    [listingsQuery.data, theme.experience.gradient, theme.experience.mediaGradient]
+  );
+
   if (!track) {
     return null;
   }
+  const activeTrack = track;
 
   const progress = getPlayerProgress(snapshot);
   const PlayerIcon = snapshot.isPlaying ? Pause : Play;
-  const trackId = track.id;
-  const isMarketplaceTrack = track.surface === 'marketplace';
-  const sellerId = track.sellerId?.trim() || null;
+  const trackId = activeTrack.id;
+  const isMarketplaceTrack = activeTrack.surface === 'marketplace';
+  const sellerId = activeTrack.sellerId?.trim() || null;
   const secondaryTitleLeft = isMarketplaceTrack ? 'Save to library' : 'Notes';
   const secondaryTitleRight = isMarketplaceTrack ? 'Purchase' : 'Edit';
 
@@ -135,6 +163,54 @@ export function FullPlayerModal() {
             : 'This device cannot open the share sheet right now.',
       });
     }
+  }
+
+  function handleOpenTrackContext() {
+    closeFullPlayer();
+
+    if (isMarketplaceTrack) {
+      router.push({
+        pathname: '/listing/[id]',
+        params: { id: trackId },
+      } as any);
+      return;
+    }
+
+    router.push('/vault' as any);
+  }
+
+  function handleTransportShare() {
+    shareMessage(`Check out "${activeTrack.title}" by ${activeTrack.artist} on Shoouts.`);
+  }
+
+  function handleSkipBackPress() {
+    const now = Date.now();
+    const isDoublePress = now - lastSkipBackPressAt.current <= 360;
+    lastSkipBackPressAt.current = now;
+
+    if (isDoublePress) {
+      playPreviousTrack();
+      return;
+    }
+
+    requestSeekToStart();
+  }
+
+  function handleSkipForwardPress() {
+    if (queue.length > 1) {
+      playNextTrack();
+      return;
+    }
+
+    if (isMarketplaceTrack) {
+      playNextTrack(randomPool);
+      return;
+    }
+
+    setNotice({
+      title: 'No next track yet',
+      message: 'Add more tracks to a Vault playlist to enable next-track navigation.',
+    });
   }
 
   function handleSecondaryLeft() {
@@ -217,7 +293,7 @@ export function FullPlayerModal() {
           icon: 'share',
           onPress: () => {
             setOptionsOpen(false);
-            shareMessage(`Check out "${track.title}" by ${track.artist} on Shoouts.`);
+            shareMessage(`Check out "${activeTrack.title}" by ${activeTrack.artist} on Shoouts.`);
           },
         },
       ];
@@ -268,7 +344,7 @@ export function FullPlayerModal() {
         icon: 'share',
         onPress: () => {
           setOptionsOpen(false);
-          shareMessage(`Preview "${track.title}" by ${track.artist} from my Vault.`);
+          shareMessage(`Preview "${activeTrack.title}" by ${activeTrack.artist} from my Vault.`);
         },
       },
     ];
@@ -287,13 +363,13 @@ export function FullPlayerModal() {
 
             <View style={styles.topBar}>
               <Pressable style={styles.iconButton} onPress={closeFullPlayer}>
-                <ChevronLeft size={28} color={theme.colors.textSecondary} />
+                <ChevronDown size={28} color={theme.colors.textSecondary} />
               </Pressable>
 
               <View style={styles.topActions}>
                 <Pressable
                   style={styles.iconButton}
-                  onPress={() => shareMessage(`Check out "${track.title}" by ${track.artist}.`)}
+                  onPress={handleOpenTrackContext}
                 >
                   <Link2 size={22} color={theme.colors.textSecondary} />
                 </Pressable>
@@ -306,15 +382,15 @@ export function FullPlayerModal() {
             <View style={styles.card}>
               <View style={styles.heading}>
                 <AppText variant="pageHeading" style={styles.trackTitle} numberOfLines={2}>
-                  {track.title}
+                  {activeTrack.title}
                 </AppText>
                 <AppText variant="bodySmall" style={styles.trackSubtitle} numberOfLines={1}>
-                  {track.projectTitle ?? 'untitled project'} - {track.artist}
+                  {activeTrack.projectTitle ?? 'untitled project'} - {activeTrack.artist}
                 </AppText>
               </View>
 
               <LinearGradient
-                colors={track.artworkGradient ?? theme.experience.gradient}
+                colors={activeTrack.artworkGradient ?? theme.experience.gradient}
                 style={styles.artworkDisc}
               />
 
@@ -326,23 +402,29 @@ export function FullPlayerModal() {
                 {formatPlayerTime(snapshot.currentTime)} / {formatPlayerTime(snapshot.duration || 139)}
               </AppText>
 
-              <View style={styles.controls}>
-                <Pressable style={styles.controlButton}>
-                  <Share2 size={24} color={theme.colors.textOnMedia} strokeWidth={2.4} />
-                </Pressable>
-                <Pressable style={styles.controlButton}>
-                  <SkipBack size={30} color={theme.colors.textOnMedia} fill={theme.colors.textOnMedia} />
-                </Pressable>
-                <Pressable style={styles.mainControlButton} onPress={togglePlayback}>
-                  <PlayerIcon size={44} color={theme.colors.textOnMedia} fill={theme.colors.textOnMedia} />
-                </Pressable>
-                <Pressable style={styles.controlButton}>
-                  <SkipForward size={30} color={theme.colors.textOnMedia} fill={theme.colors.textOnMedia} />
-                </Pressable>
-                <Pressable style={styles.controlButton}>
-                  <Repeat2 size={25} color={theme.colors.textOnMedia} strokeWidth={2.4} />
-                </Pressable>
-              </View>
+            <View style={styles.controls}>
+              <Pressable style={styles.controlButton} onPress={handleTransportShare}>
+                <Share2 size={24} color={theme.colors.textOnMedia} strokeWidth={2.4} />
+              </Pressable>
+              <Pressable style={styles.controlButton} onPress={handleSkipBackPress}>
+                <SkipBack size={30} color={theme.colors.textOnMedia} fill={theme.colors.textOnMedia} />
+              </Pressable>
+              <Pressable style={styles.mainControlButton} onPress={togglePlayback}>
+                <PlayerIcon size={44} color={theme.colors.textOnMedia} fill={theme.colors.textOnMedia} />
+              </Pressable>
+              <Pressable style={styles.controlButton} onPress={handleSkipForwardPress}>
+                <SkipForward size={30} color={theme.colors.textOnMedia} fill={theme.colors.textOnMedia} />
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.controlButton,
+                  repeatMode === 'one' ? styles.controlButtonActive : undefined,
+                ]}
+                onPress={toggleRepeatMode}
+              >
+                <Repeat2 size={25} color={theme.colors.textOnMedia} strokeWidth={2.4} />
+              </Pressable>
+            </View>
             </View>
 
             <View style={styles.secondaryActions}>
@@ -523,6 +605,12 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>, topInset: number
       height: 48,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    controlButtonActive: {
+      borderRadius: theme.radius.pill,
+      backgroundColor: theme.colors.accentSoft,
+      borderWidth: 1,
+      borderColor: theme.colors.accentBorder,
     },
     mainControlButton: {
       width: 64,

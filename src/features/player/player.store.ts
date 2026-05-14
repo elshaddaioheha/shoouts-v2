@@ -1,5 +1,14 @@
 import { create } from 'zustand';
-import type { PlayerSnapshot, PlayerTrack } from './player.types';
+import type {
+  PlayerLoadOptions,
+  PlayerRepeatMode,
+  PlayerSnapshot,
+  PlayerTrack,
+} from './player.types';
+
+type PlayerControlCommand =
+  | { id: number; type: 'seek_to_start' }
+  | { id: number; type: 'seek_by'; seconds: number };
 
 type PlayerState = {
   track: PlayerTrack | null;
@@ -7,7 +16,13 @@ type PlayerState = {
   requestedPlaying: boolean;
   fullPlayerOpen: boolean;
   snapshot: PlayerSnapshot;
-  loadTrack: (track: PlayerTrack, options?: { autoPlay?: boolean }) => void;
+  queue: PlayerTrack[];
+  queueIndex: number;
+  history: PlayerTrack[];
+  repeatMode: PlayerRepeatMode;
+  controlCommand: PlayerControlCommand | null;
+  commandCounter: number;
+  loadTrack: (track: PlayerTrack, options?: PlayerLoadOptions) => void;
   togglePlayback: () => void;
   requestPlay: () => void;
   requestPause: () => void;
@@ -15,6 +30,12 @@ type PlayerState = {
   closeFullPlayer: () => void;
   setSnapshot: (snapshot: Partial<PlayerSnapshot>) => void;
   clearError: () => void;
+  toggleRepeatMode: () => void;
+  requestSeekToStart: () => void;
+  requestSeekBy: (seconds: number) => void;
+  clearControlCommand: (id: number) => void;
+  playNextTrack: (randomPool?: PlayerTrack[]) => void;
+  playPreviousTrack: () => void;
   stop: () => void;
 };
 
@@ -27,18 +48,89 @@ const defaultSnapshot: PlayerSnapshot = {
   errorMessage: null,
 };
 
+const MAX_HISTORY = 30;
+
+function isPlayableTrack(track: PlayerTrack | null | undefined): track is PlayerTrack {
+  return Boolean(track?.audioUrl);
+}
+
+function dedupeQueue(tracks: PlayerTrack[]) {
+  const map = new Map<string, PlayerTrack>();
+  tracks.forEach((track) => {
+    map.set(`${track.id}:${track.audioUrl ?? ''}`, track);
+  });
+  return Array.from(map.values());
+}
+
+function resolveQueue(optionsQueue: PlayerTrack[] | undefined, track: PlayerTrack) {
+  const baseQueue = optionsQueue && optionsQueue.length > 0 ? optionsQueue : [track];
+  const deduped = dedupeQueue(baseQueue);
+  return deduped.length > 0 ? deduped : [track];
+}
+
+function resolveQueueIndex(queue: PlayerTrack[], track: PlayerTrack, startIndex?: number) {
+  if (
+    typeof startIndex === 'number' &&
+    Number.isInteger(startIndex) &&
+    startIndex >= 0 &&
+    startIndex < queue.length
+  ) {
+    return startIndex;
+  }
+
+  const located = queue.findIndex((item) => item.id === track.id);
+  return located >= 0 ? located : 0;
+}
+
+function findNextPlayableIndex(queue: PlayerTrack[], currentIndex: number, direction: 1 | -1) {
+  if (queue.length <= 1) {
+    return currentIndex;
+  }
+
+  for (let step = 1; step <= queue.length; step += 1) {
+    const next = (currentIndex + direction * step + queue.length) % queue.length;
+    if (isPlayableTrack(queue[next])) {
+      return next;
+    }
+  }
+
+  return currentIndex;
+}
+
+function pushHistory(history: PlayerTrack[], track: PlayerTrack | null) {
+  if (!track) {
+    return history;
+  }
+
+  return [track, ...history].slice(0, MAX_HISTORY);
+}
+
 export const usePlayerStore = create<PlayerState>((set, get) => ({
   track: null,
   visible: false,
   requestedPlaying: false,
   fullPlayerOpen: false,
   snapshot: defaultSnapshot,
+  queue: [],
+  queueIndex: 0,
+  history: [],
+  repeatMode: 'off',
+  controlCommand: null,
+  commandCounter: 0,
 
   loadTrack: (track, options) =>
     set((state) => {
-      const sameTrack = state.track?.id === track.id && state.track?.audioUrl === track.audioUrl;
+      const queue = resolveQueue(options?.queue, track);
+      const queueIndex = resolveQueueIndex(queue, track, options?.startIndex);
+      const nextTrack = queue[queueIndex] ?? track;
+      const sameTrack =
+        state.track?.id === nextTrack.id && state.track?.audioUrl === nextTrack.audioUrl;
+
       return {
-        track,
+        track: nextTrack,
+        queue,
+        queueIndex,
+        history: [],
         visible: true,
         requestedPlaying: options?.autoPlay ?? true,
         snapshot: sameTrack ? state.snapshot : defaultSnapshot,
@@ -74,12 +166,122 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       },
     })),
 
+  toggleRepeatMode: () =>
+    set((state) => ({
+      repeatMode: state.repeatMode === 'off' ? 'one' : 'off',
+    })),
+
+  requestSeekToStart: () =>
+    set((state) => ({
+      commandCounter: state.commandCounter + 1,
+      controlCommand: {
+        id: state.commandCounter + 1,
+        type: 'seek_to_start',
+      },
+    })),
+
+  requestSeekBy: (seconds) =>
+    set((state) => ({
+      commandCounter: state.commandCounter + 1,
+      controlCommand: {
+        id: state.commandCounter + 1,
+        type: 'seek_by',
+        seconds,
+      },
+    })),
+
+  clearControlCommand: (id) =>
+    set((state) => {
+      if (!state.controlCommand || state.controlCommand.id !== id) {
+        return state;
+      }
+
+      return { controlCommand: null };
+    }),
+
+  playNextTrack: (randomPool) =>
+    set((state) => {
+      const currentTrack = state.track;
+      if (!currentTrack) {
+        return state;
+      }
+
+      if (state.queue.length > 1) {
+        const nextIndex = findNextPlayableIndex(state.queue, state.queueIndex, 1);
+        if (nextIndex === state.queueIndex) {
+          return state;
+        }
+
+        return {
+          track: state.queue[nextIndex],
+          queueIndex: nextIndex,
+          history: pushHistory(state.history, currentTrack),
+          visible: true,
+          requestedPlaying: true,
+          snapshot: defaultSnapshot,
+        };
+      }
+
+      const pool = dedupeQueue((randomPool ?? []).filter(isPlayableTrack));
+      const candidates = pool.filter((item) => item.id !== currentTrack.id);
+      if (candidates.length === 0) {
+        return state;
+      }
+
+      const selected = candidates[Math.floor(Math.random() * candidates.length)];
+      return {
+        track: selected,
+        queue: [selected],
+        queueIndex: 0,
+        history: pushHistory(state.history, currentTrack),
+        visible: true,
+        requestedPlaying: true,
+        snapshot: defaultSnapshot,
+      };
+    }),
+
+  playPreviousTrack: () =>
+    set((state) => {
+      if (state.queue.length > 1) {
+        const previousIndex = findNextPlayableIndex(state.queue, state.queueIndex, -1);
+        if (previousIndex !== state.queueIndex) {
+          return {
+            track: state.queue[previousIndex],
+            queueIndex: previousIndex,
+            visible: true,
+            requestedPlaying: true,
+            snapshot: defaultSnapshot,
+          };
+        }
+      }
+
+      if (state.history.length === 0) {
+        return state;
+      }
+
+      const [previousTrack, ...remainingHistory] = state.history;
+      return {
+        track: previousTrack,
+        queue: [previousTrack],
+        queueIndex: 0,
+        history: remainingHistory,
+        visible: true,
+        requestedPlaying: true,
+        snapshot: defaultSnapshot,
+      };
+    }),
+
   stop: () =>
     set({
+      track: null,
+      queue: [],
+      queueIndex: 0,
+      history: [],
       requestedPlaying: false,
       visible: false,
       fullPlayerOpen: false,
       snapshot: defaultSnapshot,
+      controlCommand: null,
     }),
 }));
 
