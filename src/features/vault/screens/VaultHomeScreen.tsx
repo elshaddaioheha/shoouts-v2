@@ -74,12 +74,13 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
   const loadTrack = usePlayerStore((state) => state.loadTrack);
   const togglePlayback = usePlayerStore((state) => state.togglePlayback);
   const openFullPlayer = usePlayerStore((state) => state.openFullPlayer);
-  const isVaultTrackActive = visible && track?.id === VAULT_PLACEHOLDER_TRACK.id;
-  const isPlaying = isVaultTrackActive && snapshot.isPlaying;
+  const hasMiniPlayer = visible;
+  const isPlaceholderTrackActive = visible && track?.id === VAULT_PLACEHOLDER_TRACK.id;
+  const isPlaying = isPlaceholderTrackActive && snapshot.isPlaying;
   const modeCopy = MODE_COPY[mode];
 
   function handleToggleProjectPlayback() {
-    if (!isVaultTrackActive) {
+    if (!isPlaceholderTrackActive) {
       loadTrack(VAULT_PLACEHOLDER_TRACK, { autoPlay: true });
       return;
     }
@@ -88,7 +89,7 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
   }
 
   function handleOpenProject() {
-    if (!isVaultTrackActive) {
+    if (!isPlaceholderTrackActive) {
       loadTrack(VAULT_PLACEHOLDER_TRACK, { autoPlay: false });
     }
     openFullPlayer();
@@ -192,7 +193,12 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
 
         <View style={styles.bottomDock} pointerEvents="box-none">
           {menuOpen ? (
-            <View style={[styles.quickMenu, isVaultTrackActive ? styles.quickMenuRaised : undefined]}>
+            <View
+              style={[
+                styles.quickMenu,
+                hasMiniPlayer ? styles.quickMenuRaised : styles.quickMenuCentered,
+              ]}
+            >
               <QuickAction
                 label="Audio"
                 icon={<AudioWaveform size={23} color="#FFFFFF" strokeWidth={2.4} />}
@@ -211,8 +217,8 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
             </View>
           ) : null}
 
-          <View style={isVaultTrackActive ? styles.playerActionRow : styles.actionOnlyRow}>
-            {isVaultTrackActive ? <MiniPlayerBar variant="vault" style={styles.vaultMiniPlayer} /> : null}
+          <View style={hasMiniPlayer ? styles.playerActionRow : styles.actionOnlyRow}>
+            {hasMiniPlayer ? <MiniPlayerBar variant="vault" style={styles.vaultMiniPlayer} /> : null}
             <Pressable
               style={styles.floatingPlus}
               onPress={() => setMenuOpen((current) => !current)}
@@ -357,7 +363,7 @@ function createStyles(
     },
     actionOnlyRow: {
       width: '100%',
-      alignItems: 'flex-end',
+      alignItems: 'center',
     },
     playerActionRow: {
       width: '100%',
@@ -395,6 +401,10 @@ function createStyles(
     },
     quickMenuRaised: {
       bottom: 84,
+    },
+    quickMenuCentered: {
+      right: undefined,
+      alignSelf: 'center',
     },
     quickAction: {
       minHeight: 30,
