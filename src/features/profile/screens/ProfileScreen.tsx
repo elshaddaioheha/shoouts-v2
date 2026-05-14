@@ -234,7 +234,7 @@ export function ProfileScreen() {
                 <View style={styles.listingLeading}>
                   <ListingArtwork
                     coverUrl={listing.coverUrl}
-                    label={listing.genre ?? 'Beat'}
+                    label={listing.genre ?? 'Track'}
                     style={styles.listingArt}
                   />
 

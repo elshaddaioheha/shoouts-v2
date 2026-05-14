@@ -45,8 +45,8 @@ function ExploreFeedItem({ item, pageHeight }: ExploreFeedItemProps) {
 
   function handleMoreMetadata() {
     Alert.alert(
-      'Beat details',
-      `${item.genre ?? 'Beat'} - ${item.bpm ?? 'N/A'} BPM - ${item.key ?? 'N/A'}`
+      'Track details',
+      `${item.genre ?? 'Track'} - ${item.bpm ?? 'N/A'} BPM - ${item.key ?? 'N/A'}`
     );
   }
 
@@ -61,14 +61,14 @@ function ExploreFeedItem({ item, pageHeight }: ExploreFeedItemProps) {
           <Pressable style={styles.artworkPressable} onPress={handleArtworkPress}>
             <ListingArtwork
               coverUrl={item.coverUrl}
-              label={item.artworkLabel ?? item.genre ?? 'Beat'}
+              label={item.artworkLabel ?? item.genre ?? 'Track'}
               overlay={Boolean(item.coverUrl)}
               style={styles.artwork}
             >
               {item.coverUrl ? (
                 <View style={styles.artworkPill}>
                   <AppText variant="caption" style={styles.artworkPillText}>
-                    {item.genre ?? 'Beat'}
+                    {item.genre ?? 'Track'}
                   </AppText>
                 </View>
               ) : null}

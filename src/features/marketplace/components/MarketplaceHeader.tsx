@@ -19,10 +19,10 @@ export function MarketplaceHeader() {
         </AppText>
       </View>
 
-      <AppText variant="pageHeading">Discover beats</AppText>
+      <AppText variant="pageHeading">Discover tracks</AppText>
 
       <AppText variant="body" tone="secondary" style={styles.subtitle}>
-        Discover public uploads, collect free beats, and review premium listings from
+        Discover public uploads, collect free tracks, and review premium listings from
         Studio creators.
       </AppText>
 

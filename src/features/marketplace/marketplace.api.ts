@@ -7,6 +7,7 @@ import {
   collectionGroup,
   doc,
   documentId,
+  type Firestore,
   getDoc,
   getDocs,
   limit,
@@ -21,6 +22,8 @@ import type { MarketplaceListing, SellerProfile } from './marketplace.types';
 const UPLOADS_COLLECTION = 'uploads';
 const USERS_COLLECTION = 'users';
 const SELLERS_COLLECTION = 'sellers';
+const PUBLIC_VISIBILITY_FIELDS = ['isPublic', 'public', 'published', 'isPublished'] as const;
+const SELLER_ID_FIELDS = ['uploaderId', 'sellerId', 'ownerId', 'userId', 'uid'] as const;
 
 type ListingMapDropReason = 'not_published';
 
@@ -178,7 +181,7 @@ export async function fetchSellerListings(
       logFirestoreFallback('fetchSellerListings user upload lookup', error);
     }
 
-    for (const field of ['uploaderId', 'sellerId', 'ownerId', 'userId', 'uid']) {
+    for (const field of SELLER_ID_FIELDS) {
       try {
         const snapshot = await getDocs(
           query(
@@ -206,6 +209,51 @@ export async function fetchSellerListings(
         }
 
         logFirestoreFallback(`fetchSellerListings ${field} lookup`, error);
+      }
+    }
+
+    for (const visibilityField of PUBLIC_VISIBILITY_FIELDS) {
+      if (visibilityField === 'isPublic') {
+        continue;
+      }
+
+      for (const ownerField of SELLER_ID_FIELDS) {
+        try {
+          const snapshot = await getDocs(
+            query(
+              collectionGroup(db, UPLOADS_COLLECTION),
+              where(visibilityField, '==', true),
+              where(ownerField, '==', sellerId),
+              limit(Math.max(limitCount * 3, limitCount))
+            )
+          );
+
+          if (!snapshot.empty) {
+            const mappedListings = snapshot.docs.map((document) =>
+              mapListingWithDiagnostics(document.id, document.data(), document.ref.path)
+            );
+            logListingReadStats(
+              buildListingStats(
+                `fetchSellerListings.${visibilityField}.${ownerField}`,
+                mappedListings
+              )
+            );
+            return mappedListings
+              .map((result) => result.listing)
+              .filter((listing): listing is MarketplaceListing => listing !== null)
+              .sort(compareListingsByDate)
+              .slice(0, limitCount);
+          }
+        } catch (error) {
+          if (!isRecoverableFirestoreReadError(error)) {
+            throw error;
+          }
+
+          logFirestoreFallback(
+            `fetchSellerListings ${visibilityField}/${ownerField} lookup`,
+            error
+          );
+        }
       }
     }
 
@@ -281,18 +329,92 @@ async function fetchPublishedUploads(scanLimit: number): Promise<MarketplaceList
     throw primaryError;
   }
 
-  const fallbackSnapshot = await getDocs(
-    query(
-      collectionGroup(db, UPLOADS_COLLECTION),
-      where('isPublic', '==', true),
-      limit(scanLimit)
+  let canonicalDocs: QueryDocumentSnapshot<DocumentData>[] = [];
+  let canonicalError: unknown = null;
+
+  try {
+    const fallbackSnapshot = await getDocs(
+      query(
+        collectionGroup(db, UPLOADS_COLLECTION),
+        where('isPublic', '==', true),
+        limit(scanLimit)
+      )
+    );
+    canonicalDocs = fallbackSnapshot.docs;
+  } catch (error) {
+    if (!isRecoverableFirestoreReadError(error)) {
+      throw error;
+    }
+
+    canonicalError = error;
+    logFirestoreFallback('fetchPublishedUploads canonical fallback', error);
+  }
+
+  if (canonicalDocs.length > 0) {
+    const fallbackMapped = canonicalDocs.map((document) =>
+      mapListingWithDiagnostics(document.id, document.data(), document.ref.path)
+    );
+    logListingReadStats(buildListingStats('fetchPublishedUploads.fallback', fallbackMapped));
+    return sortAndDedupeListings(fallbackMapped.map((result) => result.listing));
+  }
+
+  const visibilityFallback = await fetchVisibilityVariantDocs(db, scanLimit);
+
+  if (visibilityFallback.docs.length > 0) {
+    const visibilityMapped = visibilityFallback.docs.map((document) =>
+      mapListingWithDiagnostics(document.id, document.data(), document.ref.path)
+    );
+    logListingReadStats(
+      buildListingStats('fetchPublishedUploads.visibility-fallback', visibilityMapped)
+    );
+    return sortAndDedupeListings(visibilityMapped.map((result) => result.listing));
+  }
+
+  if (!visibilityFallback.hadSuccessfulQuery) {
+    throw visibilityFallback.firstError ?? canonicalError ?? new Error('No read path succeeded.');
+  }
+
+  return [];
+}
+
+async function fetchVisibilityVariantDocs(db: Firestore, scanLimit: number) {
+  const visibilityFields = PUBLIC_VISIBILITY_FIELDS.filter((field) => field !== 'isPublic');
+  const snapshots = await Promise.allSettled(
+    visibilityFields.map((field) =>
+      getDocs(
+        query(
+          collectionGroup(db, UPLOADS_COLLECTION),
+          where(field, '==', true),
+          limit(scanLimit)
+        )
+      )
     )
   );
-  const fallbackMapped = fallbackSnapshot.docs.map((document) =>
-    mapListingWithDiagnostics(document.id, document.data(), document.ref.path)
-  );
-  logListingReadStats(buildListingStats('fetchPublishedUploads.fallback', fallbackMapped));
-  return sortAndDedupeListings(fallbackMapped.map((result) => result.listing));
+
+  const docs: QueryDocumentSnapshot<DocumentData>[] = [];
+  let firstError: unknown = null;
+  let hadSuccessfulQuery = false;
+
+  snapshots.forEach((snapshot, index) => {
+    const field = visibilityFields[index];
+    if (snapshot.status === 'fulfilled') {
+      hadSuccessfulQuery = true;
+      docs.push(...snapshot.value.docs);
+      return;
+    }
+
+    if (!firstError) {
+      firstError = snapshot.reason;
+    }
+
+    logFirestoreFallback(`fetchPublishedUploads visibility=${field}`, snapshot.reason);
+  });
+
+  return {
+    docs,
+    firstError,
+    hadSuccessfulQuery,
+  };
 }
 
 function sortAndDedupeListings(listings: (MarketplaceListing | null)[]) {

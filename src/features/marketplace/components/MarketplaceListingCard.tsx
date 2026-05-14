@@ -1,5 +1,8 @@
 import { AppText } from '@/src/components/ui/AppText';
-import type { MarketplaceListing } from '@/src/features/marketplace/marketplace.types';
+import {
+  formatMarketplacePrice,
+  type MarketplaceListing,
+} from '@/src/features/marketplace/marketplace.types';
 import { useThemeTokens } from '@/src/theme';
 import { Music2, Play, ShoppingCart } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -24,7 +27,7 @@ export function MarketplaceListingCard({
 }: MarketplaceListingCardProps) {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
-  const priceLabel = listing.price <= 0 ? 'Free' : `$${listing.price.toFixed(2)}`;
+  const priceLabel = formatMarketplacePrice(listing);
   const buyLabel = listing.price <= 0 ? 'Review access' : 'Review purchase';
 
   return (
@@ -37,7 +40,7 @@ export function MarketplaceListingCard({
     >
       <ListingArtwork
         coverUrl={listing.coverUrl}
-        label={listing.genre ?? 'Beat'}
+        label={listing.genre ?? 'Track'}
         overlay={Boolean(listing.coverUrl)}
         style={styles.artwork}
       >
@@ -52,7 +55,7 @@ export function MarketplaceListingCard({
             style={listing.coverUrl ? styles.artworkTextOnMedia : undefined}
             numberOfLines={1}
           >
-            {listing.genre ?? 'Beat'}
+            {listing.genre ?? 'Track'}
           </AppText>
 
           <AppText

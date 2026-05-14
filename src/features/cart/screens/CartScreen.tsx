@@ -35,7 +35,7 @@ export function CartScreen() {
         <AppText variant="eyebrow" tone="accent">
           Cart
         </AppText>
-        <AppText variant="pageHeading">Your selected beats</AppText>
+        <AppText variant="pageHeading">Your selected items</AppText>
         <AppText variant="bodySmall" tone="secondary" style={styles.subtitle}>
           This is local review state only. Secure checkout, entitlement writes, and protected delivery are next.
         </AppText>
@@ -44,7 +44,7 @@ export function CartScreen() {
           <View style={styles.emptyCard}>
             <AppText variant="sectionHeading">Your cart is empty</AppText>
             <AppText variant="bodySmall" tone="secondary" style={styles.emptyText}>
-              Add beats from Explore or Home to review them here before payments go live.
+              Add tracks from Explore or Home to review them here before payments go live.
             </AppText>
             <Pressable
               style={styles.secondaryButton}

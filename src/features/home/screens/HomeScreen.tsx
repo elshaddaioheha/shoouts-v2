@@ -180,7 +180,7 @@ export function HomeScreen() {
         <View style={styles.hero}>
           <AppText variant="pageHeading">Home</AppText>
           <AppText variant="bodySmall" tone="secondary">
-            Curated picks, latest releases, and popular beats.
+            Curated picks, latest releases, and popular tracks.
           </AppText>
         </View>
 
@@ -248,7 +248,7 @@ export function HomeScreen() {
                   <ListingArtwork
                     coverUrl={item.coverUrl}
                     fallbackColor={item.color}
-                    label={item.genre ?? 'Beat'}
+                    label={item.genre ?? 'Track'}
                     style={styles.releaseVisual}
                   />
                   <AppText variant="title" numberOfLines={1}>
@@ -301,7 +301,7 @@ export function HomeScreen() {
             />
 
             <SectionHeader
-              title="Popular Beats"
+              title="Popular Tracks"
               actionLabel="More"
               onActionPress={() => router.push('/(tabs)/marketplace' as any)}
             />
@@ -317,7 +317,7 @@ export function HomeScreen() {
                       <ListingArtwork
                         coverUrl={track.coverUrl}
                         fallbackColor={track.color}
-                        label={track.genre ?? 'Beat'}
+                        label={track.genre ?? 'Track'}
                         style={styles.popularArt}
                       />
 

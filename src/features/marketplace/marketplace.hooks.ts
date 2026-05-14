@@ -81,7 +81,7 @@ function mapListingToExploreItem(listing: MarketplaceListing): ExploreFeedItemMo
     bpm: listing.bpm,
     key: listing.key,
     tags: listing.tags,
-    artworkLabel: listing.genre ?? listing.title.split(' ')[0] ?? 'Beat',
+    artworkLabel: listing.genre ?? listing.title.split(' ')[0] ?? 'Track',
   };
 }
 

@@ -94,7 +94,7 @@ export function SearchMarketplaceModal({
             <TextInput
               value={filters.query}
               onChangeText={handleQueryChange}
-              placeholder="Search beats, songs, producers..."
+              placeholder="Search tracks, songs, producers..."
               placeholderTextColor={theme.colors.textMuted}
               style={styles.input}
               returnKeyType="search"

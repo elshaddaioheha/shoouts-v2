@@ -236,7 +236,7 @@ export function ListingDetailsScreen() {
       <AppShell>
         <View style={styles.center}>
           <Text style={styles.title}>Listing not found</Text>
-          <Text style={styles.subtitle}>This beat may have been removed or is unavailable.</Text>
+          <Text style={styles.subtitle}>This listing may have been removed or is unavailable.</Text>
 
           <Pressable style={styles.primaryButton} onPress={() => router.back()}>
             <Text style={styles.primaryText}>Go back</Text>
@@ -328,13 +328,13 @@ export function ListingDetailsScreen() {
 
         <ListingArtwork
           coverUrl={listingData.coverUrl}
-          label={listingData.genre ?? 'Beat'}
+          label={listingData.genre ?? 'Track'}
           overlay={Boolean(listingData.coverUrl)}
           style={styles.hero}
         >
           {listingData.coverUrl ? (
             <View style={styles.heroContent}>
-              <Text style={styles.heroText}>{listingData.genre ?? 'Beat'}</Text>
+              <Text style={styles.heroText}>{listingData.genre ?? 'Track'}</Text>
               {listingData.listenCount > 0 ? (
                 <Text style={styles.heroSubtext}>
                   {listingData.listenCount.toLocaleString()} plays

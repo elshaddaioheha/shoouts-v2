@@ -18,19 +18,19 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 const contentOptions = [
   {
     title: 'Downloads',
-    description: 'View purchased and free-downloadable beats.',
+    description: 'View purchased and free-downloadable tracks.',
     route: '/downloads',
     icon: Download,
   },
   {
     title: 'Purchase History',
-    description: 'Review your past beat purchases.',
+    description: 'Review your past track purchases.',
     route: '/purchases',
     icon: ReceiptText,
   },
   {
     title: 'Saved & Favourites',
-    description: 'Your liked beats and saved creators.',
+    description: 'Your liked tracks and saved creators.',
     route: '/saved',
     icon: Heart,
   },
