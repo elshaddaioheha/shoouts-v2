@@ -9,11 +9,14 @@ import {
 } from '@/src/features/access/access.helpers';
 import { useAccountStore } from '@/src/features/account/account.store';
 import { useAuthStore } from '@/src/features/auth/auth.store';
-import { deriveExperienceFromPathname } from '@/src/features/navigation/navigation.helpers';
+import {
+  deriveExperienceFromRouteContext,
+  isSharedExperienceRoute,
+} from '@/src/features/navigation/navigation.helpers';
 import { useExperienceNavigationStore } from '@/src/features/navigation/navigation.store';
 import { layout, useThemeTokens } from '@/src/theme';
 import { LinearGradient } from 'expo-linear-gradient';
-import { usePathname } from 'expo-router';
+import { useLocalSearchParams, usePathname } from 'expo-router';
 import { ReactNode, useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -47,7 +50,9 @@ export function AppShell({
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
-  const routeExperience = deriveExperienceFromPathname(pathname);
+  const { source } = useLocalSearchParams<{ source?: string }>();
+  const routeExperience = deriveExperienceFromRouteContext(pathname, source);
+  const isSharedRoute = isSharedExperienceRoute(pathname);
   const accountRole = useAccountStore((state) => state.role);
   const accountExperience = useAccountStore((state) => state.activeExperience);
   const setAccountExperience = useAccountStore((state) => state.setActiveExperience);
@@ -66,6 +71,10 @@ export function AppShell({
   }, [activeExperience, routeExperience, setActiveExperience]);
 
   useEffect(() => {
+    if (isSharedRoute) {
+      return;
+    }
+
     if (routeExperience === accountExperience) {
       setPreviewExperience(null);
       return;
@@ -80,7 +89,14 @@ export function AppShell({
     if (canPreviewExperience(accountRole, routeExperience)) {
       setPreviewExperience(routeExperience);
     }
-  }, [accountExperience, accountRole, routeExperience, setAccountExperience, setPreviewExperience]);
+  }, [
+    accountExperience,
+    accountRole,
+    isSharedRoute,
+    routeExperience,
+    setAccountExperience,
+    setPreviewExperience,
+  ]);
 
   return (
     <View style={styles.container}>

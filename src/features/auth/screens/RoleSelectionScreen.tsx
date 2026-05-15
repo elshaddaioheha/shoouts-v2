@@ -1,4 +1,5 @@
 import type { UserRole } from '@/src/features/access/access.types';
+import { getDefaultExperience, getRoleConfig } from '@/src/features/access/access.helpers';
 import { updateAccountRoleSelection } from '@/src/features/account/account.api';
 import { useAccountStore } from '@/src/features/account/account.store';
 import { useAuthStore } from '@/src/features/auth/auth.store';
@@ -96,6 +97,7 @@ export function RoleSelectionScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const setRole = useAccountStore((state) => state.setRole);
+  const setPreviewExperience = useAccountStore((state) => state.setPreviewExperience);
 
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -152,7 +154,13 @@ export function RoleSelectionScreen() {
 
     setIsSubmitting(true);
     try {
-      setRole(selectedRole);
+      const selectedConfig = getRoleConfig(selectedRole);
+      const accountRole: UserRole = selectedConfig.isPaid ? 'shoouts' : selectedRole;
+
+      setRole(accountRole);
+      setPreviewExperience(
+        selectedConfig.isPaid ? getDefaultExperience(selectedRole) : null
+      );
       if (user) {
         try {
           await updateAccountRoleSelection(user.uid, selectedRole);

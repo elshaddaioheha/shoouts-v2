@@ -33,10 +33,23 @@ export function GlobalPlayerHost() {
     updateInterval: 250,
   });
   const status = useAudioPlayerStatus(player);
-  const shouldSuppressPlayer =
-    normalizedPath === '/marketplace' || normalizedPath.startsWith('/settings');
+  const shouldSuppressForRoute =
+    normalizedPath === '/marketplace' ||
+    normalizedPath === '/experience-welcome' ||
+    normalizedPath.startsWith('/settings');
+  const isVaultRoute = routeExperience === 'vault';
+  const hasSurfaceMismatch =
+    Boolean(track) &&
+    ((isVaultRoute && track?.surface !== 'vault') ||
+      (!isVaultRoute && track?.surface === 'vault'));
+  const shouldStopPlayer = shouldSuppressForRoute || hasSurfaceMismatch;
   const showGlobalMiniPlayer =
-    visible && routeExperience !== 'vault' && !shouldSuppressPlayer;
+    visible &&
+    track?.surface === 'marketplace' &&
+    routeExperience !== 'vault' &&
+    !shouldSuppressForRoute &&
+    !hasSurfaceMismatch;
+  const showFullPlayer = !shouldSuppressForRoute && !hasSurfaceMismatch;
   const miniPlayerWidth = Math.min(390, Math.max(280, width - theme.spacing.xl * 2));
 
   useEffect(() => {
@@ -131,14 +144,14 @@ export function GlobalPlayerHost() {
   ]);
 
   useEffect(() => {
-    if (!shouldSuppressPlayer) {
+    if (!shouldStopPlayer) {
       return;
     }
 
-    if (visible || fullPlayerOpen) {
+    if (visible || fullPlayerOpen || track) {
       stop();
     }
-  }, [fullPlayerOpen, shouldSuppressPlayer, stop, visible]);
+  }, [fullPlayerOpen, shouldStopPlayer, stop, track, visible]);
 
   useEffect(() => {
     if (!track?.audioUrl) {
@@ -185,7 +198,7 @@ export function GlobalPlayerHost() {
         </View>
       ) : null}
 
-      {shouldSuppressPlayer ? null : <FullPlayerModal />}
+      {showFullPlayer ? <FullPlayerModal /> : null}
     </>
   );
 }

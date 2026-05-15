@@ -1,5 +1,6 @@
 import { AppText } from '@/src/components/ui/AppText';
 import { AppShell } from '@/src/features/navigation/components/AppShell';
+import { normalizeExperienceValue } from '@/src/features/navigation/navigation.helpers';
 import { useThemeTokens } from '@/src/theme';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Bell, ShieldCheck, Sparkles } from 'lucide-react-native';
@@ -37,7 +38,10 @@ export function UpdatesScreen() {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
   const { source } = useLocalSearchParams<{ source?: string }>();
-  const sourceLabel = source === 'vault' ? 'Vault updates' : 'App updates';
+  const sourceExperience = normalizeExperienceValue(source);
+  const sourceLabel = sourceExperience
+    ? `${sourceExperience.charAt(0).toUpperCase()}${sourceExperience.slice(1)} updates`
+    : 'App updates';
 
   return (
     <AppShell>

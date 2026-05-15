@@ -2,6 +2,7 @@ import { AppText } from '@/src/components/ui/AppText';
 import { useAccountStore } from '@/src/features/account/account.store';
 import { useAuthStore } from '@/src/features/auth/auth.store';
 import { AppShell } from '@/src/features/navigation/components/AppShell';
+import { normalizeExperienceValue } from '@/src/features/navigation/navigation.helpers';
 import { useThemeTokens } from '@/src/theme';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -17,7 +18,11 @@ export function AccountProfileScreen() {
   const email = profile?.email ?? user?.email ?? 'No email linked';
   const status = (profile?.subscriptionStatus ?? 'free').replace(/_/g, ' ').toUpperCase();
   const tier = (profile?.subscriptionTier ?? role).replace(/_/g, ' ').toUpperCase();
-  const sourceLabel = source === 'vault' ? 'Vault context' : 'Account context';
+  const access = role.replace(/_/g, ' ').toUpperCase();
+  const sourceExperience = normalizeExperienceValue(source);
+  const sourceLabel = sourceExperience
+    ? `${sourceExperience.charAt(0).toUpperCase()}${sourceExperience.slice(1)} context`
+    : 'Account context';
 
   return (
     <AppShell>
@@ -42,8 +47,13 @@ export function AccountProfileScreen() {
             {email}
           </AppText>
           <AppText variant="caption" tone="muted">
-            Tier: {tier} - Status: {status}
+            Current access: {access} - Status: {status}
           </AppText>
+          {tier !== access ? (
+            <AppText variant="caption" tone="secondary">
+              Selected tier: {tier}
+            </AppText>
+          ) : null}
         </View>
 
         <View style={styles.card}>

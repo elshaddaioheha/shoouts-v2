@@ -10,11 +10,11 @@ import { updateAccountActiveExperience } from '@/src/features/account/account.ap
 import { useAccountStore } from '@/src/features/account/account.store';
 import { useAuthStore } from '@/src/features/auth/auth.store';
 import { openExperienceWelcome } from '@/src/features/navigation/experienceWelcome';
-import { deriveExperienceFromPathname } from '@/src/features/navigation/navigation.helpers';
+import { deriveExperienceFromRouteContext } from '@/src/features/navigation/navigation.helpers';
 import { EXPERIENCE_NAVIGATION } from '@/src/features/navigation/navigation.config';
 import { useExperienceNavigationStore } from '@/src/features/navigation/navigation.store';
 import { layout, useThemeTokens } from '@/src/theme';
-import { router, usePathname } from 'expo-router';
+import { router, useLocalSearchParams, usePathname } from 'expo-router';
 import { useState } from 'react';
 import {
   Image,
@@ -41,6 +41,7 @@ export function ExperienceSwitcher() {
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
+  const { source } = useLocalSearchParams<{ source?: string }>();
   const user = useAuthStore((state) => state.user);
   const role = useAccountStore((state) => state.role);
   const setAccountActiveExperience = useAccountStore((state) => state.setActiveExperience);
@@ -48,7 +49,8 @@ export function ExperienceSwitcher() {
   const storedExperience = useExperienceNavigationStore((state) => state.activeExperience);
   const setActiveExperience = useExperienceNavigationStore((state) => state.setActiveExperience);
   const [activeSheet, setActiveSheet] = useState<ActiveSheet>(null);
-  const activeExperience = deriveExperienceFromPathname(pathname || '/') ?? storedExperience;
+  const activeExperience =
+    deriveExperienceFromRouteContext(pathname || '/', source) ?? storedExperience;
 
   const activeConfig = EXPERIENCE_NAVIGATION[activeExperience];
   const activeUnlocked = canAccessExperience(role, activeExperience);
@@ -116,11 +118,21 @@ export function ExperienceSwitcher() {
           <View style={styles.headerActions}>
             <HeaderActionButton
               icon="messages"
-              onPress={() => router.push('/messages' as any)}
+              onPress={() =>
+                router.push({
+                  pathname: '/messages',
+                  params: { source: activeExperience },
+                } as any)
+              }
             />
             <HeaderActionButton
               icon="notifications"
-              onPress={() => router.push('/settings/updates' as any)}
+              onPress={() =>
+                router.push({
+                  pathname: '/settings/updates',
+                  params: { source: activeExperience },
+                } as any)
+              }
             />
           </View>
         </View>

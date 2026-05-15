@@ -90,11 +90,11 @@ export function MiniPlayerBar({ variant = 'global', style }: MiniPlayerBarProps)
 
   return (
     <Animated.View
-      style={{ transform: [{ translateY: dragY }] }}
+      style={[style, { transform: [{ translateY: dragY }] }]}
       {...panResponder.panHandlers}
     >
       <Pressable
-        style={({ pressed }) => [styles.container, pressed ? styles.containerPressed : undefined, style]}
+        style={({ pressed }) => [styles.container, pressed ? styles.containerPressed : undefined]}
         onPress={openFullPlayer}
       >
         <LinearGradient

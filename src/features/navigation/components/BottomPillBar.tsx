@@ -1,10 +1,13 @@
 import { AppIcon } from '@/src/components/ui/AppIcon';
 import { AppText } from '@/src/components/ui/AppText';
-import { deriveExperienceFromPathname, normalizeNavigationPath } from '@/src/features/navigation/navigation.helpers';
+import {
+  deriveExperienceFromRouteContext,
+  normalizeNavigationPath,
+} from '@/src/features/navigation/navigation.helpers';
 import { EXPERIENCE_NAVIGATION } from '@/src/features/navigation/navigation.config';
 import { layout, useThemeTokens } from '@/src/theme';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, usePathname } from 'expo-router';
+import { router, useLocalSearchParams, usePathname } from 'expo-router';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -32,8 +35,9 @@ export function BottomPillBar() {
   const { width: viewportWidth } = useWindowDimensions();
   const styles = createStyles(theme);
   const pathname = usePathname();
+  const { source } = useLocalSearchParams<{ source?: string }>();
   const normalizedPathname = normalizeNavigationPath(pathname);
-  const routeExperience = deriveExperienceFromPathname(pathname);
+  const routeExperience = deriveExperienceFromRouteContext(pathname, source);
   const config = EXPERIENCE_NAVIGATION[routeExperience];
   const tabs = config.tabs;
   const isDenseLayout = tabs.length >= 5;

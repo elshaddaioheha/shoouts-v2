@@ -93,7 +93,15 @@ export const useAccountStore = create<AccountState>((set) => ({
       };
     }),
 
-  setPreviewExperience: (previewExperience) => set({ previewExperience }),
+  setPreviewExperience: (previewExperience) =>
+    set((state) => ({
+      previewExperience:
+        previewExperience &&
+        !canAccessExperience(state.role, previewExperience) &&
+        canPreviewExperience(state.role, previewExperience)
+          ? previewExperience
+          : null,
+    })),
 
   resetAccount: () =>
     set({

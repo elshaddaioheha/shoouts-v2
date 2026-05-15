@@ -67,8 +67,10 @@ export function WorkspaceShellScreen({
   const role = useAccountStore((state) => state.role);
   const roleConfig = getRoleConfig(role);
   const experienceUnlocked = experience ? canAccessExperience(role, experience) : true;
-  const planLabel = formatLabel(profile?.subscriptionTier ?? roleConfig.id);
+  const accessLabel = formatLabel(roleConfig.id);
+  const selectedTierLabel = formatLabel(profile?.subscriptionTier ?? roleConfig.id);
   const statusLabel = formatLabel(profile?.subscriptionStatus ?? 'free');
+  const hasPendingTier = selectedTierLabel !== accessLabel && statusLabel !== 'ACTIVE' && statusLabel !== 'TRIAL';
 
   return (
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -88,8 +90,10 @@ export function WorkspaceShellScreen({
             </AppText>
             <AppText variant="bodySmall" tone="secondary" style={styles.accessText}>
               {experienceUnlocked
-                ? `${planLabel} plan - ${statusLabel} status`
-                : `${planLabel} can preview this shell. Full actions stay gated until the plan is upgraded.`}
+                ? `Current access: ${accessLabel} - ${statusLabel} status`
+                : hasPendingTier
+                  ? `Current access: ${accessLabel}. ${selectedTierLabel} is selected but not active yet.`
+                  : `Current access: ${accessLabel}. Full actions stay gated until the plan is upgraded.`}
             </AppText>
           </View>
         </View>

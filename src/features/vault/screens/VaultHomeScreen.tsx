@@ -1,6 +1,8 @@
 import { AppIcon } from '@/src/components/ui/AppIcon';
 import { AppText } from '@/src/components/ui/AppText';
 import { InterimFeatureSheet } from '@/src/components/ui/InterimFeatureSheet';
+import { canAccessExperience } from '@/src/features/access/access.helpers';
+import { useAccountStore } from '@/src/features/account/account.store';
 import { MiniPlayerBar } from '@/src/features/player/components/MiniPlayerBar';
 import { usePlayerStore } from '@/src/features/player/player.store';
 import type { PlayerTrack } from '@/src/features/player/player.types';
@@ -29,8 +31,16 @@ const VAULT_PLACEHOLDER_TRACK: PlayerTrack = {
   artworkGradient: ['#E65AD4', '#FFB7D6'],
   surface: 'vault',
 };
+const VAULT_FAB_SIZE = 64;
+const VAULT_DOCK_GAP = 10;
 
 type VaultMode = 'home' | 'folders' | 'record' | 'shared' | 'more';
+type VaultNotice = {
+  title: string;
+  message: string;
+  primaryLabel?: string;
+  onPrimaryPress?: () => void;
+};
 
 const MODE_COPY: Record<VaultMode, { title: string; eyebrow: string }> = {
   home: { title: 'Projects', eyebrow: 'Vault' },
@@ -65,19 +75,43 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme, insets.bottom);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
+  const [notice, setNotice] = useState<VaultNotice | null>(null);
+  const role = useAccountStore((state) => state.role);
   const track = usePlayerStore((state) => state.track);
   const visible = usePlayerStore((state) => state.visible);
   const snapshot = usePlayerStore((state) => state.snapshot);
   const loadTrack = usePlayerStore((state) => state.loadTrack);
   const togglePlayback = usePlayerStore((state) => state.togglePlayback);
   const openFullPlayer = usePlayerStore((state) => state.openFullPlayer);
-  const hasMiniPlayer = visible;
+  const hasVaultMiniPlayer = visible && track?.surface === 'vault';
   const isPlaceholderTrackActive = visible && track?.id === VAULT_PLACEHOLDER_TRACK.id;
   const isPlaying = isPlaceholderTrackActive && snapshot.isPlaying;
   const modeCopy = MODE_COPY[mode];
+  const hasVaultAccess = canAccessExperience(role, 'vault');
+
+  function showVaultPreviewNotice() {
+    setMenuOpen(false);
+    setNotice({
+      title: 'Vault preview',
+      message:
+        'Vault is visible as a preview. Project playback, folders, and new private assets unlock when Vault is part of the current account access.',
+      primaryLabel: 'Manage Vault access',
+      onPrimaryPress: () => {
+        setNotice(null);
+        router.push({
+          pathname: '/settings/subscriptions',
+          params: { experience: 'vault', source: 'vault' },
+        } as any);
+      },
+    });
+  }
 
   function handleToggleProjectPlayback() {
+    if (!hasVaultAccess) {
+      showVaultPreviewNotice();
+      return;
+    }
+
     if (!isPlaceholderTrackActive) {
       loadTrack(VAULT_PLACEHOLDER_TRACK, { autoPlay: true });
       return;
@@ -87,6 +121,11 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
   }
 
   function handleOpenProject() {
+    if (!hasVaultAccess) {
+      showVaultPreviewNotice();
+      return;
+    }
+
     if (!isPlaceholderTrackActive) {
       loadTrack(VAULT_PLACEHOLDER_TRACK, { autoPlay: false });
     }
@@ -95,6 +134,11 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
 
   function handleAction(action: 'audio' | 'project' | 'folder') {
     setMenuOpen(false);
+
+    if (!hasVaultAccess) {
+      showVaultPreviewNotice();
+      return;
+    }
 
     if (action === 'audio') {
       router.push('/vault/record' as any);
@@ -128,6 +172,11 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
             <AppText variant="pageHeading" style={styles.headerTitle}>
               {modeCopy.title}
             </AppText>
+            {!hasVaultAccess ? (
+              <AppText variant="caption" tone="accent">
+                Preview workspace
+              </AppText>
+            ) : null}
           </View>
 
           <View style={styles.headerActions}>
@@ -144,7 +193,12 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
             </Pressable>
             <Pressable
               style={styles.headerIconButton}
-              onPress={() => router.push('/settings/profile?source=vault' as any)}
+              onPress={() =>
+                router.push({
+                  pathname: '/settings/profile',
+                  params: { source: 'vault' },
+                } as any)
+              }
             >
               <AppIcon name="profile" size="md" tone="secondary" stroke="bold" />
             </Pressable>
@@ -185,7 +239,7 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
             <View
               style={[
                 styles.quickMenu,
-                hasMiniPlayer ? styles.quickMenuRaised : styles.quickMenuCentered,
+                hasVaultMiniPlayer ? styles.quickMenuRaised : styles.quickMenuCentered,
               ]}
             >
               <QuickAction
@@ -206,11 +260,20 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
             </View>
           ) : null}
 
-          <View style={hasMiniPlayer ? styles.playerActionRow : styles.actionOnlyRow}>
-            {hasMiniPlayer ? <MiniPlayerBar variant="vault" style={styles.vaultMiniPlayer} /> : null}
+          <View style={hasVaultMiniPlayer ? styles.playerActionRow : styles.actionOnlyRow}>
+            {hasVaultMiniPlayer ? (
+              <MiniPlayerBar variant="vault" style={styles.vaultMiniPlayer} />
+            ) : null}
             <Pressable
               style={styles.floatingPlus}
-              onPress={() => setMenuOpen((current) => !current)}
+              onPress={() => {
+                if (!hasVaultAccess) {
+                  showVaultPreviewNotice();
+                  return;
+                }
+
+                setMenuOpen((current) => !current);
+              }}
             >
               <Plus size={27} color={theme.colors.textPrimary} strokeWidth={2.6} />
             </Pressable>
@@ -222,6 +285,8 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
         visible={Boolean(notice)}
         title={notice?.title ?? ''}
         message={notice?.message ?? ''}
+        primaryLabel={notice?.primaryLabel}
+        onPrimaryPress={notice?.onPrimaryPress}
         onClose={() => setNotice(null)}
       />
     </AppShell>
@@ -357,20 +422,22 @@ function createStyles(
       width: '100%',
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.sm,
+      gap: VAULT_DOCK_GAP,
     },
     vaultMiniPlayer: {
       flex: 1,
+      minWidth: 0,
     },
     floatingPlus: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
+      width: VAULT_FAB_SIZE,
+      height: VAULT_FAB_SIZE,
+      borderRadius: VAULT_FAB_SIZE / 2,
       backgroundColor: theme.colors.surfaceElevated,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
       borderColor: theme.colors.borderStrong,
+      flexShrink: 0,
       ...theme.shadows.md,
     },
     quickMenu: {

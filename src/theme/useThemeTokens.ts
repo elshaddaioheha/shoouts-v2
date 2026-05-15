@@ -1,6 +1,6 @@
-import { deriveExperienceFromPathname } from '@/src/features/navigation/navigation.helpers';
+import { deriveExperienceFromRouteContext } from '@/src/features/navigation/navigation.helpers';
 import { useExperienceNavigationStore } from '@/src/features/navigation/navigation.store';
-import { usePathname } from 'expo-router';
+import { useLocalSearchParams, usePathname } from 'expo-router';
 import { useColorScheme } from 'react-native';
 import { experienceTokens } from './experienceTokens';
 import { iconContainers, iconSizes, iconStrokeWidths } from './icons';
@@ -16,8 +16,10 @@ export function useThemeTokens() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme !== 'light';
   const pathname = usePathname();
+  const { source } = useLocalSearchParams<{ source?: string }>();
   const storedExperience = useExperienceNavigationStore((state) => state.activeExperience);
-  const activeExperience = deriveExperienceFromPathname(pathname || '/') ?? storedExperience;
+  const activeExperience =
+    deriveExperienceFromRouteContext(pathname || '/', source) ?? storedExperience;
 
   const mode = isDark ? 'dark' : 'light';
   const neutral = isDark ? neutralPalettes.dark : neutralPalettes.light;

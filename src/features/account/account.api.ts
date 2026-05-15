@@ -125,6 +125,7 @@ export async function fetchAccountProfile(user: AuthUser): Promise<AccountProfil
   const selectedRole = normalizeOptionalRole(
     onboarding.selectedRole ?? raw.selectedRole ?? raw.role
   );
+  const declaredRole = normalizeOptionalRole(raw.role);
   const subscriptionStatus = normalizeSubscriptionStatus(
     subscription.status ?? raw.subscriptionStatus
   );
@@ -132,9 +133,8 @@ export async function fetchAccountProfile(user: AuthUser): Promise<AccountProfil
     subscription.tier,
     raw.subscriptionTier,
     raw.plan,
-    selectedRole
+    selectedRole ?? declaredRole
   );
-  const declaredRole = normalizeOptionalRole(raw.role);
   const role = resolveEffectiveRole({
     declaredRole,
     selectedRole,
@@ -168,10 +168,10 @@ export async function fetchAccountProfile(user: AuthUser): Promise<AccountProfil
   if (
     declaredRole &&
     getRoleConfig(declaredRole).isPaid &&
-    isRestrictedSubscriptionStatus(subscriptionStatus)
+    !isEntitledSubscriptionStatus(subscriptionStatus)
   ) {
     notes.push(
-      `Paid role "${declaredRole}" is paired with "${subscriptionStatus}" subscription status.`
+      `Paid role "${declaredRole}" requires an active or trial subscription before it becomes the real account role.`
     );
   }
 
@@ -198,9 +198,7 @@ export async function fetchAccountProfile(user: AuthUser): Promise<AccountProfil
     activeExperience,
     subscriptionStatus,
     subscriptionTier,
-    isSubscribed:
-      asBoolean(subscription.isSubscribed) ??
-      (subscriptionStatus === 'active' || subscriptionStatus === 'trial'),
+    isSubscribed: resolveIsSubscribed(subscription.isSubscribed, subscriptionStatus),
     onboarding: {
       hasSeenOnboarding: asBoolean(onboarding.hasSeenOnboarding) ?? true,
       needsRoleSelection:
@@ -236,12 +234,14 @@ export async function updateAccountRoleSelection(
   role: UserRole
 ): Promise<void> {
   const db = getFirebaseDb();
-  const activeExperience = getDefaultExperience(role);
+  const roleConfig = getRoleConfig(role);
+  const accountRole: UserRole = roleConfig.isPaid ? 'shoouts' : role;
+  const activeExperience = getDefaultExperience(accountRole);
 
   await setDoc(
     doc(db, USERS_COLLECTION, uid),
     {
-      role,
+      role: accountRole,
       activeExperience,
       onboarding: {
         hasSeenOnboarding: true,
@@ -326,25 +326,31 @@ function resolveEffectiveRole({
   subscriptionTier: UserRole;
   subscriptionStatus: SubscriptionStatus;
 }): UserRole {
-  if (declaredRole) {
-    if (!getRoleConfig(declaredRole).isPaid) {
-      return declaredRole;
-    }
-
-    if (!isRestrictedSubscriptionStatus(subscriptionStatus)) {
-      return declaredRole;
-    }
-  }
-
   if (isEntitledSubscriptionStatus(subscriptionStatus)) {
     return subscriptionTier;
   }
 
-  if (selectedRole) {
-    return getRoleConfig(selectedRole).isPaid ? 'shoouts' : selectedRole;
+  if (declaredRole && !getRoleConfig(declaredRole).isPaid) {
+    return declaredRole;
+  }
+
+  if (selectedRole && !getRoleConfig(selectedRole).isPaid) {
+    return selectedRole;
   }
 
   return 'shoouts';
+}
+
+function resolveIsSubscribed(value: unknown, status: SubscriptionStatus) {
+  if (isEntitledSubscriptionStatus(status)) {
+    return true;
+  }
+
+  if (status === 'free' || isRestrictedSubscriptionStatus(status)) {
+    return false;
+  }
+
+  return asBoolean(value) ?? false;
 }
 
 function collectMissingAccountFields({
@@ -393,7 +399,7 @@ function collectMissingAccountFields({
     missingFields.push('subscriptionStatus');
   } else if (
     getRoleConfig(subscriptionTier).isPaid &&
-    isRestrictedSubscriptionStatus(subscriptionStatus)
+    !isEntitledSubscriptionStatus(subscriptionStatus)
   ) {
     missingFields.push(`subscriptionStatus:${subscriptionStatus}`);
   }
@@ -446,11 +452,26 @@ function normalizeSubscriptionStatus(value: unknown): SubscriptionStatus {
   if (
     normalized === 'free' ||
     normalized === 'trial' ||
+    normalized === 'trialing' ||
     normalized === 'active' ||
     normalized === 'past_due' ||
+    normalized === 'past-due' ||
     normalized === 'cancelled' ||
+    normalized === 'canceled' ||
     normalized === 'expired'
   ) {
+    if (normalized === 'trialing') {
+      return 'trial';
+    }
+
+    if (normalized === 'past-due') {
+      return 'past_due';
+    }
+
+    if (normalized === 'canceled') {
+      return 'cancelled';
+    }
+
     return normalized;
   }
 

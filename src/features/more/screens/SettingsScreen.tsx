@@ -1,11 +1,10 @@
 import { AppText } from '@/src/components/ui/AppText';
 import { getStartupStatusCopy } from '@/src/config/backendStatus';
 import { getVaultLimits } from '@/src/features/access/access.helpers';
-import type { AppExperience } from '@/src/features/access/access.types';
 import { useAccountStore } from '@/src/features/account/account.store';
 import { useAuthStore } from '@/src/features/auth/auth.store';
 import { AppShell } from '@/src/features/navigation/components/AppShell';
-import { deriveExperienceFromPathname } from '@/src/features/navigation/navigation.helpers';
+import { deriveExperienceFromRouteContext } from '@/src/features/navigation/navigation.helpers';
 import { useThemeTokens } from '@/src/theme';
 import { router, useLocalSearchParams, usePathname } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -24,14 +23,14 @@ export function SettingsScreen() {
   const displayName = profile?.displayName?.trim() || user?.displayName || 'Creator';
   const emailLabel = user?.email ?? 'No email linked';
   const roleLabel = role.replace(/_/g, ' ').toUpperCase();
+  const selectedTierLabel = (profile?.subscriptionTier ?? role).replace(/_/g, ' ').toUpperCase();
   const statusLabel = (profile?.subscriptionStatus ?? 'free').replace(/_/g, ' ').toUpperCase();
   const startupCopy = getStartupStatusCopy(startupStatus, startupMessage);
   const accountDocLabel = profile?.dataHealth.userDocState?.replace(/_/g, ' ').toUpperCase() ?? 'MISSING';
   const previewLabel = previewExperience ? previewExperience.replace(/_/g, ' ').toUpperCase() : 'NONE';
-  const routeExperience = deriveExperienceFromPathname(pathname);
-  const settingsExperience = normalizeExperience(source) ?? routeExperience;
+  const settingsExperience = deriveExperienceFromRouteContext(pathname, source);
   const isVaultContext = settingsExperience === 'vault';
-  const vaultLimits = getVaultLimits(profile?.subscriptionTier ?? role);
+  const vaultLimits = getVaultLimits(role);
   const storageUsedBytes = profile?.usage.vaultStorageUsedBytes ?? 0;
   const storageUsedGb = storageUsedBytes / (1024 * 1024 * 1024);
   const storageLimitGb = vaultLimits.vaultStorageGb;
@@ -64,8 +63,13 @@ export function SettingsScreen() {
             {emailLabel}
           </AppText>
           <AppText variant="caption" tone="muted">
-            {roleLabel} - {statusLabel}
+            Current access: {roleLabel} - {statusLabel}
           </AppText>
+          {selectedTierLabel !== roleLabel ? (
+            <AppText variant="caption" tone="secondary">
+              Selected tier: {selectedTierLabel}
+            </AppText>
+          ) : null}
         </View>
 
         <View style={styles.card}>
@@ -139,15 +143,37 @@ export function SettingsScreen() {
           <Pressable
             style={styles.inlineButton}
             onPress={() =>
-              router.push(`/settings/subscriptions?experience=${settingsExperience}` as any)
+              router.push({
+                pathname: '/settings/subscriptions',
+                params: {
+                  experience: settingsExperience,
+                  source: settingsExperience,
+                },
+              } as any)
             }
           >
             <AppText variant="button">Manage subscriptions</AppText>
           </Pressable>
-          <Pressable style={styles.inlineButton} onPress={() => router.push('/settings/profile' as any)}>
+          <Pressable
+            style={styles.inlineButton}
+            onPress={() =>
+              router.push({
+                pathname: '/settings/profile',
+                params: { source: settingsExperience },
+              } as any)
+            }
+          >
             <AppText variant="button">Account profile</AppText>
           </Pressable>
-          <Pressable style={styles.inlineButton} onPress={() => router.push('/settings/updates' as any)}>
+          <Pressable
+            style={styles.inlineButton}
+            onPress={() =>
+              router.push({
+                pathname: '/settings/updates',
+                params: { source: settingsExperience },
+              } as any)
+            }
+          >
             <AppText variant="button">Updates & notifications</AppText>
           </Pressable>
           <Pressable style={styles.inlineButton} onPress={() => router.push('/debug/signout' as any)}>
@@ -209,17 +235,4 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       lineHeight: 18,
     },
   });
-}
-
-function normalizeExperience(value: unknown): AppExperience | null {
-  if (
-    value === 'shoouts' ||
-    value === 'vault' ||
-    value === 'studio' ||
-    value === 'hybrid'
-  ) {
-    return value;
-  }
-
-  return null;
 }

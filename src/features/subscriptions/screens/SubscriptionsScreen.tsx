@@ -162,7 +162,8 @@ export function SubscriptionsScreen() {
   const activeExperience = normalizeExperience(rawExperience);
   const activeConfig = activeExperience ? subscriptionConfig[activeExperience] : null;
   const roleConfig = getRoleConfig(role);
-  const planLabel = formatLabel(profile?.subscriptionTier ?? roleConfig.id);
+  const accessLabel = formatLabel(roleConfig.id);
+  const selectedTierLabel = formatLabel(profile?.subscriptionTier ?? roleConfig.id);
   const statusLabel = formatLabel(profile?.subscriptionStatus ?? 'free');
   const toneMode = theme.isDark ? 'dark' : 'light';
 
@@ -173,7 +174,7 @@ export function SubscriptionsScreen() {
 
     openExperienceWelcome({
       experience,
-      nextRoute: `/settings/subscriptions?experience=${experience}`,
+      nextRoute: `/settings/subscriptions?experience=${experience}&source=${experience}`,
     });
   }
 
@@ -201,10 +202,15 @@ export function SubscriptionsScreen() {
           <AppText variant="caption" tone="muted">
             Current account state
           </AppText>
-          <AppText variant="sectionHeading">{planLabel}</AppText>
+          <AppText variant="sectionHeading">{accessLabel} access</AppText>
           <AppText variant="bodySmall" tone="secondary">
             Subscription status: {statusLabel}
           </AppText>
+          {selectedTierLabel !== accessLabel ? (
+            <AppText variant="caption" tone="secondary">
+              Selected tier: {selectedTierLabel}
+            </AppText>
+          ) : null}
         </View>
 
         <View style={styles.categoryGrid}>

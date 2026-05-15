@@ -64,8 +64,13 @@ export function MoreScreen() {
   const role = useAccountStore((state) => state.role);
   const displayName = profile?.displayName?.trim() || 'Creator';
   const initials = getInitials(displayName);
-  const planLabel = formatPlanLabel(profile?.subscriptionTier ?? role);
+  const accessLabel = formatPlanLabel(role);
+  const selectedTierLabel = formatPlanLabel(profile?.subscriptionTier ?? role);
   const statusLabel = formatStatusLabel(profile?.subscriptionStatus ?? 'free');
+  const accountStateLabel =
+    selectedTierLabel !== accessLabel
+      ? `${accessLabel} access - ${selectedTierLabel} selected`
+      : `${accessLabel} access - ${statusLabel}`;
 
   return (
     <AppShell>
@@ -98,7 +103,7 @@ export function MoreScreen() {
                 Hi, {displayName}
               </AppText>
               <AppText variant="bodySmall" tone="secondary" numberOfLines={1}>
-                {planLabel} - {statusLabel}
+                {accountStateLabel}
               </AppText>
             </View>
           </View>
