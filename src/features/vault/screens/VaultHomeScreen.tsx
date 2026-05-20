@@ -1,24 +1,30 @@
+import { ErrorState } from '@/src/components/ui/ErrorState';
+import { LoadingState } from '@/src/components/ui/LoadingState';
 import { AppIcon } from '@/src/components/ui/AppIcon';
 import { AppText } from '@/src/components/ui/AppText';
 import { InterimFeatureSheet } from '@/src/components/ui/InterimFeatureSheet';
+import { getReadErrorCopy } from '@/src/config/backendStatus';
 import { canAccessExperience } from '@/src/features/access/access.helpers';
 import { useAccountStore } from '@/src/features/account/account.store';
+import { useAuthStore } from '@/src/features/auth/auth.store';
+import { AppShell } from '@/src/features/navigation/components/AppShell';
 import { MiniPlayerBar } from '@/src/features/player/components/MiniPlayerBar';
 import { usePlayerStore } from '@/src/features/player/player.store';
 import type { PlayerTrack } from '@/src/features/player/player.types';
-import { AppShell } from '@/src/features/navigation/components/AppShell';
+import { useVaultProjects } from '@/src/features/vault/vault.hooks';
+import type { VaultProject } from '@/src/features/vault/vault.types';
 import { useThemeTokens } from '@/src/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import {
+  AudioWaveform,
   FolderPlus,
   MoreHorizontal,
-  AudioWaveform,
   Pause,
   Play,
   Plus,
 } from 'lucide-react-native';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -76,6 +82,8 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
   const styles = createStyles(theme, insets.bottom);
   const [menuOpen, setMenuOpen] = useState(false);
   const [notice, setNotice] = useState<VaultNotice | null>(null);
+  const user = useAuthStore((state) => state.user);
+  const startupStatus = useAuthStore((state) => state.startupStatus);
   const role = useAccountStore((state) => state.role);
   const track = usePlayerStore((state) => state.track);
   const visible = usePlayerStore((state) => state.visible);
@@ -84,18 +92,52 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
   const togglePlayback = usePlayerStore((state) => state.togglePlayback);
   const openFullPlayer = usePlayerStore((state) => state.openFullPlayer);
   const hasVaultMiniPlayer = visible && track?.surface === 'vault';
-  const isPlaceholderTrackActive = visible && track?.id === VAULT_PLACEHOLDER_TRACK.id;
-  const isPlaying = isPlaceholderTrackActive && snapshot.isPlaying;
   const modeCopy = MODE_COPY[mode];
   const hasVaultAccess = canAccessExperience(role, 'vault');
+  const shouldReadVaultProjects = mode === 'home' && hasVaultAccess && Boolean(user?.uid);
+  const vaultProjectsQuery = useVaultProjects(user?.uid ?? null, 24, {
+    enabled: shouldReadVaultProjects,
+  });
+  const vaultProjectsData = vaultProjectsQuery.data;
+  const primaryVaultTrack = useMemo(() => {
+    const primaryProject = vaultProjectsData?.[0];
+    if (!primaryProject) {
+      return VAULT_PLACEHOLDER_TRACK;
+    }
+
+    return mapVaultProjectToTrack(primaryProject, theme.experience.gradient);
+  }, [theme.experience.gradient, vaultProjectsData]);
+  const playableVaultTracks = useMemo(
+    () =>
+      (vaultProjectsData ?? [])
+        .map((project) => mapVaultProjectToTrack(project, theme.experience.gradient))
+        .filter((projectTrack) => Boolean(projectTrack.audioUrl)),
+    [theme.experience.gradient, vaultProjectsData]
+  );
+  const vaultProjectCount = vaultProjectsData?.length ?? 0;
+  const hasSyncedProject = vaultProjectCount > 0;
+  const vaultReadErrorCopy = vaultProjectsQuery.isError
+    ? getReadErrorCopy(vaultProjectsQuery.error, {
+        subject: 'Vault projects',
+        startupStatus,
+      })
+    : null;
+  const isPrimaryTrackActive =
+    visible &&
+    track?.surface === 'vault' &&
+    track?.id === primaryVaultTrack.id &&
+    track?.audioUrl === primaryVaultTrack.audioUrl;
+  const isPlaying = isPrimaryTrackActive && snapshot.isPlaying;
+  const projectTitleLabel = primaryVaultTrack.projectTitle ?? primaryVaultTrack.title;
+  const projectArtistLabel = primaryVaultTrack.artist;
 
   function showVaultPreviewNotice() {
     setMenuOpen(false);
     setNotice({
-      title: 'Vault preview',
+      title: 'Vault plan required',
       message:
-        'Vault is visible as a preview. Project playback, folders, and new private assets unlock when Vault is part of the current account access.',
-      primaryLabel: 'Manage Vault access',
+        'Playback, folders, and private project actions are available when your plan includes Vault.',
+      primaryLabel: 'View plans',
       onPrimaryPress: () => {
         setNotice(null);
         router.push({
@@ -112,8 +154,27 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
       return;
     }
 
-    if (!isPlaceholderTrackActive) {
-      loadTrack(VAULT_PLACEHOLDER_TRACK, { autoPlay: true });
+    if (!primaryVaultTrack.audioUrl) {
+      setNotice({
+        title: 'No preview audio yet',
+        message:
+          'This project does not have preview audio yet. Add audio, then refresh Vault.',
+      });
+      return;
+    }
+
+    if (!isPrimaryTrackActive) {
+      const queue = playableVaultTracks.length > 0 ? playableVaultTracks : [primaryVaultTrack];
+      const startIndex = Math.max(
+        0,
+        queue.findIndex((entry) => entry.id === primaryVaultTrack.id)
+      );
+
+      loadTrack(primaryVaultTrack, {
+        autoPlay: true,
+        queue,
+        startIndex,
+      });
       return;
     }
 
@@ -126,8 +187,27 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
       return;
     }
 
-    if (!isPlaceholderTrackActive) {
-      loadTrack(VAULT_PLACEHOLDER_TRACK, { autoPlay: false });
+    if (!primaryVaultTrack.audioUrl) {
+      setNotice({
+        title: 'No preview audio yet',
+        message:
+          'This project does not have preview audio yet. Add audio, then refresh Vault.',
+      });
+      return;
+    }
+
+    if (!isPrimaryTrackActive) {
+      const queue = playableVaultTracks.length > 0 ? playableVaultTracks : [primaryVaultTrack];
+      const startIndex = Math.max(
+        0,
+        queue.findIndex((entry) => entry.id === primaryVaultTrack.id)
+      );
+
+      loadTrack(primaryVaultTrack, {
+        autoPlay: false,
+        queue,
+        startIndex,
+      });
     }
     openFullPlayer();
   }
@@ -152,17 +232,14 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
 
     router.push('/vault' as any);
     setNotice({
-      title: 'Project creation is next',
-      message: 'The Vault project surface is ready. Real project writes will connect after private storage rules are in place.',
+      title: 'Project creation is coming soon',
+      message:
+        'The Vault project view is ready. New project save is the next backend step.',
     });
   }
 
   return (
-    <AppShell
-      showBottomBar={false}
-      reserveBottomBarSpace={false}
-      showStartupNotice={false}
-    >
+    <AppShell showBottomBar={false} reserveBottomBarSpace={false} showStartupNotice={false}>
       <View style={styles.screen}>
         <View style={styles.header}>
           <View>
@@ -176,6 +253,10 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
               <AppText variant="caption" tone="accent">
                 Preview workspace
               </AppText>
+            ) : hasSyncedProject ? (
+              <AppText variant="caption" tone="secondary">
+                {vaultProjectCount} project{vaultProjectCount === 1 ? '' : 's'} synced
+              </AppText>
             ) : null}
           </View>
 
@@ -185,7 +266,8 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
               onPress={() =>
                 setNotice({
                   title: 'Vault search',
-                  message: 'Search will index private projects after Vault documents are stored in Firestore.',
+                  message:
+                    'Project search is coming soon. Vault project sync is already active.',
                 })
               }
             >
@@ -206,32 +288,68 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
         </View>
 
         <View style={styles.projectWrap}>
-          <Pressable style={styles.projectCard} onPress={handleOpenProject}>
-            <LinearGradient
-              colors={VAULT_PLACEHOLDER_TRACK.artworkGradient ?? theme.experience.gradient}
-              style={styles.projectArtwork}
-            >
-              <Pressable style={styles.projectPlayButton} onPress={handleToggleProjectPlayback}>
-                {isPlaying ? (
-                  <Pause size={22} color="#FFFFFF" fill="#FFFFFF" />
-                ) : (
-                  <Play size={24} color="#FFFFFF" fill="#FFFFFF" />
-                )}
-              </Pressable>
-            </LinearGradient>
-
-            <View style={styles.projectCopy}>
-              <AppText variant="sectionHeading" style={styles.projectTitle} numberOfLines={1}>
-                untitled project
+          {mode === 'home' && hasVaultAccess && !user ? (
+            <View style={styles.emptyStateCard}>
+              <AppText variant="sectionHeading">Sign in to load your Vault projects</AppText>
+              <AppText variant="bodySmall" tone="secondary" style={styles.emptyStateText}>
+                Vault sync needs an active account session.
               </AppText>
-              <View style={styles.projectMetaRow}>
-                <AppText variant="bodySmall" style={styles.projectArtist} numberOfLines={1}>
-                  yunnowobe
-                </AppText>
-                <MoreHorizontal size={22} color={theme.colors.textMuted} />
-              </View>
+              <Pressable
+                style={styles.emptyAction}
+                onPress={() => router.push('/(auth)/login' as any)}
+              >
+                <AppText variant="button">Go to login</AppText>
+              </Pressable>
             </View>
-          </Pressable>
+          ) : mode === 'home' && shouldReadVaultProjects && vaultProjectsQuery.isLoading ? (
+            <LoadingState label="Loading Vault projects..." />
+          ) : mode === 'home' && shouldReadVaultProjects && vaultProjectsQuery.isError ? (
+            <ErrorState
+              title={vaultReadErrorCopy?.title ?? 'Could not load Vault projects'}
+              message={vaultReadErrorCopy?.message ?? 'Please retry after checking backend access.'}
+              onAction={() => vaultProjectsQuery.refetch()}
+            />
+          ) : mode === 'home' &&
+            shouldReadVaultProjects &&
+            !vaultProjectsQuery.isLoading &&
+            vaultProjectCount === 0 ? (
+            <View style={styles.emptyStateCard}>
+              <AppText variant="sectionHeading">No Vault projects yet</AppText>
+              <AppText variant="bodySmall" tone="secondary" style={styles.emptyStateText}>
+                Create your first private project or upload draft audio to start your Vault library.
+              </AppText>
+              <Pressable style={styles.emptyAction} onPress={() => setMenuOpen(true)}>
+                <AppText variant="button">Open quick actions</AppText>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable style={styles.projectCard} onPress={handleOpenProject}>
+              <LinearGradient
+                colors={primaryVaultTrack.artworkGradient ?? theme.experience.gradient}
+                style={styles.projectArtwork}
+              >
+                <Pressable style={styles.projectPlayButton} onPress={handleToggleProjectPlayback}>
+                  {isPlaying ? (
+                    <Pause size={22} color="#FFFFFF" fill="#FFFFFF" />
+                  ) : (
+                    <Play size={24} color="#FFFFFF" fill="#FFFFFF" />
+                  )}
+                </Pressable>
+              </LinearGradient>
+
+              <View style={styles.projectCopy}>
+                <AppText variant="sectionHeading" style={styles.projectTitle} numberOfLines={1}>
+                  {projectTitleLabel}
+                </AppText>
+                <View style={styles.projectMetaRow}>
+                  <AppText variant="bodySmall" style={styles.projectArtist} numberOfLines={1}>
+                    {projectArtistLabel}
+                  </AppText>
+                  <MoreHorizontal size={22} color={theme.colors.textMuted} />
+                </View>
+              </View>
+            </Pressable>
+          )}
         </View>
 
         <View style={styles.bottomDock} pointerEvents="box-none">
@@ -261,9 +379,7 @@ function VaultMinimalScreen({ mode }: { mode: VaultMode }) {
           ) : null}
 
           <View style={hasVaultMiniPlayer ? styles.playerActionRow : styles.actionOnlyRow}>
-            {hasVaultMiniPlayer ? (
-              <MiniPlayerBar variant="vault" style={styles.vaultMiniPlayer} />
-            ) : null}
+            {hasVaultMiniPlayer ? <MiniPlayerBar variant="vault" style={styles.vaultMiniPlayer} /> : null}
             <Pressable
               style={styles.floatingPlus}
               onPress={() => {
@@ -315,10 +431,24 @@ function QuickAction({
   );
 }
 
-function createStyles(
-  theme: ReturnType<typeof useThemeTokens>,
-  bottomInset: number
-) {
+function mapVaultProjectToTrack(
+  project: VaultProject,
+  fallbackGradient: readonly [string, string]
+): PlayerTrack {
+  return {
+    id: project.id,
+    title: project.title,
+    artist: project.artist,
+    sellerId: project.ownerId,
+    projectTitle: project.title,
+    audioUrl: project.audioUrl,
+    coverUrl: project.coverUrl,
+    artworkGradient: fallbackGradient,
+    surface: 'vault',
+  };
+}
+
+function createStyles(theme: ReturnType<typeof useThemeTokens>, bottomInset: number) {
   return StyleSheet.create({
     screen: {
       flex: 1,
@@ -406,6 +536,29 @@ function createStyles(
       fontSize: 16,
       lineHeight: 20,
       flex: 1,
+    },
+    emptyStateCard: {
+      width: '100%',
+      borderRadius: theme.radius.xl,
+      backgroundColor: theme.colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      padding: theme.spacing.lg,
+      gap: theme.spacing.sm,
+    },
+    emptyStateText: {
+      lineHeight: 19,
+    },
+    emptyAction: {
+      minHeight: theme.layout.minTouchTarget,
+      borderRadius: theme.radius.lg,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: theme.spacing.lg,
+      marginTop: theme.spacing.sm,
     },
     bottomDock: {
       position: 'absolute',
