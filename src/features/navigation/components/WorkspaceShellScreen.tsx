@@ -1,13 +1,11 @@
 import { AppIcon } from '@/src/components/ui/AppIcon';
 import { AppText } from '@/src/components/ui/AppText';
 import type { AppIconKey } from '@/src/components/ui/appIcons';
-import {
-  canAccessExperience,
-  getRoleConfig,
-} from '@/src/features/access/access.helpers';
+import { canAccessExperience, getRoleConfig } from '@/src/features/access/access.helpers';
 import type { AppExperience } from '@/src/features/access/access.types';
 import { useAccountStore } from '@/src/features/account/account.store';
 import { useThemeTokens } from '@/src/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 type WorkspaceCardStatus = 'available' | 'shell' | 'locked';
@@ -70,30 +68,52 @@ export function WorkspaceShellScreen({
   const accessLabel = formatLabel(roleConfig.id);
   const selectedTierLabel = formatLabel(profile?.subscriptionTier ?? roleConfig.id);
   const statusLabel = formatLabel(profile?.subscriptionStatus ?? 'free');
-  const hasPendingTier = selectedTierLabel !== accessLabel && statusLabel !== 'ACTIVE' && statusLabel !== 'TRIAL';
+  const hasPendingTier =
+    selectedTierLabel !== accessLabel &&
+    statusLabel !== 'ACTIVE' &&
+    statusLabel !== 'TRIAL';
 
   return (
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <AppText variant="eyebrow" tone="accent">
-        {eyebrow}
-      </AppText>
-      <AppText variant="pageHeading">{title}</AppText>
-      <AppText variant="body" tone="secondary" style={styles.subtitle}>
-        {subtitle}
-      </AppText>
+      <LinearGradient
+        colors={
+          theme.isDark
+            ? [theme.colors.surfaceElevated, theme.colors.accentSoft]
+            : [theme.colors.accentSoft, theme.colors.surfaceElevated]
+        }
+        style={styles.hero}
+      >
+        <View style={styles.heroTopRow}>
+          <AppText variant="eyebrow" tone="accent">
+            {eyebrow}
+          </AppText>
+          {experience ? (
+            <View style={styles.heroBadge}>
+              <AppText variant="caption" tone={experienceUnlocked ? 'success' : 'accent'}>
+                {experienceUnlocked ? 'Plan active' : 'Preview'}
+              </AppText>
+            </View>
+          ) : null}
+        </View>
+
+        <AppText variant="pageHeading">{title}</AppText>
+        <AppText variant="body" tone="secondary" style={styles.subtitle}>
+          {subtitle}
+        </AppText>
+      </LinearGradient>
 
       {experience ? (
         <View style={[styles.accessBanner, !experienceUnlocked && styles.previewBanner]}>
           <View style={styles.accessCopy}>
             <AppText variant="caption" tone={experienceUnlocked ? 'success' : 'accent'}>
-              {experienceUnlocked ? 'Workspace included' : 'Preview workspace'}
+              {experienceUnlocked ? 'Included in your plan' : 'Preview mode'}
             </AppText>
             <AppText variant="bodySmall" tone="secondary" style={styles.accessText}>
               {experienceUnlocked
-                ? `Current access: ${accessLabel} - ${statusLabel} status`
+                ? `Plan: ${accessLabel} (${statusLabel}).`
                 : hasPendingTier
-                  ? `Current access: ${accessLabel}. ${selectedTierLabel} is selected but not active yet.`
-                  : `Current access: ${accessLabel}. Full actions stay gated until the plan is upgraded.`}
+                  ? `Plan: ${accessLabel}. ${selectedTierLabel} is selected but not active yet.`
+                  : `Plan: ${accessLabel}. Upgrade to unlock full workspace actions.`}
             </AppText>
           </View>
         </View>
@@ -131,10 +151,7 @@ export function WorkspaceShellScreen({
           <Pressable
             key={card.title}
             onPress={card.onPress}
-            style={({ pressed }) => [
-              styles.card,
-              pressed ? styles.cardPressed : undefined,
-            ]}
+            style={({ pressed }) => [styles.card, pressed ? styles.cardPressed : undefined]}
           >
             <View style={styles.cardHeader}>
               {card.icon ? (
@@ -160,7 +177,7 @@ export function WorkspaceShellScreen({
 
       {workflow && workflow.length > 0 ? (
         <View style={styles.workflow}>
-          <AppText variant="title">MVP workflow</AppText>
+          <AppText variant="title">Roadmap</AppText>
           {workflow.map((step, index) => (
             <View key={step.title} style={styles.workflowStep}>
               <View style={styles.stepIndex}>
@@ -204,19 +221,19 @@ function formatLabel(value: string) {
 
 function getCardStatusLabel(status: WorkspaceCardStatus = 'shell') {
   if (status === 'available') return 'Ready';
-  if (status === 'locked') return 'Gated';
-  return 'Shell';
+  if (status === 'locked') return 'Upgrade needed';
+  return 'Coming soon';
 }
 
 function getCardStatusTone(status: WorkspaceCardStatus = 'shell') {
   if (status === 'available') return 'success';
   if (status === 'locked') return 'warning';
-  return 'muted';
+  return 'accent';
 }
 
 function getStepStatusLabel(status: WorkflowStepStatus) {
-  if (status === 'ready') return 'Ready';
-  if (status === 'next') return 'Next';
+  if (status === 'ready') return 'Ready now';
+  if (status === 'next') return 'Next up';
   return 'Later';
 }
 
@@ -231,14 +248,32 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     content: {
       paddingHorizontal: theme.spacing.lg,
       paddingTop: theme.spacing.lg,
-      // AppShell.content already reserves bottomBarHeight + bottomBarOffset +
-      // insets.bottom + spacing.lg via reserveBottomBarSpace. This padding adds
-      // a little extra visual breathing room below the last card.
       paddingBottom: theme.spacing.xxl,
       gap: theme.spacing.md,
     },
+    hero: {
+      borderRadius: theme.radius.xl,
+      borderWidth: 1,
+      borderColor: theme.colors.accentBorder,
+      padding: theme.spacing.lg,
+      gap: theme.spacing.sm,
+    },
+    heroTopRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: theme.spacing.sm,
+    },
+    heroBadge: {
+      borderRadius: theme.radius.pill,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 2,
+    },
     subtitle: {
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.xs,
     },
     accessBanner: {
       borderRadius: theme.radius.xl,
@@ -259,9 +294,9 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     },
     highlight: {
       borderRadius: theme.radius.xl,
-      backgroundColor: theme.colors.accentSoft,
+      backgroundColor: theme.colors.surfaceElevated,
       borderWidth: 1,
-      borderColor: theme.colors.accentBorder,
+      borderColor: theme.colors.borderStrong,
       padding: theme.spacing.lg,
       gap: theme.spacing.xs,
     },

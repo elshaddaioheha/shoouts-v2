@@ -32,12 +32,12 @@ export function openWorkspaceGate(
     const upgradeLabel = upgradeTarget ? getRoleConfig(upgradeTarget).label : 'a higher plan';
     Alert.alert(
       'Upgrade required',
-      `${featureLabel} is gated in this workspace. Upgrade to ${upgradeLabel} to unlock ${experience}.`
+      `${featureLabel} needs ${upgradeLabel}. Upgrade your plan to unlock ${experience}.`
     );
     return;
   }
 
-  Alert.alert('Shell in progress', shellMessage);
+  Alert.alert('Coming soon', shellMessage);
 }
 
 export function buildAccountHealthNotice(
@@ -46,27 +46,27 @@ export function buildAccountHealthNotice(
 ) {
   if (!profile) {
     return {
-      title: `${workspaceLabel} is waiting for account data`,
+      title: `${workspaceLabel} is getting your account ready`,
       description:
-        'The shell is rendering without a resolved account profile yet, so counts and gating may stay conservative.',
+        'We are still loading your account details. Some counters and actions may look limited for now.',
     };
   }
 
   if (profile.dataHealth.profileSource === 'fallback') {
     return {
-      title: `${workspaceLabel} is running on fallback profile data`,
+      title: `${workspaceLabel} is using basic account data`,
       description:
-        'The signed-in session is valid, but users/{uid} is missing or unreadable. Workspace metrics stay minimal until profile sync recovers.',
+        'You are signed in, but full profile data has not synced yet. Workspace info stays minimal until sync completes.',
     };
   }
 
   if (profile.dataHealth.userDocState === 'partial') {
     const fieldList = profile.dataHealth.missingFields.slice(0, 3).join(', ');
     return {
-      title: `${workspaceLabel} account data is partial`,
+      title: `${workspaceLabel} account details need a quick refresh`,
       description: fieldList
-        ? `Some profile fields are missing or adjusted: ${fieldList}. The shell is using safe defaults where needed.`
-        : 'Some profile fields are missing, so the shell is using safe defaults where needed.',
+        ? `Some account fields are still incomplete (${fieldList}). Safe defaults are in use for now.`
+        : 'Some account fields are still incomplete. Safe defaults are in use for now.',
     };
   }
 

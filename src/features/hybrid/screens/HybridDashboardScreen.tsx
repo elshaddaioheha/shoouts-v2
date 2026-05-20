@@ -19,29 +19,29 @@ export function HybridDashboardScreen() {
       <WorkspaceShellScreen
         experience="hybrid"
         eyebrow="Hybrid"
-        title="Creator dashboard"
-        subtitle="Run private production and public selling in one workflow."
+        title="Creator flow"
+        subtitle="Move from private creation to public release in one connected workspace."
         highlight={{
-          title: 'Vault -> Studio -> Marketplace',
+          title: 'Vault to Studio to Marketplace',
           description:
-            'Start privately in Vault, refine in Studio, and publish to marketplace when ready.',
+            'Draft in Vault, refine in Studio, and release when everything is ready.',
         }}
         metrics={[
           {
             label: 'Vault drafts',
             value: `${uploadCount}`,
-            helper: 'Private source files',
+            helper: 'Private source projects',
           },
           {
             label: 'Studio status',
             value: formatStatus(verification),
-            helper: 'Seller verification',
+            helper: 'Seller verification state',
           },
         ]}
         cards={[
           {
-            title: 'Private Workspace',
-            description: 'Build and iterate in Vault with private previews.',
+            title: 'Private workspace',
+            description: 'Build and review ideas in Vault.',
             icon: 'vault',
             status: getWorkspaceCardStatus(role, 'hybrid'),
             onPress: () =>
@@ -49,12 +49,12 @@ export function HybridDashboardScreen() {
                 role,
                 'hybrid',
                 'Hybrid Vault workflow',
-                'Hybrid Vault workflow will be connected after shell stabilization.'
+                'Hybrid Vault tools are being connected now.'
               ),
           },
           {
-            title: 'Listing Pipeline',
-            description: 'Transform selected files into marketplace-ready listings.',
+            title: 'Listing pipeline',
+            description: 'Turn selected projects into release-ready listings.',
             icon: 'studio',
             status: getWorkspaceCardStatus(role, 'hybrid'),
             onPress: () =>
@@ -62,12 +62,12 @@ export function HybridDashboardScreen() {
                 role,
                 'hybrid',
                 'Hybrid listing pipeline',
-                'Hybrid listing pipeline will be connected after shell stabilization.'
+                'Listing pipeline actions are coming in the next phase.'
               ),
           },
           {
-            title: 'Publish Queue',
-            description: 'Approve and release finalized listings to market.',
+            title: 'Publish queue',
+            description: 'Approve and release finalized listings.',
             icon: 'upload',
             status: getWorkspaceCardStatus(role, 'hybrid'),
             onPress: () =>
@@ -75,32 +75,34 @@ export function HybridDashboardScreen() {
                 role,
                 'hybrid',
                 'Hybrid publish queue',
-                'Hybrid publish queue will be connected after shell stabilization.'
+                'Publish queue actions unlock after secure release writes are enabled.'
               ),
           },
         ]}
         workflow={[
           {
             title: 'Keep source private',
-            description: 'Vault remains the source of truth for drafts and private assets.',
+            description: 'Vault remains the source of truth for drafts.',
             status: 'ready',
           },
           {
             title: 'Convert draft to listing',
-            description: 'The next implementation should create a draft listing from selected metadata.',
+            description: 'Next step is creating Studio draft listings from Vault projects.',
             status: 'next',
           },
           {
             title: 'Publish securely',
-            description: 'Final publishing waits for file delivery, purchases, and entitlement checks.',
+            description: 'Final release waits for secure delivery, purchases, and entitlements.',
             status: 'later',
           },
         ]}
-        notice={healthNotice ?? {
-          title: 'Hybrid stays orchestration-first',
-          description:
-            'This shell keeps the Vault-to-Studio journey visible now, while secure publish writes remain intentionally deferred.',
-        }}
+        notice={
+          healthNotice ?? {
+            title: 'Workflow-first release design',
+            description:
+              'The full Vault-to-Studio journey is visible now. Final publish writes are the next backend milestone.',
+          }
+        }
       />
     </AppShell>
   );
@@ -115,12 +117,12 @@ export function HybridVaultScreen() {
       <WorkspaceShellScreen
         experience="hybrid"
         eyebrow="Hybrid"
-        title="Vault Workspace"
-        subtitle="Use private tools while staying in the Hybrid experience."
+        title="Vault workspace"
+        subtitle="Use private tools without leaving your Hybrid workflow."
         cards={[
           {
-            title: 'Draft Folder',
-            description: 'Organize draft tracks before publishing decisions.',
+            title: 'Draft folders',
+            description: 'Organize private projects before release decisions.',
             icon: 'folders',
             status: getWorkspaceCardStatus(role, 'hybrid'),
             onPress: () =>
@@ -128,12 +130,12 @@ export function HybridVaultScreen() {
                 role,
                 'hybrid',
                 'Hybrid draft folders',
-                'Hybrid draft folders will be connected after shell stabilization.'
+                'Draft folder actions are being connected.'
               ),
           },
           {
-            title: 'Private Preview',
-            description: 'Review vault tracks before sending them to Studio.',
+            title: 'Private preview',
+            description: 'Review tracks before moving them into Studio.',
             icon: 'play',
             status: getWorkspaceCardStatus(role, 'hybrid'),
             onPress: () =>
@@ -141,15 +143,17 @@ export function HybridVaultScreen() {
                 role,
                 'hybrid',
                 'Hybrid private preview',
-                'Hybrid private preview will be connected after shell stabilization.'
+                'Private preview controls are coming soon.'
               ),
           },
         ]}
-        notice={buildAccountHealthNotice(profile, 'Hybrid') ?? {
-          title: 'Private first',
-          description:
-            'Hybrid Vault keeps drafts separate from public marketplace reads until publishing is explicit.',
-        }}
+        notice={
+          buildAccountHealthNotice(profile, 'Hybrid') ?? {
+            title: 'Private-first workflow',
+            description:
+              'Hybrid keeps drafts private until you intentionally move them toward release.',
+          }
+        }
       />
     </AppShell>
   );
@@ -165,11 +169,11 @@ export function HybridStudioScreen() {
         experience="hybrid"
         eyebrow="Hybrid"
         title="Studio Tools"
-        subtitle="Manage listings and promotions while preserving source files in Vault."
+        subtitle="Prepare listings and promotions while your source projects stay in Vault."
         cards={[
           {
-            title: 'Listing Setup',
-            description: 'Create listings from approved Vault projects.',
+            title: 'Listing setup',
+            description: 'Create release drafts from approved Vault projects.',
             icon: 'listings',
             status: getWorkspaceCardStatus(role, 'hybrid'),
             onPress: () =>
@@ -177,12 +181,12 @@ export function HybridStudioScreen() {
                 role,
                 'hybrid',
                 'Hybrid listing setup',
-                'Hybrid listing setup will be connected after shell stabilization.'
+                'Listing setup actions are in progress.'
               ),
           },
           {
-            title: 'Promotion Setup',
-            description: 'Prepare promotion placeholders for launch windows.',
+            title: 'Promotion setup',
+            description: 'Plan promotion timing for launch windows.',
             icon: 'promote',
             status: getWorkspaceCardStatus(role, 'hybrid'),
             onPress: () =>
@@ -190,15 +194,17 @@ export function HybridStudioScreen() {
                 role,
                 'hybrid',
                 'Hybrid promotions',
-                'Hybrid promotions will be connected after shell stabilization.'
+                'Promotion tools are coming in a later phase.'
               ),
           },
         ]}
-        notice={buildAccountHealthNotice(profile, 'Hybrid') ?? {
-          title: 'Studio tooling depends on Vault truth',
-          description:
-            'Hybrid listing setup will stay shell-only until selected Vault assets can produce real listing drafts.',
-        }}
+        notice={
+          buildAccountHealthNotice(profile, 'Hybrid') ?? {
+            title: 'Vault-to-Studio bridge',
+            description:
+              'This view becomes fully active once selected Vault assets can create real listing drafts.',
+          }
+        }
       />
     </AppShell>
   );
@@ -214,11 +220,11 @@ export function HybridPublishScreen() {
         experience="hybrid"
         eyebrow="Hybrid"
         title="Publish"
-        subtitle="Final check before publishing a Vault project as a marketplace listing."
+        subtitle="Final release check before publishing to the marketplace."
         cards={[
           {
-            title: 'Asset Validation',
-            description: 'Confirm audio, artwork, and metadata completeness.',
+            title: 'Asset validation',
+            description: 'Confirm audio, artwork, and metadata.',
             icon: 'upload',
             status: getWorkspaceCardStatus(role, 'hybrid'),
             onPress: () =>
@@ -226,12 +232,12 @@ export function HybridPublishScreen() {
                 role,
                 'hybrid',
                 'Asset validation',
-                'Asset validation will be connected after shell stabilization.'
+                'Asset validation is being connected to release checks.'
               ),
           },
           {
-            title: 'Pricing Review',
-            description: 'Set and review listing price before going live.',
+            title: 'Pricing review',
+            description: 'Set and confirm listing price before release.',
             icon: 'wallet',
             status: getWorkspaceCardStatus(role, 'hybrid'),
             onPress: () =>
@@ -239,12 +245,12 @@ export function HybridPublishScreen() {
                 role,
                 'hybrid',
                 'Pricing review',
-                'Pricing review will be connected after shell stabilization.'
+                'Pricing review is coming soon.'
               ),
           },
           {
-            title: 'Release Action',
-            description: 'Push approved listing to the marketplace feed.',
+            title: 'Release action',
+            description: 'Publish approved listings to the marketplace feed.',
             icon: 'hybrid',
             status: getWorkspaceCardStatus(role, 'hybrid'),
             onPress: () =>
@@ -252,15 +258,17 @@ export function HybridPublishScreen() {
                 role,
                 'hybrid',
                 'Release action',
-                'Release action will be connected after shell stabilization.'
+                'Release actions unlock after secure publish writes are complete.'
               ),
           },
         ]}
-        notice={buildAccountHealthNotice(profile, 'Hybrid') ?? {
-          title: 'Publish remains gated',
-          description:
-            'The checklist is visible now, but public writes wait for secure storage and listing validation.',
-        }}
+        notice={
+          buildAccountHealthNotice(profile, 'Hybrid') ?? {
+            title: 'Publish path in progress',
+            description:
+              'The checklist is visible now. Public writes unlock after storage and validation security is complete.',
+          }
+        }
       />
     </AppShell>
   );
@@ -276,11 +284,11 @@ export function HybridMoreScreen() {
         experience="hybrid"
         eyebrow="Hybrid"
         title="More"
-        subtitle="Advanced workflow settings, notifications, and workspace tools."
+        subtitle="Workflow settings, alerts, and account tools."
         cards={[
           {
-            title: 'Workflow Settings',
-            description: 'Tune how Vault files move into Studio and publishing.',
+            title: 'Workflow settings',
+            description: 'Control how Vault projects move into Studio and Publish.',
             icon: 'settings',
             status: getWorkspaceCardStatus(role, 'hybrid'),
             onPress: () =>
@@ -288,12 +296,12 @@ export function HybridMoreScreen() {
                 role,
                 'hybrid',
                 'Workflow settings',
-                'Workflow settings will be connected after shell stabilization.'
+                'Workflow settings are being designed now.'
               ),
           },
           {
             title: 'Notifications',
-            description: 'Choose update and activity alerts across all tools.',
+            description: 'Choose update and activity alerts.',
             icon: 'notifications',
             status: getWorkspaceCardStatus(role, 'hybrid'),
             onPress: () =>
@@ -301,12 +309,12 @@ export function HybridMoreScreen() {
                 role,
                 'hybrid',
                 'Hybrid notifications',
-                'Hybrid notifications will be connected after shell stabilization.'
+                'Notification controls are coming soon.'
               ),
           },
           {
             title: 'Billing',
-            description: 'Manage Hybrid subscription and billing details.',
+            description: 'Manage your Hybrid subscription and billing details.',
             icon: 'billing',
             status: getWorkspaceCardStatus(role, 'hybrid'),
             onPress: () =>
@@ -314,15 +322,17 @@ export function HybridMoreScreen() {
                 role,
                 'hybrid',
                 'Hybrid billing',
-                'Hybrid billing will be connected after shell stabilization.'
+                'Billing actions will unlock after payment settings are fully integrated.'
               ),
           },
         ]}
-        notice={buildAccountHealthNotice(profile, 'Hybrid') ?? {
-          title: 'Workflow settings follow entitlement truth',
-          description:
-            'Hybrid settings will stay shell-only until billing and publish-state writes are protected end to end.',
-        }}
+        notice={
+          buildAccountHealthNotice(profile, 'Hybrid') ?? {
+            title: 'Settings follow account state',
+            description:
+              'Hybrid settings become fully active once billing and publish-state writes are protected end to end.',
+          }
+        }
       />
     </AppShell>
   );

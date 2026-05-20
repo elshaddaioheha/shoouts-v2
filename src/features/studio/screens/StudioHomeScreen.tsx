@@ -15,41 +15,41 @@ export function StudioHomeScreen() {
   const healthNotice = buildAccountHealthNotice(profile, 'Studio');
   const sellerStateDescription =
     verification === 'verified'
-      ? 'Seller verification is complete, so payout-oriented UI can trust the current profile.'
+      ? 'Your seller verification is complete, so payout settings are ready for activation.'
       : verification === 'pending'
-        ? 'Verification is underway. Publishing can stay visible, but payout actions should remain conservative.'
-        : 'Verification has not been completed yet, so payout and release-critical actions stay gated.';
+        ? 'Verification is in progress. You can prepare releases now, then enable payouts once approval is complete.'
+        : 'Verify your seller profile to unlock payout and release-critical actions.';
 
   return (
     <AppShell>
       <WorkspaceShellScreen
         experience="studio"
         eyebrow="Studio"
-        title="Seller workspace"
-        subtitle="Publish tracks, manage catalog, and grow discoverability."
+        title="Release workspace"
+        subtitle="Prepare music, manage listings, and plan launch activity from one place."
         highlight={{
-          title: payoutsEnabled ? 'Seller account is payout-ready' : 'Studio shell is seller-aware',
+          title: payoutsEnabled ? 'Payout setup is ready' : 'Studio setup in progress',
           description: sellerStateDescription,
         }}
         metrics={[
           {
             label: 'Verification',
             value: formatStatus(verification),
-            helper: payoutsEnabled ? 'Payouts enabled' : 'Payouts pending',
+            helper: payoutsEnabled ? 'Payouts available' : 'Payouts not active yet',
           },
           {
             label: 'Account data',
             value: formatStatus(profile?.dataHealth.userDocState ?? 'missing'),
             helper:
               profile?.dataHealth.profileSource === 'fallback'
-                ? 'Auth-only fallback profile'
-                : 'Workspace shell reads from account state',
+                ? 'Using basic profile data'
+                : 'Synced from your account profile',
           },
         ]}
         cards={[
           {
-            title: 'Upload to Marketplace',
-            description: 'Create a listing directly from your Studio workspace.',
+            title: 'Upload release assets',
+            description: 'Add audio and artwork for your next release.',
             icon: 'upload',
             status: getWorkspaceCardStatus(role, 'studio'),
             onPress: () =>
@@ -57,12 +57,12 @@ export function StudioHomeScreen() {
                 role,
                 'studio',
                 'Studio upload',
-                'Studio upload will be connected after shell stabilization.'
+                'Upload tools are being connected to secure storage.'
               ),
           },
           {
-            title: 'Listing Queue',
-            description: 'Track drafts, scheduled releases, and published listings.',
+            title: 'Manage listings',
+            description: 'Track drafts, scheduled drops, and live listings.',
             icon: 'listings',
             status: getWorkspaceCardStatus(role, 'studio'),
             onPress: () =>
@@ -70,12 +70,12 @@ export function StudioHomeScreen() {
                 role,
                 'studio',
                 'Listing queue',
-                'Listing queue will be connected after shell stabilization.'
+                'Listing management tools are coming in the next release.'
               ),
           },
           {
-            title: 'Promotion Queue',
-            description: 'Prepare placements and boost campaigns for release days.',
+            title: 'Plan promotions',
+            description: 'Set up release campaigns and boost timing.',
             icon: 'promote',
             status: getWorkspaceCardStatus(role, 'studio'),
             onPress: () =>
@@ -83,32 +83,33 @@ export function StudioHomeScreen() {
                 role,
                 'studio',
                 'Promotions',
-                'Promotions will be connected after shell stabilization.'
+                'Promotion setup will unlock after listing write paths are live.'
               ),
           },
         ]}
         workflow={[
           {
-            title: 'Map published uploads',
-            description: 'Buyer marketplace surfaces already read public upload data safely.',
+            title: 'Read live marketplace data',
+            description: 'Marketplace listing reads are already stable and active.',
             status: 'ready',
           },
           {
-            title: 'Create listing drafts',
-            description: 'Next pass should write draft metadata without uploading raw files yet.',
+            title: 'Create draft listings',
+            description: 'Next step is writing draft metadata from Studio.',
             status: 'next',
           },
           {
             title: 'Enable payouts and analytics',
-            description: 'KYC, payout, and deeper analytics stay after transaction security.',
+            description: 'KYC, payouts, and full analytics follow secure transaction rollout.',
             status: 'later',
           },
         ]}
-        notice={healthNotice ?? {
-          title: 'Payout verification',
-          description:
-            'Publishing stays open, while payout access will require KYC verification.',
-        }}
+        notice={
+          healthNotice ?? {
+            title: 'Payout verification',
+            description: 'Publishing can be prepared now. Payout access requires KYC verification.',
+          }
+        }
       />
     </AppShell>
   );
@@ -124,16 +125,16 @@ export function StudioListingsScreen() {
         experience="studio"
         eyebrow="Studio"
         title="Listings"
-        subtitle="Manage listing lifecycle from draft to live."
+        subtitle="Manage each release from draft to live."
         highlight={{
-          title: 'Listing state will come from real writes',
+          title: 'Listing activity will reflect real writes',
           description:
-            'Marketplace reads are live now, but this shell will only show drafts and releases once secure Studio writes are in place.',
+            'Marketplace reads are live now. Studio will show draft and release states as soon as secure writes are enabled.',
         }}
         cards={[
           {
             title: 'Create Listing',
-            description: 'Define title, artwork, genre, and pricing details.',
+            description: 'Set title, artwork, genre, and pricing.',
             icon: 'add',
             status: getWorkspaceCardStatus(role, 'studio'),
             onPress: () =>
@@ -141,12 +142,12 @@ export function StudioListingsScreen() {
                 role,
                 'studio',
                 'Create listing',
-                'Studio listing creation will be connected after shell stabilization.'
+                'Listing creation is being connected to secure write paths.'
               ),
           },
           {
             title: 'Edit Listing',
-            description: 'Update metadata and pricing without rebuilding from scratch.',
+            description: 'Update metadata and pricing at any time.',
             icon: 'settings',
             status: getWorkspaceCardStatus(role, 'studio'),
             onPress: () =>
@@ -154,12 +155,12 @@ export function StudioListingsScreen() {
                 role,
                 'studio',
                 'Edit listing',
-                'Studio listing editing will be connected after shell stabilization.'
+                'Listing editing is coming soon.'
               ),
           },
           {
             title: 'Archive Listing',
-            description: 'Pause visibility while keeping historical analytics.',
+            description: 'Pause visibility without losing history.',
             icon: 'more',
             status: getWorkspaceCardStatus(role, 'studio'),
             onPress: () =>
@@ -167,15 +168,17 @@ export function StudioListingsScreen() {
                 role,
                 'studio',
                 'Archive listing',
-                'Studio archive actions will be connected after shell stabilization.'
+                'Archive controls will unlock after listing lifecycle writes are active.'
               ),
           },
         ]}
-        notice={buildAccountHealthNotice(profile, 'Studio') ?? {
-          title: 'No fake listings',
-          description:
-            'This shell will show real drafts and published uploads only once write paths are secure.',
-        }}
+        notice={
+          buildAccountHealthNotice(profile, 'Studio') ?? {
+            title: 'Real listing states only',
+            description:
+              'Draft and published states will appear here once Studio write security is complete.',
+          }
+        }
       />
     </AppShell>
   );
@@ -191,11 +194,11 @@ export function StudioUploadScreen() {
         experience="studio"
         eyebrow="Studio"
         title="Upload"
-        subtitle="Prepare assets and upload files for marketplace release."
+        subtitle="Prepare files for your next release."
         cards={[
           {
             title: 'Audio File',
-            description: 'Upload your primary track file and preview metadata.',
+            description: 'Upload your track and confirm audio details.',
             icon: 'upload',
             status: getWorkspaceCardStatus(role, 'studio'),
             onPress: () =>
@@ -203,12 +206,12 @@ export function StudioUploadScreen() {
                 role,
                 'studio',
                 'Audio upload',
-                'Studio audio upload will be connected after shell stabilization.'
+                'Audio uploads are being connected to secure storage.'
               ),
           },
           {
             title: 'Artwork',
-            description: 'Attach cover art optimized for feed and listing views.',
+            description: 'Attach cover art for feed and listing views.',
             icon: 'studio',
             status: getWorkspaceCardStatus(role, 'studio'),
             onPress: () =>
@@ -216,15 +219,17 @@ export function StudioUploadScreen() {
                 role,
                 'studio',
                 'Artwork upload',
-                'Studio artwork upload will be connected after shell stabilization.'
+                'Artwork uploads are coming soon.'
               ),
           },
         ]}
-        notice={buildAccountHealthNotice(profile, 'Studio') ?? {
-          title: 'Upload is intentionally gated',
-          description:
-            'The shell is ready, but file writes wait for storage rules, validation, and publish review.',
-        }}
+        notice={
+          buildAccountHealthNotice(profile, 'Studio') ?? {
+            title: 'Upload flow in progress',
+            description:
+              'This screen is ready. File writes will unlock after storage rules and validation are finalized.',
+          }
+        }
       />
     </AppShell>
   );
@@ -240,11 +245,11 @@ export function StudioPromoteScreen() {
         experience="studio"
         eyebrow="Studio"
         title="Promote"
-        subtitle="Set up campaigns and audience targeting placeholders."
+        subtitle="Plan campaign ideas and launch timing."
         cards={[
           {
             title: 'Campaign Draft',
-            description: 'Prepare campaign intent and target channels.',
+            description: 'Outline campaign goals and channels.',
             icon: 'promote',
             status: getWorkspaceCardStatus(role, 'studio'),
             onPress: () =>
@@ -252,12 +257,12 @@ export function StudioPromoteScreen() {
                 role,
                 'studio',
                 'Campaign drafts',
-                'Campaign drafts will be connected after shell stabilization.'
+                'Campaign drafts will unlock after listing writes are live.'
               ),
           },
           {
             title: 'Boost Rules',
-            description: 'Define basic release boost preferences for future rollout.',
+            description: 'Set release boost preferences.',
             icon: 'promote',
             status: getWorkspaceCardStatus(role, 'studio'),
             onPress: () =>
@@ -265,15 +270,17 @@ export function StudioPromoteScreen() {
                 role,
                 'studio',
                 'Boost rules',
-                'Boost rules will be connected after shell stabilization.'
+                'Boost controls are coming in a later phase.'
               ),
           },
         ]}
-        notice={buildAccountHealthNotice(profile, 'Studio') ?? {
-          title: 'Promotion follows listing truth',
-          description:
-            'Campaign setup will stay shell-only until listing drafts and release timing are backed by real writes.',
-        }}
+        notice={
+          buildAccountHealthNotice(profile, 'Studio') ?? {
+            title: 'Promotion follows listing state',
+            description:
+              'Campaign setup becomes fully active after draft listings and release timing are backed by real writes.',
+          }
+        }
       />
     </AppShell>
   );
@@ -289,11 +296,11 @@ export function StudioAnalyticsScreen() {
         experience="studio"
         eyebrow="Studio"
         title="Analytics"
-        subtitle="Monitor simple performance signals across your catalog."
+        subtitle="Track core performance signals across your catalog."
         cards={[
           {
             title: 'View Count',
-            description: 'Track listing impressions and product page visits.',
+            description: 'Measure listing impressions and page visits.',
             icon: 'analytics',
             status: getWorkspaceCardStatus(role, 'studio'),
             onPress: () =>
@@ -301,12 +308,12 @@ export function StudioAnalyticsScreen() {
                 role,
                 'studio',
                 'View metrics',
-                'View metrics will be connected after shell stabilization.'
+                'View metrics are coming soon.'
               ),
           },
           {
             title: 'Listen Count',
-            description: 'Track listen behavior and preview completion rates.',
+            description: 'Track plays and preview completion.',
             icon: 'play',
             status: getWorkspaceCardStatus(role, 'studio'),
             onPress: () =>
@@ -314,12 +321,12 @@ export function StudioAnalyticsScreen() {
                 role,
                 'studio',
                 'Listen metrics',
-                'Listen metrics will be connected after shell stabilization.'
+                'Listen analytics are in progress.'
               ),
           },
           {
             title: 'Cart Signals',
-            description: 'Track adds to cart and basic conversion trend snapshots.',
+            description: 'Track add-to-cart and conversion trends.',
             icon: 'cart',
             status: getWorkspaceCardStatus(role, 'studio'),
             onPress: () =>
@@ -327,15 +334,17 @@ export function StudioAnalyticsScreen() {
                 role,
                 'studio',
                 'Cart analytics',
-                'Cart analytics will be connected after shell stabilization.'
+                'Cart analytics will unlock after commerce events are fully wired.'
               ),
           },
         ]}
-        notice={buildAccountHealthNotice(profile, 'Studio') ?? {
-          title: 'Analytics shell only',
-          description:
-            'Counts shown here will come from real event writes after preview playback and purchases are secured.',
-        }}
+        notice={
+          buildAccountHealthNotice(profile, 'Studio') ?? {
+            title: 'Analytics in progress',
+            description:
+              'Counts on this screen will be sourced from real event writes after playback and purchase events are secured.',
+          }
+        }
       />
     </AppShell>
   );
