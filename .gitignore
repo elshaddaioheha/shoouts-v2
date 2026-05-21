@@ -37,6 +37,12 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# Claude Code local settings
+.claude/
+
+# Local scratch / logs / screenshots
+tmp/
+
 app-example
 
 # generated native folders

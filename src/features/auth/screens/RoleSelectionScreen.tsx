@@ -165,7 +165,7 @@ export function RoleSelectionScreen() {
         try {
           await updateAccountRoleSelection(user.uid, selectedRole);
         } catch (error) {
-          console.warn('[account] Failed to persist selected role.', error);
+          if (__DEV__) console.warn('[account] Failed to persist selected role.', error);
         }
       }
       router.replace('/');

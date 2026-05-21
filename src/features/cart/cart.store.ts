@@ -1,4 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import type { CartItem } from './cart.types';
 
 type CartState = {
@@ -10,27 +12,37 @@ type CartState = {
   total: () => number;
 };
 
-export const useCartStore = create<CartState>((set, get) => ({
-  items: [],
+export const useCartStore = create<CartState>()(
+  persist(
+    (set, get) => ({
+      items: [],
 
-  addItem: (item) =>
-    set((state) => {
-      const exists = state.items.some((existing) => existing.id === item.id);
-      if (exists) return state;
+      addItem: (item) =>
+        set((state) => {
+          const exists = state.items.some((existing) => existing.id === item.id);
+          if (exists) return state;
 
-      return {
-        items: [...state.items, item],
-      };
+          return {
+            items: [...state.items, item],
+          };
+        }),
+
+      removeItem: (id) =>
+        set((state) => ({
+          items: state.items.filter((item) => item.id !== id),
+        })),
+
+      clearCart: () => set({ items: [] }),
+
+      isInCart: (id) => get().items.some((item) => item.id === id),
+
+      total: () => get().items.reduce((sum, item) => sum + item.price, 0),
     }),
-
-  removeItem: (id) =>
-    set((state) => ({
-      items: state.items.filter((item) => item.id !== id),
-    })),
-
-  clearCart: () => set({ items: [] }),
-
-  isInCart: (id) => get().items.some((item) => item.id === id),
-
-  total: () => get().items.reduce((sum, item) => sum + item.price, 0),
-}));
+    {
+      name: 'shoout-cart',
+      storage: createJSONStorage(() => AsyncStorage),
+      // Only persist the items array; derived methods (isInCart, total) are re-created
+      partialize: (state) => ({ items: state.items }),
+    }
+  )
+);

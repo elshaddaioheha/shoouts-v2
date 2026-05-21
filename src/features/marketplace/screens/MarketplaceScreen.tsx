@@ -84,7 +84,7 @@ export function MarketplaceScreen() {
 
         setPresets(sanitized);
       } catch (error) {
-        console.warn('[marketplace] Failed to load saved filter presets.', error);
+        if (__DEV__) console.warn('[marketplace] Failed to load saved filter presets.', error);
       }
     }
 
@@ -100,7 +100,7 @@ export function MarketplaceScreen() {
     try {
       await AsyncStorage.setItem(EXPLORE_PRESETS_KEY, JSON.stringify(nextPresets));
     } catch (error) {
-      console.warn('[marketplace] Failed to persist filter presets.', error);
+      if (__DEV__) console.warn('[marketplace] Failed to persist filter presets.', error);
     }
   }
 

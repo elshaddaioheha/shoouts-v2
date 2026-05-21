@@ -176,7 +176,7 @@ export function SettingsScreen() {
           >
             <AppText variant="button">Updates & notifications</AppText>
           </Pressable>
-          <Pressable style={styles.inlineButton} onPress={() => router.push('/debug/signout' as any)}>
+          <Pressable style={styles.inlineButton} onPress={() => router.push('/signout' as any)}>
             <AppText variant="button" tone="danger">
               Sign out
             </AppText>

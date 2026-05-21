@@ -75,7 +75,7 @@ export function ExperienceSwitcher() {
       try {
         await updateAccountActiveExperience(user.uid, experience);
       } catch (error) {
-        console.warn('[account] Failed to persist active experience.', error);
+        if (__DEV__) console.warn('[account] Failed to persist active experience.', error);
       }
     }
   }

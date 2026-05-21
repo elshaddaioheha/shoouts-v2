@@ -354,10 +354,14 @@ function logVaultReadStats(stats: VaultReadStats) {
     `inferred_owner=${stats.inferredOwnerId}`,
   ].join(', ');
 
-  console.warn(`[vault] ${stats.scope} diagnostics: ${summary}`);
+  if (__DEV__) {
+    console.warn(`[vault] ${stats.scope} diagnostics: ${summary}`);
+  }
 }
 
 function logVaultReadError(scope: string, error: unknown) {
+  if (!__DEV__) return;
+
   const message =
     error instanceof Error
       ? error.message
@@ -376,6 +380,8 @@ function logVaultReadError(scope: string, error: unknown) {
 }
 
 function logVaultFallback(scope: string, error: unknown) {
+  if (!__DEV__) return;
+
   const message = error instanceof Error ? error.message : 'Unknown Firestore read error';
   const code = error instanceof FirebaseError ? error.code : 'unknown';
   console.warn(`[vault] ${scope} fell back (${code}): ${message}`);

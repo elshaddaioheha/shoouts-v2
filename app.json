@@ -8,7 +8,9 @@
     "scheme": "shooutv2",
     "userInterfaceStyle": "automatic",
     "updates": {
-      "enabled": false
+      "enabled": true,
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
     },
     "ios": {
       "supportsTablet": true

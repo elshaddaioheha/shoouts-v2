@@ -124,20 +124,16 @@ export function BottomPillBar() {
       return;
     }
 
-    indicatorX.value = withTiming(clampedX, {
-      duration: 220,
-      easing: Easing.out(Easing.cubic),
-    });
+    // Keep X, width, and opacity on the same easing/duration so the indicator
+    // moves as a single object instead of three loosely-coupled tweens.
+    const motion = { duration: 200, easing: Easing.out(Easing.cubic) };
 
-    indicatorWidth.value = withTiming(targetWidth, {
-      duration: 220,
-      easing: Easing.out(Easing.cubic),
-    });
+    indicatorX.value = withTiming(clampedX, motion);
+    indicatorWidth.value = withTiming(targetWidth, motion);
 
-    indicatorOpacity.value = withTiming(1, {
-      duration: 180,
-      easing: Easing.out(Easing.quad),
-    });
+    if (indicatorOpacity.value < 1) {
+      indicatorOpacity.value = withTiming(1, { duration: 140, easing: Easing.linear });
+    }
   }, [
     indicatorOpacity,
     indicatorWidth,

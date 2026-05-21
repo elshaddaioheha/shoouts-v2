@@ -135,14 +135,16 @@ export function AppShell({
         <LinearGradient
           key={`bottom-backdrop:${bottomBarThemeKey}`}
           pointerEvents="none"
-          // Transparent at the top → opaque at the bottom so the pill floats
-          // freely instead of sitting on a solid shelf.
+          // The pill is meant to float. We keep the gradient almost fully
+          // transparent through the area the pill occupies, then ramp to
+          // opaque only in the bottom strip (safe area / home indicator)
+          // so scrolling content doesn't bleed into the system gestures.
           colors={[
             withAlpha(theme.colors.background, '00'),
-            withAlpha(theme.colors.background, 'CC'),
-            withAlpha(theme.colors.background, 'FF'),
+            withAlpha(theme.colors.background, '1A'),
+            withAlpha(theme.colors.background, 'F2'),
           ]}
-          locations={[0, 0.55, 1]}
+          locations={[0, 0.75, 1]}
           style={[
             styles.bottomBarBackdrop,
             {
@@ -150,7 +152,7 @@ export function AppShell({
                 layout.bottomBarHeight +
                 layout.bottomBarOffset +
                 insets.bottom +
-                theme.spacing.xxxl,
+                theme.spacing.lg,
             },
           ]}
         />

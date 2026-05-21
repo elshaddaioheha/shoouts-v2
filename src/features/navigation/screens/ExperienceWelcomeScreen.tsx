@@ -4,8 +4,8 @@ import { appIcons, type AppIconKey } from '@/src/components/ui/appIcons';
 import { useReducedMotion } from '@/src/hooks/use-reduced-motion';
 import { experienceTokens, useThemeTokens } from '@/src/theme';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef } from 'react';
-import { Animated, Dimensions, Easing, Platform, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useRef } from 'react';
+import { Animated, Dimensions, Easing, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -84,6 +84,36 @@ export function ExperienceWelcomeScreen() {
   const welcomeOpacityAnim = useRef(new Animated.Value(0)).current;
   const screenShiftAnim = useRef(new Animated.Value(18)).current;
   const screenScaleAnim = useRef(new Animated.Value(0.985)).current;
+  const hasExitedRef = useRef(false);
+
+  const exit = useCallback(() => {
+    if (hasExitedRef.current) return;
+    hasExitedRef.current = true;
+
+    if (reduceMotion) {
+      router.replace(destination as any);
+      return;
+    }
+
+    // Brief exit fade so the welcome doesn't snap out before the Stack
+    // animation kicks in on the destination route.
+    Animated.parallel([
+      Animated.timing(overlayAnim, {
+        toValue: 0,
+        duration: 220,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(welcomeOpacityAnim, {
+        toValue: 0,
+        duration: 180,
+        easing: Easing.in(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      router.replace(destination as any);
+    });
+  }, [destination, overlayAnim, reduceMotion, welcomeOpacityAnim]);
 
   useEffect(() => {
     overlayAnim.stopAnimation();
@@ -139,14 +169,14 @@ export function ExperienceWelcomeScreen() {
       ]).start();
     }
 
-    const exitDelay = reduceMotion ? 260 : 1280;
+    const exitDelay = reduceMotion ? 220 : 1000;
     const timer = setTimeout(() => {
-      router.replace(destination as any);
+      exit();
     }, exitDelay);
 
     return () => clearTimeout(timer);
   }, [
-    destination,
+    exit,
     overlayAnim,
     reduceMotion,
     screenScaleAnim,
@@ -177,7 +207,13 @@ export function ExperienceWelcomeScreen() {
         },
       ]}
     >
-      <SafeAreaView style={styles.safeArea}>
+      <Pressable
+        onPress={Platform.OS === 'web' ? undefined : exit}
+        accessibilityRole="button"
+        accessibilityLabel={`Skip to ${copy.label}`}
+        style={styles.safeArea}
+      >
+        <SafeAreaView style={styles.safeArea}>
         {doodlePositions.map((doodle, index) => (
           <Animated.View
             key={`${experience}-doodle-${index}`}
@@ -284,7 +320,8 @@ export function ExperienceWelcomeScreen() {
             </AppText>
           </View>
         </Animated.View>
-      </SafeAreaView>
+        </SafeAreaView>
+      </Pressable>
     </Animated.View>
   );
 }

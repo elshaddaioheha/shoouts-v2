@@ -17,6 +17,9 @@ export default function RootLayout() {
               <Stack.Screen name="index" />
               <Stack.Screen name="(auth)" />
               <Stack.Screen name="(tabs)" />
+              {/* Welcome screen runs its own opacity/scale animation; let the
+                  Stack swap instantly so the two don't fight each other. */}
+              <Stack.Screen name="experience-welcome" options={{ animation: 'none' }} />
             </Stack>
           </StartupGate>
         </AppProviders>

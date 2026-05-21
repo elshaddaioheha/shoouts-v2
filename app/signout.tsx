@@ -10,7 +10,7 @@ import { AppShell } from '@/src/features/navigation/components/AppShell';
 import { useThemeTokens } from '@/src/theme';
 import { StyleSheet, View } from 'react-native';
 
-export default function DebugSignOut() {
+export default function SignOut() {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
   const router = useRouter();

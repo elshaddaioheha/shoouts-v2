@@ -322,9 +322,11 @@ async function fetchPublishedUploads(scanLimit: number): Promise<MarketplaceList
         : null;
 
   if (isMissingIndexError(primaryError)) {
-    console.warn(
-      '[marketplace] Published upload ranking needs a Firestore index. Showing unranked uploads.'
-    );
+    if (__DEV__) {
+      console.warn(
+        '[marketplace] Published upload ranking needs a Firestore index. Showing unranked uploads.'
+      );
+    }
   } else if (primaryError) {
     throw primaryError;
   }
@@ -510,10 +512,14 @@ function logListingReadStats(stats: ListingReadStats) {
     `missing_audio=${stats.missingAudio}`,
   ].join(', ');
 
-  console.warn(`[marketplace] ${stats.scope} diagnostics: ${summary}`);
+  if (__DEV__) {
+    console.warn(`[marketplace] ${stats.scope} diagnostics: ${summary}`);
+  }
 }
 
 function logFirestoreReadError(scope: string, error: unknown) {
+  if (!__DEV__) return;
+
   const message =
     error instanceof Error
       ? error.message
@@ -532,6 +538,8 @@ function logFirestoreReadError(scope: string, error: unknown) {
 }
 
 function logFirestoreFallback(scope: string, error: unknown) {
+  if (!__DEV__) return;
+
   const message = error instanceof Error ? error.message : 'Unknown Firestore read error';
   const code = error instanceof FirebaseError ? error.code : 'unknown';
 
