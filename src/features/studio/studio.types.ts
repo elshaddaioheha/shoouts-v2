@@ -1,4 +1,4 @@
-export type StudioListingLifecycle = 'draft' | 'published' | 'archived';
+export type StudioListingLifecycle = 'draft' | 'published' | 'archived' | 'taken_down';
 
 export type StudioListingLicenseType = 'lease' | 'exclusive' | 'non_exclusive';
 
@@ -21,6 +21,9 @@ export type StudioListing = {
   createdAtMs: number;
   updatedAtMs: number;
   publishedAtMs: number | null;
+  takenDownAt: number | null;
+  takenDownReason: string | null;
+  vaultSourceId: string | null;
 };
 
 export type StreamDataPoint = {

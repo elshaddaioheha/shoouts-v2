@@ -45,7 +45,6 @@ export const EXPERIENCE_NAVIGATION: Record<AppExperience, ExperienceNavigationCo
       { key: 'hybrid', label: 'Dashboard', route: '/hybrid', icon: 'hybrid' },
       { key: 'vault', label: 'Vault', route: '/hybrid/vault', icon: 'vault' },
       { key: 'studio', label: 'Studio', route: '/hybrid/studio', icon: 'studio' },
-      { key: 'upload', label: 'Publish', route: '/hybrid/publish', icon: 'upload' },
       { key: 'more', label: 'More', route: '/hybrid/more', icon: 'more' },
     ],
   },

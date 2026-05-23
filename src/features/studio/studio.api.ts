@@ -30,6 +30,9 @@ export type CreateDraftInput = {
   description: string | null;
   bpm: number | null;
   key: string | null;
+  coverUrl?: string | null;
+  audioUrl?: string | null;
+  vaultSourceId?: string | null;
 };
 
 export async function createDraftListing(
@@ -41,8 +44,8 @@ export async function createDraftListing(
     ownerId: uid,
     title: input.title,
     priceInCents: input.priceInCents,
-    audioUrl: null,
-    coverUrl: null,
+    audioUrl: input.audioUrl ?? null,
+    coverUrl: input.coverUrl ?? null,
     genre: input.genre,
     licenseType: input.licenseType,
     description: input.description,
@@ -52,11 +55,24 @@ export async function createDraftListing(
     lifecycleStatus: 'draft' as StudioListingLifecycle,
     isPublic: false,
     listenCount: 0,
+    vaultSourceId: input.vaultSourceId ?? null,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     publishedAt: null,
+    takenDownAt: null,
+    takenDownReason: null,
   });
   return docRef.id;
+}
+
+export async function publishListing(uid: string, listingId: string): Promise<void> {
+  const db = getFirebaseDb();
+  await updateDoc(doc(db, USERS, uid, LISTINGS, listingId), {
+    lifecycleStatus: 'published' as StudioListingLifecycle,
+    isPublic: true,
+    publishedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export async function patchListingUrls(
@@ -144,6 +160,9 @@ function mapListing(document: QueryDocumentSnapshot<DocumentData>): StudioListin
     createdAtMs: getTimestampMs(d.createdAt),
     updatedAtMs: getTimestampMs(d.updatedAt),
     publishedAtMs: d.publishedAt ? getTimestampMs(d.publishedAt) : null,
+    takenDownAt: d.takenDownAt ? getTimestampMs(d.takenDownAt) : null,
+    takenDownReason: asNullableString(d.takenDownReason),
+    vaultSourceId: asNullableString(d.vaultSourceId),
   };
 }
 
@@ -160,7 +179,7 @@ function isLicenseType(v: unknown): v is StudioListingLicenseType {
 }
 
 function isLifecycle(v: unknown): v is StudioListingLifecycle {
-  return v === 'draft' || v === 'published' || v === 'archived';
+  return v === 'draft' || v === 'published' || v === 'archived' || v === 'taken_down';
 }
 
 function isRecoverableError(error: unknown) {

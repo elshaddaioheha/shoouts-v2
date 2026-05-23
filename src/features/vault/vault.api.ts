@@ -3,16 +3,19 @@ import { FirebaseError } from 'firebase/app';
 import {
   collection,
   collectionGroup,
+  doc,
   getDocs,
   limit,
   orderBy,
   query,
+  serverTimestamp,
+  updateDoc,
   where,
   type DocumentData,
   type Firestore,
   type QueryDocumentSnapshot,
 } from 'firebase/firestore';
-import type { VaultProject } from './vault.types';
+import type { VaultProject, VaultProjectEditFields } from './vault.types';
 
 const USERS_COLLECTION = 'users';
 const UPLOADS_COLLECTION = 'uploads';
@@ -42,6 +45,29 @@ type VaultReadStats = {
   missingCover: number;
   inferredOwnerId: number;
 };
+
+export async function updateVaultProject(
+  sourcePath: string,
+  fields: Partial<VaultProjectEditFields>
+): Promise<void> {
+  const db = getFirebaseDb();
+  const segments = sourcePath.split('/').filter(Boolean);
+  const docRef = doc(db, segments[0], ...segments.slice(1));
+  await updateDoc(docRef, {
+    ...fields,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function markVaultProjectPromoted(sourcePath: string): Promise<void> {
+  const db = getFirebaseDb();
+  const segments = sourcePath.split('/').filter(Boolean);
+  const docRef = doc(db, segments[0], ...segments.slice(1));
+  await updateDoc(docRef, {
+    lifecycleStatus: 'promoted',
+    updatedAt: serverTimestamp(),
+  });
+}
 
 export async function fetchVaultProjects(uid: string, limitCount = 24): Promise<VaultProject[]> {
   try {
@@ -271,6 +297,10 @@ function mapVaultProject(
     ),
     folderName: pickNullableString(raw.folderName, raw.folder, details.folderName),
     lifecycleStatus: pickNullableString(raw.lifecycleStatus, raw.publishState, raw.status),
+    genre: pickNullableString(raw.genre, metadata.genre, details.genre),
+    bpm: typeof raw.bpm === 'number' ? raw.bpm : null,
+    key: pickNullableString(raw.key, metadata.key, details.key),
+    description: pickNullableString(raw.description, metadata.description, details.description),
   };
 
   return {

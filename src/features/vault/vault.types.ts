@@ -11,4 +11,18 @@ export type VaultProject = {
   updatedAtMs: number;
   folderName?: string | null;
   lifecycleStatus?: string | null;
+  genre?: string | null;
+  bpm?: number | null;
+  key?: string | null;
+  description?: string | null;
+};
+
+export type VaultProjectEditFields = {
+  title: string;
+  artist: string;
+  coverUrl: string | null;
+  genre: string | null;
+  bpm: number | null;
+  key: string | null;
+  description: string | null;
 };
