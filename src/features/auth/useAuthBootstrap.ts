@@ -53,10 +53,19 @@ export function useAuthBootstrap() {
           setStartupState('ready', null);
 
           if (user) {
-            setSession({
-              uid: user.uid,
-              email: user.email,
-              displayName: user.displayName,
+            user.getIdTokenResult().then((tokenResult) => {
+              setSession({
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName,
+                isAdmin: tokenResult.claims['role'] === 'admin',
+              });
+            }).catch(() => {
+              setSession({
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName,
+              });
             });
           } else {
             clearSession();

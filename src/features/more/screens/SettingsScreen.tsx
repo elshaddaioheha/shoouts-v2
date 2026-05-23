@@ -182,6 +182,18 @@ export function SettingsScreen() {
             </AppText>
           </Pressable>
         </View>
+
+        {user?.isAdmin ? (
+          <View style={styles.card}>
+            <AppText variant="sectionHeading">Administration</AppText>
+            <Pressable
+              style={styles.inlineButton}
+              onPress={() => router.push('/admin' as any)}
+            >
+              <AppText variant="button" tone="accent">Open admin panel</AppText>
+            </Pressable>
+          </View>
+        ) : null}
       </ScrollView>
     </AppShell>
   );

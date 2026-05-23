@@ -9,6 +9,7 @@ import { can } from '@/src/features/access/access.helpers';
 import { useAccountStore } from '@/src/features/account/account.store';
 import { createThread, findExistingThread } from '@/src/features/chat/chat.api';
 import { ComposeThreadModal } from '@/src/features/chat/components/ComposeThreadModal';
+import { ReportListingSheet } from '@/src/features/marketplace/components/ReportListingSheet';
 import { ListingArtwork } from '@/src/features/marketplace/components/ListingArtwork';
 import { useMarketplaceListingDetail } from '@/src/features/marketplace/marketplace.hooks';
 import { formatMarketplacePrice } from '@/src/features/marketplace/marketplace.types';
@@ -40,6 +41,7 @@ export function ListingDetailsScreen() {
   const role = useAccountStore((state) => state.role);
   const [featureNotice, setFeatureNotice] = useState<ListingFeatureNotice | null>(null);
   const [showCompose, setShowCompose] = useState(false);
+  const [showReport, setShowReport] = useState(false);
 
   if (listingQuery.isLoading) {
     return (
@@ -281,6 +283,12 @@ export function ListingDetailsScreen() {
             <AppText variant="button" tone="accent">Message seller</AppText>
           </Pressable>
         ) : null}
+
+        {user ? (
+          <Pressable style={styles.reportButton} onPress={() => setShowReport(true)}>
+            <AppText variant="caption" tone="muted">Report listing</AppText>
+          </Pressable>
+        ) : null}
       </ScrollView>
 
       <ComposeThreadModal
@@ -289,6 +297,24 @@ export function ListingDetailsScreen() {
         onSend={handleSendFirstMessage}
         onClose={() => setShowCompose(false)}
       />
+
+      {user ? (
+        <ReportListingSheet
+          visible={showReport}
+          listingId={listingData.id}
+          listingTitle={listingData.title}
+          sellerId={listingData.sellerId}
+          reportedBy={user.uid}
+          onClose={() => setShowReport(false)}
+          onSent={() => {
+            setShowReport(false);
+            setFeatureNotice({
+              title: 'Report submitted',
+              message: 'Thank you. Our team will review this listing.',
+            });
+          }}
+        />
+      ) : null}
 
       <InterimFeatureSheet
         visible={Boolean(featureNotice)}
@@ -434,6 +460,11 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       borderWidth: 1,
       borderColor: theme.colors.accentBorder,
       paddingVertical: theme.spacing.md,
+      alignItems: 'center',
+    },
+    reportButton: {
+      marginTop: theme.spacing.sm,
+      paddingVertical: theme.spacing.sm,
       alignItems: 'center',
     },
   });

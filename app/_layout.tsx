@@ -22,6 +22,7 @@ export default function RootLayout() {
               <Stack.Screen name="experience-welcome" options={{ animation: 'none' }} />
               <Stack.Screen name="checkout" options={{ presentation: 'modal' }} />
               <Stack.Screen name="messages" />
+              <Stack.Screen name="admin" />
             </Stack>
           </StartupGate>
         </AppProviders>
