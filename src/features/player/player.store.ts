@@ -8,7 +8,8 @@ import type {
 
 type PlayerControlCommand =
   | { id: number; type: 'seek_to_start' }
-  | { id: number; type: 'seek_by'; seconds: number };
+  | { id: number; type: 'seek_by'; seconds: number }
+  | { id: number; type: 'seek_to_fraction'; fraction: number };
 
 type PlayerState = {
   track: PlayerTrack | null;
@@ -22,6 +23,8 @@ type PlayerState = {
   repeatMode: PlayerRepeatMode;
   controlCommand: PlayerControlCommand | null;
   commandCounter: number;
+  isSuppressed: boolean;
+  preSuppressionPlaying: boolean;
   loadTrack: (track: PlayerTrack, options?: PlayerLoadOptions) => void;
   togglePlayback: () => void;
   requestPlay: () => void;
@@ -33,9 +36,12 @@ type PlayerState = {
   toggleRepeatMode: () => void;
   requestSeekToStart: () => void;
   requestSeekBy: (seconds: number) => void;
+  requestSeekToFraction: (fraction: number) => void;
   clearControlCommand: (id: number) => void;
   playNextTrack: (randomPool?: PlayerTrack[]) => void;
   playPreviousTrack: () => void;
+  suppress: () => void;
+  unsuppress: () => void;
   stop: () => void;
 };
 
@@ -117,6 +123,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   repeatMode: 'off',
   controlCommand: null,
   commandCounter: 0,
+  isSuppressed: false,
+  preSuppressionPlaying: false,
 
   loadTrack: (track, options) =>
     set((state) => {
@@ -187,6 +195,16 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         id: state.commandCounter + 1,
         type: 'seek_by',
         seconds,
+      },
+    })),
+
+  requestSeekToFraction: (fraction) =>
+    set((state) => ({
+      commandCounter: state.commandCounter + 1,
+      controlCommand: {
+        id: state.commandCounter + 1,
+        type: 'seek_to_fraction',
+        fraction: Math.min(Math.max(fraction, 0), 1),
       },
     })),
 
@@ -271,6 +289,25 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       };
     }),
 
+  suppress: () =>
+    set((state) => ({
+      isSuppressed: true,
+      preSuppressionPlaying: state.requestedPlaying,
+      requestedPlaying: false,
+      visible: false,
+      fullPlayerOpen: false,
+    })),
+
+  unsuppress: () =>
+    set((state) => {
+      if (!state.track || !state.isSuppressed) return state;
+      return {
+        isSuppressed: false,
+        visible: true,
+        requestedPlaying: state.preSuppressionPlaying,
+      };
+    }),
+
   stop: () =>
     set({
       track: null,
@@ -282,6 +319,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       fullPlayerOpen: false,
       snapshot: defaultSnapshot,
       controlCommand: null,
+      isSuppressed: false,
+      preSuppressionPlaying: false,
     }),
 }));
 

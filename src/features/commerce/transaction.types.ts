@@ -1,5 +1,5 @@
 export type CommerceAccessType = 'free' | 'paid';
-export type CommerceCheckoutState = 'review_only';
+export type CommerceCheckoutState = 'review_only' | 'claimed';
 export type CommerceAvailabilityStatus = 'available' | 'processing' | 'restricted';
 export type CommercePaymentStatus =
   | 'not_started'

@@ -12,6 +12,7 @@ import {
   initializeFirestore,
   type Firestore,
 } from 'firebase/firestore';
+import { getStorage, type FirebaseStorage } from 'firebase/storage';
 import { Platform } from 'react-native';
 import { assertEnv, env } from './env';
 
@@ -22,6 +23,7 @@ type ReactNativePersistenceFactory = (
 let firebaseApp: FirebaseApp | null = null;
 let firebaseAuth: Auth | null = null;
 let firebaseDb: Firestore | null = null;
+let firebaseStorage: FirebaseStorage | null = null;
 
 const firebaseConfig = {
   apiKey: env.firebaseApiKey,
@@ -99,4 +101,10 @@ export function getFirebaseDb() {
   }
 
   return firebaseDb;
+}
+
+export function getFirebaseStorage() {
+  if (firebaseStorage) return firebaseStorage;
+  firebaseStorage = getStorage(getFirebaseApp());
+  return firebaseStorage;
 }

@@ -1,1 +1,1 @@
-export { StudioUploadScreen as default } from '@/src/features/studio/screens/StudioHomeScreen';
+export { UploadWizardScreen as default } from '@/src/features/studio/screens/UploadWizardScreen';

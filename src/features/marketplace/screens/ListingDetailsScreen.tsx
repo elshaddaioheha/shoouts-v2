@@ -1,3 +1,4 @@
+import { AppText } from '@/src/components/ui/AppText';
 import { InterimFeatureSheet } from '@/src/components/ui/InterimFeatureSheet';
 import { getReadErrorCopy } from '@/src/config/backendStatus';
 import { ErrorState } from '@/src/components/ui/ErrorState';
@@ -5,16 +6,14 @@ import { LoadingState } from '@/src/components/ui/LoadingState';
 import { useAuthStore } from '@/src/features/auth/auth.store';
 import { useCartStore } from '@/src/features/cart/cart.store';
 import { ListingArtwork } from '@/src/features/marketplace/components/ListingArtwork';
-import {
-  useMarketplaceListingDetail,
-} from '@/src/features/marketplace/marketplace.hooks';
+import { useMarketplaceListingDetail } from '@/src/features/marketplace/marketplace.hooks';
 import { formatMarketplacePrice } from '@/src/features/marketplace/marketplace.types';
 import { AppShell } from '@/src/features/navigation/components/AppShell';
 import { usePlayerStore } from '@/src/features/player/player.store';
 import { useThemeTokens } from '@/src/theme';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 type ListingFeatureNotice = {
   title: string;
@@ -22,175 +21,6 @@ type ListingFeatureNotice = {
   actionLabel?: string;
   onAction?: () => void;
 };
-
-function createStyles(theme: ReturnType<typeof useThemeTokens>) {
-  return StyleSheet.create({
-    content: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingTop: theme.spacing.lg,
-      paddingBottom: theme.spacing.xxl,
-      backgroundColor: theme.colors.background,
-    },
-    center: {
-      flex: 1,
-      justifyContent: 'center',
-      paddingHorizontal: theme.spacing.xxl,
-      backgroundColor: theme.colors.background,
-    },
-    back: {
-      color: theme.colors.textSecondary,
-      fontWeight: '800',
-      marginBottom: theme.spacing.lg,
-    },
-    hero: {
-      height: 220,
-      borderRadius: theme.radius.xxl,
-      borderWidth: 1,
-      borderColor: theme.colors.cardBorder,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: theme.spacing.xl,
-    },
-    heroContent: {
-      alignItems: 'center',
-      gap: theme.spacing.xs,
-      paddingHorizontal: theme.spacing.lg,
-    },
-    heroText: {
-      color: theme.colors.textOnMedia,
-      fontSize: 32,
-      fontWeight: '900',
-      textAlign: 'center',
-    },
-    heroSubtext: {
-      color: theme.colors.textOnMediaMuted,
-      fontSize: 13,
-      fontWeight: '800',
-    },
-    eyebrow: {
-      ...theme.typography.eyebrow,
-      color: theme.colors.accent,
-      marginBottom: theme.spacing.sm,
-    },
-    title: {
-      color: theme.colors.textPrimary,
-      fontSize: 32,
-      fontWeight: '900',
-      letterSpacing: -0.8,
-    },
-    subtitle: {
-      color: theme.colors.textSecondary,
-      marginTop: theme.spacing.sm,
-      marginBottom: theme.spacing.lg,
-    },
-    artist: {
-      color: theme.colors.textSecondary,
-      fontSize: 15,
-      marginTop: theme.spacing.sm,
-      marginBottom: theme.spacing.xl,
-      fontWeight: '700',
-    },
-    metaGrid: {
-      flexDirection: 'row',
-      gap: theme.spacing.sm,
-      marginBottom: theme.spacing.xl,
-    },
-    metaCard: {
-      flex: 1,
-      borderRadius: theme.radius.lg,
-      backgroundColor: theme.colors.card,
-      borderWidth: 1,
-      borderColor: theme.colors.cardBorder,
-      padding: theme.spacing.md,
-    },
-    metaLabel: {
-      color: theme.colors.textMuted,
-      fontSize: 12,
-      fontWeight: '700',
-      marginBottom: theme.spacing.xs,
-    },
-    metaValue: {
-      color: theme.colors.textPrimary,
-      fontWeight: '900',
-    },
-    section: {
-      borderRadius: theme.radius.xl,
-      backgroundColor: theme.colors.card,
-      borderWidth: 1,
-      borderColor: theme.colors.cardBorder,
-      padding: theme.spacing.lg,
-      marginBottom: theme.spacing.md,
-    },
-    sectionTitle: {
-      color: theme.colors.textPrimary,
-      fontWeight: '900',
-      fontSize: 16,
-      marginBottom: theme.spacing.sm,
-    },
-    description: {
-      color: theme.colors.textSecondary,
-      lineHeight: 21,
-    },
-    tagRow: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: theme.spacing.sm,
-      marginBottom: theme.spacing.xl,
-    },
-    tag: {
-      borderRadius: theme.radius.pill,
-      backgroundColor: theme.colors.card,
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-    },
-    tagText: {
-      color: theme.colors.textSecondary,
-      fontWeight: '800',
-      fontSize: 12,
-    },
-    actions: {
-      flexDirection: 'row',
-      gap: theme.spacing.sm,
-    },
-    secondaryButton: {
-      flex: 1,
-      borderRadius: theme.radius.lg,
-      borderWidth: 1,
-      borderColor: theme.colors.cardBorder,
-      paddingVertical: theme.spacing.lg,
-      alignItems: 'center',
-    },
-    secondaryText: {
-      color: theme.colors.textPrimary,
-      fontWeight: '900',
-    },
-    primaryButton: {
-      flex: 1,
-      borderRadius: theme.radius.lg,
-      backgroundColor: theme.colors.accent,
-      paddingVertical: theme.spacing.lg,
-      alignItems: 'center',
-    },
-    disabledButton: {
-      backgroundColor: theme.colors.card,
-    },
-    primaryText: {
-      color: theme.colors.textOnAccent,
-      fontWeight: '900',
-    },
-    buyButton: {
-      marginTop: theme.spacing.md,
-      borderRadius: theme.radius.lg,
-      backgroundColor: theme.colors.card,
-      paddingVertical: theme.spacing.lg,
-      alignItems: 'center',
-    },
-    buyText: {
-      color: theme.colors.textSecondary,
-      fontWeight: '900',
-    },
-  });
-}
 
 export function ListingDetailsScreen() {
   const theme = useThemeTokens();
@@ -235,11 +65,12 @@ export function ListingDetailsScreen() {
     return (
       <AppShell>
         <View style={styles.center}>
-          <Text style={styles.title}>Listing not found</Text>
-          <Text style={styles.subtitle}>This listing may have been removed or is unavailable.</Text>
-
+          <AppText variant="pageHeading">Listing not found</AppText>
+          <AppText variant="body" tone="secondary" style={styles.notFoundSubtitle}>
+            This listing may have been removed or is unavailable.
+          </AppText>
           <Pressable style={styles.primaryButton} onPress={() => router.back()}>
-            <Text style={styles.primaryText}>Go back</Text>
+            <AppText variant="button" style={styles.onAccentText}>Go back</AppText>
           </Pressable>
         </View>
       </AppShell>
@@ -289,19 +120,15 @@ export function ListingDetailsScreen() {
     if (listingData.price <= 0) {
       setFeatureNotice({
         title: 'Secure library access is next',
-        message: 'Free download delivery will be connected with entitlement checks in the next phase.',
-        actionLabel: 'Open downloads',
-        onAction: () => router.push('/downloads' as any),
+        message:
+          'Free download delivery will be connected with entitlement checks in the next phase.',
+        actionLabel: 'Open cart',
+        onAction: () => router.push('/(tabs)/cart' as any),
       });
       return;
     }
 
-    setFeatureNotice({
-      title: 'Secure purchase flow is next',
-      message: 'This screen stays in review mode until payment integration and entitlement checks are finalized.',
-      actionLabel: 'Open cart',
-      onAction: () => router.push('/(tabs)/cart' as any),
-    });
+    router.push('/(tabs)/cart' as any);
   }
 
   function handleOpenArtist() {
@@ -323,7 +150,7 @@ export function ListingDetailsScreen() {
     <AppShell>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Pressable onPress={() => router.back()}>
-          <Text style={styles.back}>Back</Text>
+          <AppText variant="button" tone="secondary" style={styles.back}>Back</AppText>
         </Pressable>
 
         <ListingArtwork
@@ -334,52 +161,54 @@ export function ListingDetailsScreen() {
         >
           {listingData.coverUrl ? (
             <View style={styles.heroContent}>
-              <Text style={styles.heroText}>{listingData.genre ?? 'Track'}</Text>
+              <AppText variant="pageHeading" style={styles.heroText}>
+                {listingData.genre ?? 'Track'}
+              </AppText>
               {listingData.listenCount > 0 ? (
-                <Text style={styles.heroSubtext}>
+                <AppText variant="caption" style={styles.heroSubtext}>
                   {listingData.listenCount.toLocaleString()} plays
-                </Text>
+                </AppText>
               ) : null}
             </View>
           ) : null}
         </ListingArtwork>
 
-        <Text style={styles.eyebrow}>Marketplace Listing</Text>
-        <Text style={styles.title}>{listingData.title}</Text>
+        <AppText variant="eyebrow" tone="accent">Marketplace Listing</AppText>
+        <AppText variant="pageHeading">{listingData.title}</AppText>
 
         <Pressable onPress={handleOpenArtist}>
-          <Text style={styles.artist}>by {listingData.artist}</Text>
+          <AppText variant="body" tone="secondary" style={styles.artist}>
+            by {listingData.artist}
+          </AppText>
         </Pressable>
 
         <View style={styles.metaGrid}>
           <View style={styles.metaCard}>
-            <Text style={styles.metaLabel}>Price</Text>
-            <Text style={styles.metaValue}>{formatMarketplacePrice(listingData)}</Text>
+            <AppText variant="caption" tone="muted">Price</AppText>
+            <AppText variant="sectionHeading">{formatMarketplacePrice(listingData)}</AppText>
           </View>
-
           <View style={styles.metaCard}>
-            <Text style={styles.metaLabel}>BPM</Text>
-            <Text style={styles.metaValue}>{listingData.bpm ?? 'N/A'}</Text>
+            <AppText variant="caption" tone="muted">BPM</AppText>
+            <AppText variant="sectionHeading">{listingData.bpm ?? 'N/A'}</AppText>
           </View>
-
           <View style={styles.metaCard}>
-            <Text style={styles.metaLabel}>Key</Text>
-            <Text style={styles.metaValue}>{listingData.key ?? 'N/A'}</Text>
+            <AppText variant="caption" tone="muted">Key</AppText>
+            <AppText variant="sectionHeading">{listingData.key ?? 'N/A'}</AppText>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Description</Text>
-          <Text style={styles.description}>
+          <AppText variant="sectionHeading" style={styles.sectionTitle}>Description</AppText>
+          <AppText variant="body" tone="secondary" style={styles.description}>
             {listingData.description ?? 'No description has been added for this listing yet.'}
-          </Text>
+          </AppText>
         </View>
 
         {listingData.tags.length > 0 ? (
           <View style={styles.tagRow}>
             {listingData.tags.map((tag) => (
               <View key={tag} style={styles.tag}>
-                <Text style={styles.tagText}>{tag}</Text>
+                <AppText variant="caption" tone="secondary">{tag}</AppText>
               </View>
             ))}
           </View>
@@ -387,7 +216,7 @@ export function ListingDetailsScreen() {
 
         <View style={styles.actions}>
           <Pressable style={styles.secondaryButton} onPress={handlePreview}>
-            <Text style={styles.secondaryText}>Preview</Text>
+            <AppText variant="button">Preview</AppText>
           </Pressable>
 
           <Pressable
@@ -395,14 +224,16 @@ export function ListingDetailsScreen() {
             onPress={handleAddToCart}
             disabled={inCart}
           >
-            <Text style={styles.primaryText}>{inCart ? 'Added to cart' : 'Add to cart'}</Text>
+            <AppText variant="button" style={styles.onAccentText}>
+              {inCart ? 'Added to cart' : 'Add to cart'}
+            </AppText>
           </Pressable>
         </View>
 
         <Pressable style={styles.buyButton} onPress={handleBuyNow}>
-          <Text style={styles.buyText}>
+          <AppText variant="button" tone="secondary">
             {listingData.price <= 0 ? 'Review access' : 'Review purchase'}
-          </Text>
+          </AppText>
         </Pressable>
       </ScrollView>
 
@@ -420,4 +251,128 @@ export function ListingDetailsScreen() {
       />
     </AppShell>
   );
+}
+
+function createStyles(theme: ReturnType<typeof useThemeTokens>) {
+  return StyleSheet.create({
+    content: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingTop: theme.spacing.lg,
+      paddingBottom: theme.spacing.xxl,
+      backgroundColor: theme.colors.background,
+      gap: theme.spacing.sm,
+    },
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      paddingHorizontal: theme.spacing.xxl,
+      backgroundColor: theme.colors.background,
+      gap: theme.spacing.md,
+    },
+    back: {
+      marginBottom: theme.spacing.sm,
+    },
+    notFoundSubtitle: {
+      lineHeight: 22,
+    },
+    hero: {
+      height: 220,
+      borderRadius: theme.radius.xxl,
+      borderWidth: 1,
+      borderColor: theme.colors.cardBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: theme.spacing.sm,
+    },
+    heroContent: {
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.lg,
+    },
+    heroText: {
+      color: theme.colors.textOnMedia,
+      textAlign: 'center',
+    },
+    heroSubtext: {
+      color: theme.colors.textOnMediaMuted,
+    },
+    artist: {
+      marginBottom: theme.spacing.sm,
+    },
+    metaGrid: {
+      flexDirection: 'row',
+      gap: theme.spacing.sm,
+      marginVertical: theme.spacing.sm,
+    },
+    metaCard: {
+      flex: 1,
+      borderRadius: theme.radius.lg,
+      backgroundColor: theme.colors.card,
+      borderWidth: 1,
+      borderColor: theme.colors.cardBorder,
+      padding: theme.spacing.md,
+      gap: theme.spacing.xs,
+    },
+    section: {
+      borderRadius: theme.radius.xl,
+      backgroundColor: theme.colors.card,
+      borderWidth: 1,
+      borderColor: theme.colors.cardBorder,
+      padding: theme.spacing.lg,
+      gap: theme.spacing.sm,
+    },
+    sectionTitle: {
+      marginBottom: theme.spacing.xs,
+    },
+    description: {
+      lineHeight: 21,
+    },
+    tagRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: theme.spacing.sm,
+      marginVertical: theme.spacing.sm,
+    },
+    tag: {
+      borderRadius: theme.radius.pill,
+      backgroundColor: theme.colors.card,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+    },
+    actions: {
+      flexDirection: 'row',
+      gap: theme.spacing.sm,
+      marginTop: theme.spacing.sm,
+    },
+    secondaryButton: {
+      flex: 1,
+      borderRadius: theme.radius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.cardBorder,
+      paddingVertical: theme.spacing.lg,
+      alignItems: 'center',
+    },
+    primaryButton: {
+      flex: 1,
+      borderRadius: theme.radius.lg,
+      backgroundColor: theme.colors.accent,
+      paddingVertical: theme.spacing.lg,
+      alignItems: 'center',
+    },
+    disabledButton: {
+      backgroundColor: theme.colors.card,
+    },
+    onAccentText: {
+      color: theme.colors.textOnAccent,
+    },
+    buyButton: {
+      marginTop: theme.spacing.xs,
+      borderRadius: theme.radius.lg,
+      backgroundColor: theme.colors.card,
+      borderWidth: 1,
+      borderColor: theme.colors.cardBorder,
+      paddingVertical: theme.spacing.lg,
+      alignItems: 'center',
+    },
+  });
 }

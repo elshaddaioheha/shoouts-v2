@@ -2,8 +2,10 @@ import { getReadErrorCopy } from '@/src/config/backendStatus';
 import { LoadingState } from '@/src/components/ui/LoadingState';
 import { ErrorState } from '@/src/components/ui/ErrorState';
 import { useAuthStore } from '@/src/features/auth/auth.store';
-import { useCallback, useMemo } from 'react';
-import { FlatList, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { usePlayerStore } from '@/src/features/player/player.store';
+import { useThemeTokens } from '@/src/theme';
+import { useCallback, useMemo, useRef } from 'react';
+import { FlatList, StyleSheet, useWindowDimensions, View, type ViewToken } from 'react-native';
 import {
   type ExploreFeedFilters,
   type ExploreFeedItemModel,
@@ -22,12 +24,53 @@ export function ExploreFeed({ activeTab, filters }: ExploreFeedProps) {
   const startupStatus = useAuthStore((state) => state.startupStatus);
   const data = useMemo(() => feedQuery.data ?? [], [feedQuery.data]);
   const { height } = useWindowDimensions();
-  const renderItem = useCallback(
-    ({ item }: { item: ExploreFeedItemModel }) => (
-      <MemoExploreFeedItem item={item} pageHeight={height} />
-    ),
-    [height]
+  const theme = useThemeTokens();
+  const mediaGradient = theme.experience.mediaGradient ?? theme.experience.gradient;
+  const loadTrack = usePlayerStore((state) => state.loadTrack);
+  const activeTrackId = usePlayerStore((state) => state.track?.id ?? null);
+  const requestedPlaying = usePlayerStore((state) => state.requestedPlaying);
+
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 80 }).current;
+
+  const handleViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      const first = viewableItems.find((v) => v.isViewable);
+      if (!first) return;
+      const item = first.item as ExploreFeedItemModel;
+      if (!item.audioUrl) return;
+      loadTrack(
+        {
+          id: item.listingId,
+          title: item.title,
+          artist: item.artist,
+          sellerId: item.sellerId,
+          projectTitle: item.genre ?? 'Marketplace preview',
+          audioUrl: item.audioUrl,
+          coverUrl: item.coverUrl ?? null,
+          artworkGradient: mediaGradient as readonly [string, string],
+          surface: 'marketplace',
+        },
+        { autoPlay: true }
+      );
+    },
+    [loadTrack, mediaGradient]
   );
+
+  const renderItem = useCallback(
+    ({ item }: { item: ExploreFeedItemModel }) => {
+      const isActive = activeTrackId === item.listingId;
+      return (
+        <MemoExploreFeedItem
+          item={item}
+          pageHeight={height}
+          isActive={isActive}
+          isPlaying={isActive && requestedPlaying}
+        />
+      );
+    },
+    [height, activeTrackId, requestedPlaying]
+  );
+
   const keyExtractor = useCallback((item: ExploreFeedItemModel) => item.id, []);
 
   if (feedQuery.isLoading) {
@@ -100,6 +143,8 @@ export function ExploreFeed({ activeTab, filters }: ExploreFeedProps) {
       initialNumToRender={2}
       maxToRenderPerBatch={2}
       removeClippedSubviews
+      viewabilityConfig={viewabilityConfig}
+      onViewableItemsChanged={handleViewableItemsChanged}
       getItemLayout={(_, index) => ({
         length: height,
         offset: height * index,

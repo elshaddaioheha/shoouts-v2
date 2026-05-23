@@ -1,5 +1,4 @@
 import { AppIcon } from '@/src/components/ui/AppIcon';
-import { InterimFeatureSheet } from '@/src/components/ui/InterimFeatureSheet';
 import { AppText } from '@/src/components/ui/AppText';
 import { useCartStore } from '@/src/features/cart/cart.store';
 import {
@@ -12,7 +11,6 @@ import { ListingArtwork } from '@/src/features/marketplace/components/ListingArt
 import { AppShell } from '@/src/features/navigation/components/AppShell';
 import { useThemeTokens } from '@/src/theme';
 import { router } from 'expo-router';
-import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 export function CartScreen() {
@@ -21,12 +19,11 @@ export function CartScreen() {
   const clearCart = useCartStore((state) => state.clearCart);
   const theme = useThemeTokens();
   const styles = createStyles(theme);
-  const [showCheckoutNotice, setShowCheckoutNotice] = useState(false);
   const totalLabel = formatCartTotal(items);
   const hasMixedCurrencies = hasMixedCartCurrencies(items);
 
   function handleCheckout() {
-    setShowCheckoutNotice(true);
+    router.push('/checkout' as any);
   }
 
   return (
@@ -134,7 +131,7 @@ export function CartScreen() {
             disabled={items.length === 0}
           >
             <AppText variant="button" style={styles.checkoutText}>
-              Secure checkout is next
+              Proceed to checkout
             </AppText>
           </Pressable>
 
@@ -148,17 +145,6 @@ export function CartScreen() {
         </View>
       </ScrollView>
 
-      <InterimFeatureSheet
-        visible={showCheckoutNotice}
-        title="Secure purchase flow is next"
-        message="This cart remains a review step until payments and download entitlements are fully secured."
-        primaryLabel="Review downloads"
-        onPrimaryPress={() => {
-          setShowCheckoutNotice(false);
-          router.push('/downloads' as any);
-        }}
-        onClose={() => setShowCheckoutNotice(false)}
-      />
     </AppShell>
   );
 }

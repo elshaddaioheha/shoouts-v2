@@ -1,7 +1,9 @@
 import { AppText } from '@/src/components/ui/AppText';
+import { usePlayerStore } from '@/src/features/player/player.store';
 import { useThemeTokens } from '@/src/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { Play, VolumeX } from 'lucide-react-native';
 import { memo } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import {
@@ -21,12 +23,17 @@ const DISC_CENTER_OFFSET = 10;
 type ExploreFeedItemProps = {
   item: ExploreFeedItemModel;
   pageHeight: number;
+  isActive: boolean;
+  isPlaying: boolean;
 };
 
-function ExploreFeedItem({ item, pageHeight }: ExploreFeedItemProps) {
+function ExploreFeedItem({ item, pageHeight, isActive, isPlaying }: ExploreFeedItemProps) {
   const theme = useThemeTokens();
   const styles = createStyles(theme, pageHeight);
   const mediaGradient = theme.experience.mediaGradient ?? theme.experience.gradient;
+  const requestPause = usePlayerStore((state) => state.requestPause);
+  const requestPlay = usePlayerStore((state) => state.requestPlay);
+  const loadTrack = usePlayerStore((state) => state.loadTrack);
 
   function handleOpenListing() {
     router.push({
@@ -40,7 +47,32 @@ function ExploreFeedItem({ item, pageHeight }: ExploreFeedItemProps) {
   }
 
   function handleArtworkPress() {
-    handleOpenListing();
+    if (!item.audioUrl) {
+      handleOpenListing();
+      return;
+    }
+    if (isActive) {
+      if (isPlaying) {
+        requestPause();
+      } else {
+        requestPlay();
+      }
+      return;
+    }
+    loadTrack(
+      {
+        id: item.listingId,
+        title: item.title,
+        artist: item.artist,
+        sellerId: item.sellerId,
+        projectTitle: item.genre ?? 'Marketplace preview',
+        audioUrl: item.audioUrl,
+        coverUrl: item.coverUrl ?? null,
+        artworkGradient: mediaGradient as readonly [string, string],
+        surface: 'marketplace',
+      },
+      { autoPlay: true }
+    );
   }
 
   function handleMoreMetadata() {
@@ -73,6 +105,19 @@ function ExploreFeedItem({ item, pageHeight }: ExploreFeedItemProps) {
                 </View>
               ) : null}
             </ListingArtwork>
+            {item.audioUrl ? (
+              (!isActive || !isPlaying) ? (
+                <View style={styles.audioOverlay}>
+                  <View style={styles.audioOverlayBadge}>
+                    <Play size={18} color="#FFFFFF" fill="#FFFFFF" />
+                  </View>
+                </View>
+              ) : null
+            ) : (
+              <View style={styles.noPreviewBadge}>
+                <VolumeX size={14} color="rgba(255,255,255,0.85)" />
+              </View>
+            )}
           </Pressable>
         </View>
 
@@ -179,6 +224,31 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>, pageHeight: numb
       color: theme.colors.textOnMedia,
       textAlign: 'center',
     },
+    audioOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      borderRadius: ARTWORK_RADIUS,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    audioOverlayBadge: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: 'rgba(0,0,0,0.44)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    noPreviewBadge: {
+      position: 'absolute',
+      bottom: 4,
+      right: 4,
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: 'rgba(0,0,0,0.52)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     meta: {
       position: 'absolute',
       left: theme.spacing.lg,
@@ -220,6 +290,8 @@ export const MemoExploreFeedItem = memo(
   ExploreFeedItem,
   (previous, next) =>
     previous.pageHeight === next.pageHeight &&
+    previous.isActive === next.isActive &&
+    previous.isPlaying === next.isPlaying &&
     previous.item.id === next.item.id &&
     previous.item.coverUrl === next.item.coverUrl &&
     previous.item.title === next.item.title &&

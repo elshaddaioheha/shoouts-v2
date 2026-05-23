@@ -20,7 +20,7 @@ import { AppShell } from '@/src/features/navigation/components/AppShell';
 import { useThemeTokens } from '@/src/theme';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 type HomeTrack = MarketplaceListing & {
   color: string;
@@ -198,16 +198,14 @@ export function HomeScreen() {
               actionLabel="Explore"
               onActionPress={() => router.push('/(tabs)/marketplace' as any)}
             />
-            <FlatList
-              data={featuredTracks}
-              keyExtractor={(item) => `featured-${item.id}`}
+            <ScrollView
               horizontal
-              scrollEnabled
               showsHorizontalScrollIndicator={false}
-              ItemSeparatorComponent={() => <View style={{ width: theme.spacing.md }} />}
               contentContainerStyle={styles.horizontalList}
-              renderItem={({ item }) => (
+            >
+              {featuredTracks.map((item) => (
                 <ListingArtwork
+                  key={`featured-${item.id}`}
                   coverUrl={item.coverUrl}
                   fallbackColor={item.color}
                   overlay={Boolean(item.coverUrl)}
@@ -227,24 +225,21 @@ export function HomeScreen() {
                     <AppIcon name="play" size="sm" tone="inverse" stroke="bold" />
                   </Pressable>
                 </ListingArtwork>
-              )}
-            />
+              ))}
+            </ScrollView>
 
             <SectionHeader
               title="Latest Releases"
               actionLabel="See All"
               onActionPress={() => router.push('/(tabs)/marketplace' as any)}
             />
-            <FlatList
-              data={releaseTracks}
-              keyExtractor={(item) => `release-${item.id}`}
+            <ScrollView
               horizontal
-              scrollEnabled
               showsHorizontalScrollIndicator={false}
-              ItemSeparatorComponent={() => <View style={{ width: theme.spacing.md }} />}
               contentContainerStyle={styles.horizontalList}
-              renderItem={({ item }) => (
-                <Pressable style={styles.releaseCard} onPress={() => openListing(item.id)}>
+            >
+              {releaseTracks.map((item) => (
+                <Pressable key={`release-${item.id}`} style={styles.releaseCard} onPress={() => openListing(item.id)}>
                   <ListingArtwork
                     coverUrl={item.coverUrl}
                     fallbackColor={item.color}
@@ -261,24 +256,21 @@ export function HomeScreen() {
                     {formatMarketplacePrice(item)}
                   </AppText>
                 </Pressable>
-              )}
-            />
+              ))}
+            </ScrollView>
 
             <SectionHeader
               title="Free Music"
               actionLabel="Browse"
               onActionPress={() => router.push('/(tabs)/marketplace' as any)}
             />
-            <FlatList
-              data={freeTracks}
-              keyExtractor={(item) => `free-${item.id}`}
+            <ScrollView
               horizontal
-              scrollEnabled
               showsHorizontalScrollIndicator={false}
-              ItemSeparatorComponent={() => <View style={{ width: theme.spacing.md }} />}
               contentContainerStyle={styles.horizontalList}
-              renderItem={({ item }) => (
-                <View style={styles.freeCard}>
+            >
+              {freeTracks.map((item) => (
+                <View key={`free-${item.id}`} style={styles.freeCard}>
                   <Pressable style={styles.freeTapArea} onPress={() => openListing(item.id)}>
                     <ListingArtwork
                       coverUrl={item.coverUrl}
@@ -297,8 +289,8 @@ export function HomeScreen() {
                     <AppIcon name="cart" size="sm" tone="accent" stroke="medium" />
                   </Pressable>
                 </View>
-              )}
-            />
+              ))}
+            </ScrollView>
 
             <SectionHeader
               title="Popular Tracks"
@@ -431,6 +423,7 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
     },
     horizontalList: {
       paddingVertical: theme.spacing.xs,
+      gap: theme.spacing.md,
     },
     featuredCard: {
       width: 248,

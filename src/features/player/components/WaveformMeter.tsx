@@ -1,5 +1,6 @@
 import { useThemeTokens } from '@/src/theme';
-import { StyleSheet, View } from 'react-native';
+import { useRef } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 const BAR_HEIGHTS = [9, 16, 12, 22, 18, 28, 14, 34, 20, 13, 24, 17, 11, 29, 15, 22, 10, 18, 12];
 
@@ -7,15 +8,21 @@ type WaveformMeterProps = {
   progress: number;
   compact?: boolean;
   onMedia?: boolean;
+  onSeek?: (fraction: number) => void;
 };
 
-export function WaveformMeter({ progress, compact = false, onMedia = false }: WaveformMeterProps) {
+export function WaveformMeter({ progress, compact = false, onMedia = false, onSeek }: WaveformMeterProps) {
   const theme = useThemeTokens();
   const styles = createStyles(theme, compact, onMedia);
   const activeIndex = Math.round(progress * (BAR_HEIGHTS.length - 1));
+  const containerWidthRef = useRef(0);
 
   return (
-    <View style={styles.container} pointerEvents="none">
+    <View
+      style={styles.container}
+      pointerEvents={onSeek ? 'auto' : 'none'}
+      onLayout={(e) => { containerWidthRef.current = e.nativeEvent.layout.width; }}
+    >
       {BAR_HEIGHTS.map((height, index) => (
         <View
           key={`${height}-${index}`}
@@ -29,6 +36,17 @@ export function WaveformMeter({ progress, compact = false, onMedia = false }: Wa
           ]}
         />
       ))}
+      {onSeek ? (
+        <Pressable
+          style={StyleSheet.absoluteFillObject}
+          onPress={(e) => {
+            const w = containerWidthRef.current;
+            if (w <= 0) return;
+            const fraction = Math.min(Math.max(e.nativeEvent.locationX / w, 0), 1);
+            onSeek(fraction);
+          }}
+        />
+      ) : null}
     </View>
   );
 }

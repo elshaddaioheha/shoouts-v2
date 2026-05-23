@@ -20,6 +20,7 @@ export default function RootLayout() {
               {/* Welcome screen runs its own opacity/scale animation; let the
                   Stack swap instantly so the two don't fight each other. */}
               <Stack.Screen name="experience-welcome" options={{ animation: 'none' }} />
+              <Stack.Screen name="checkout" options={{ presentation: 'modal' }} />
             </Stack>
           </StartupGate>
         </AppProviders>

@@ -28,13 +28,15 @@ export function GlobalPlayerHost() {
   const clearControlCommand = usePlayerStore((state) => state.clearControlCommand);
   const setSnapshot = usePlayerStore((state) => state.setSnapshot);
   const requestPause = usePlayerStore((state) => state.requestPause);
+  const isSuppressed = usePlayerStore((state) => state.isSuppressed);
+  const suppress = usePlayerStore((state) => state.suppress);
+  const unsuppress = usePlayerStore((state) => state.unsuppress);
   const stop = usePlayerStore((state) => state.stop);
   const player = useAudioPlayer(track?.audioUrl ?? null, {
     updateInterval: 250,
   });
   const status = useAudioPlayerStatus(player);
   const shouldSuppressForRoute =
-    normalizedPath === '/marketplace' ||
     normalizedPath === '/experience-welcome' ||
     normalizedPath.startsWith('/settings');
   const isVaultRoute = routeExperience === 'vault';
@@ -42,7 +44,6 @@ export function GlobalPlayerHost() {
     Boolean(track) &&
     ((isVaultRoute && track?.surface !== 'vault') ||
       (!isVaultRoute && track?.surface === 'vault'));
-  const shouldStopPlayer = shouldSuppressForRoute || hasSurfaceMismatch;
   const showGlobalMiniPlayer =
     visible &&
     track?.surface === 'marketplace' &&
@@ -116,6 +117,12 @@ export function GlobalPlayerHost() {
           return;
         }
 
+        if (command.type === 'seek_to_fraction') {
+          const duration = status.duration ?? 0;
+          await player.seekTo(command.fraction * duration);
+          return;
+        }
+
         const currentTime = status.currentTime ?? 0;
         const duration = status.duration ?? 0;
         const unclampedTarget = currentTime + command.seconds;
@@ -144,14 +151,23 @@ export function GlobalPlayerHost() {
   ]);
 
   useEffect(() => {
-    if (!shouldStopPlayer) {
-      return;
+    if (shouldSuppressForRoute) {
+      if (track && !isSuppressed) {
+        suppress();
+      }
+    } else {
+      if (isSuppressed) {
+        unsuppress();
+      }
     }
+  }, [isSuppressed, shouldSuppressForRoute, suppress, track, unsuppress]);
 
+  useEffect(() => {
+    if (!hasSurfaceMismatch) return;
     if (visible || fullPlayerOpen || track) {
       stop();
     }
-  }, [fullPlayerOpen, shouldStopPlayer, stop, track, visible]);
+  }, [fullPlayerOpen, hasSurfaceMismatch, stop, track, visible]);
 
   useEffect(() => {
     if (!track?.audioUrl) {

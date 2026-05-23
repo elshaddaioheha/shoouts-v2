@@ -24,14 +24,20 @@ import {
 } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated,
   Modal,
-  PanResponder,
   Pressable,
   Share,
   StyleSheet,
   View,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WaveformMeter } from './WaveformMeter';
 
@@ -62,59 +68,52 @@ export function FullPlayerModal() {
   const repeatMode = usePlayerStore((state) => state.repeatMode);
   const toggleRepeatMode = usePlayerStore((state) => state.toggleRepeatMode);
   const requestSeekToStart = usePlayerStore((state) => state.requestSeekToStart);
+  const requestSeekToFraction = usePlayerStore((state) => state.requestSeekToFraction);
   const playNextTrack = usePlayerStore((state) => state.playNextTrack);
   const playPreviousTrack = usePlayerStore((state) => state.playPreviousTrack);
   const closeFullPlayer = usePlayerStore((state) => state.closeFullPlayer);
   const listingsQuery = useMarketplaceListings(72);
-  const dragY = useRef(new Animated.Value(0)).current;
+  const dragY = useSharedValue(0);
   const lastSkipBackPressAt = useRef(0);
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [notice, setNotice] = useState<PlayerNotice | null>(null);
 
-  const panResponder = useMemo(
+  const panGesture = useMemo(
     () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_, gesture) =>
-          gesture.dy > 6 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
-        onPanResponderMove: (_, gesture) => {
-          dragY.setValue(Math.max(0, gesture.dy));
-        },
-        onPanResponderRelease: (_, gesture) => {
-          if (gesture.dy > SWIPE_DISMISS_DISTANCE || gesture.vy > 1.1) {
-            Animated.timing(dragY, {
-              toValue: 420,
-              duration: 180,
-              useNativeDriver: true,
-            }).start(() => {
-              dragY.setValue(0);
-              setOptionsOpen(false);
-              closeFullPlayer();
+      Gesture.Pan()
+        .activeOffsetY(6)
+        .failOffsetX([-10, 10])
+        .onUpdate((e) => {
+          dragY.value = Math.max(0, e.translationY);
+        })
+        .onEnd((e) => {
+          if (e.translationY > SWIPE_DISMISS_DISTANCE || e.velocityY > 800) {
+            dragY.value = withTiming(420, { duration: 180 }, (finished) => {
+              if (finished) {
+                dragY.value = 0;
+                runOnJS(setOptionsOpen)(false);
+                runOnJS(closeFullPlayer)();
+              }
             });
-            return;
+          } else {
+            dragY.value = withSpring(0, { damping: 20, stiffness: 200 });
           }
-
-          Animated.spring(dragY, {
-            toValue: 0,
-            speed: 20,
-            bounciness: 0,
-            useNativeDriver: true,
-          }).start();
-        },
-        onPanResponderTerminate: () => {
-          Animated.spring(dragY, {
-            toValue: 0,
-            speed: 20,
-            bounciness: 0,
-            useNativeDriver: true,
-          }).start();
-        },
-      }),
+        })
+        .onFinalize(() => {
+          if (dragY.value > 0 && dragY.value < 420) {
+            dragY.value = withSpring(0, { damping: 20, stiffness: 200 });
+          }
+        }),
     [closeFullPlayer, dragY]
   );
 
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: dragY.value }],
+  }));
+
   useEffect(() => {
     if (!fullPlayerOpen) {
-      dragY.setValue(0);
+      dragY.value = 0;
       setOptionsOpen(false);
       setNotice(null);
     }
@@ -352,14 +351,16 @@ export function FullPlayerModal() {
 
   return (
     <>
-      <Modal visible={fullPlayerOpen} transparent animationType="fade" onRequestClose={closeFullPlayer}>
+      <Modal visible={fullPlayerOpen} transparent animationType="slide" onRequestClose={closeFullPlayer}>
         <View style={styles.overlay}>
           <Pressable style={styles.backdrop} onPress={closeFullPlayer} />
 
-          <Animated.View style={[styles.modalContent, { transform: [{ translateY: dragY }] }]}>
-            <View style={styles.dragHandleWrap} {...panResponder.panHandlers}>
-              <View style={styles.dragHandle} />
-            </View>
+          <Animated.View style={[styles.modalContent, animatedStyle]}>
+            <GestureDetector gesture={panGesture}>
+              <View style={styles.dragHandleWrap}>
+                <View style={styles.dragHandle} />
+              </View>
+            </GestureDetector>
 
             <View style={styles.topBar}>
               <Pressable style={styles.iconButton} onPress={closeFullPlayer}>
@@ -395,11 +396,11 @@ export function FullPlayerModal() {
               />
 
               <View style={styles.waveformWrap}>
-                <WaveformMeter progress={progress} onMedia />
+                <WaveformMeter progress={progress} onMedia onSeek={requestSeekToFraction} />
               </View>
 
               <AppText variant="button" style={styles.timeText}>
-                {formatPlayerTime(snapshot.currentTime)} / {formatPlayerTime(snapshot.duration || 139)}
+                {formatPlayerTime(snapshot.currentTime)} / {snapshot.duration ? formatPlayerTime(snapshot.duration) : '--:--'}
               </AppText>
 
             <View style={styles.controls}>
