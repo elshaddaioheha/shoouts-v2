@@ -12,6 +12,7 @@ import {
   serverTimestamp,
   updateDoc,
   where,
+  writeBatch,
   type DocumentData,
   type QueryDocumentSnapshot,
   type Unsubscribe,
@@ -212,12 +213,31 @@ export async function fetchAdminUser(uid: string): Promise<AdminUser | null> {
 
 export async function restrictUser(uid: string): Promise<void> {
   const db = getFirebaseDb();
-  await updateDoc(doc(db, USERS, uid), { isRestricted: true });
+  const batch = writeBatch(db);
+
+  batch.update(doc(db, USERS, uid), { isRestricted: true });
+
+  const publishedSnap = await getDocs(
+    query(collection(db, USERS, uid, LISTINGS), where('lifecycleStatus', '==', 'published'), where('isPublic', '==', true))
+  );
+  publishedSnap.docs.forEach((d) => batch.update(d.ref, { isPublic: false }));
+
+  await batch.commit();
 }
 
 export async function unrestrictUser(uid: string): Promise<void> {
   const db = getFirebaseDb();
-  await updateDoc(doc(db, USERS, uid), { isRestricted: false });
+  const batch = writeBatch(db);
+
+  batch.update(doc(db, USERS, uid), { isRestricted: false });
+
+  // Restore only published listings hidden by restriction (not taken_down/archived)
+  const hiddenSnap = await getDocs(
+    query(collection(db, USERS, uid, LISTINGS), where('lifecycleStatus', '==', 'published'), where('isPublic', '==', false))
+  );
+  hiddenSnap.docs.forEach((d) => batch.update(d.ref, { isPublic: true }));
+
+  await batch.commit();
 }
 
 export async function suspendUser(uid: string): Promise<void> {
