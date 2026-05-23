@@ -26,6 +26,8 @@ export type AccountProfile = {
   displayName: string | null;
   photoURL?: string | null;
 
+  isSuspended: boolean;
+
   role: UserRole;
   activeExperience: AppExperience;
   subscriptionStatus: SubscriptionStatus;

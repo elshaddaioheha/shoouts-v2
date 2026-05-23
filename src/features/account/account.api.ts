@@ -40,6 +40,7 @@ export function buildFallbackAccountProfile(
     email: user.email,
     displayName: user.displayName,
     photoURL: null,
+    isSuspended: false,
     role,
     activeExperience: getDefaultExperience(role),
     subscriptionStatus: 'free',
@@ -194,6 +195,7 @@ export async function fetchAccountProfile(user: AuthUser): Promise<AccountProfil
       asNullableString(raw.photoURL) ??
       asNullableString(raw.avatarUrl) ??
       asNullableString(raw.profileImageUrl),
+    isSuspended: asBoolean(raw.isSuspended) ?? false,
     role,
     activeExperience,
     subscriptionStatus,

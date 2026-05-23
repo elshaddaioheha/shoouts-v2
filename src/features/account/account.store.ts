@@ -12,6 +12,7 @@ type AccountState = {
   role: UserRole;
   activeExperience: AppExperience;
   previewExperience: AppExperience | null;
+  isSuspended: boolean;
 
   setProfile: (profile: AccountProfile | null) => void;
   setRole: (role: UserRole) => void;
@@ -25,6 +26,7 @@ export const useAccountStore = create<AccountState>((set) => ({
   role: 'shoouts',
   activeExperience: 'shoouts',
   previewExperience: null,
+  isSuspended: false,
 
   setProfile: (profile) => {
     const role = profile?.role ?? 'shoouts';
@@ -43,6 +45,7 @@ export const useAccountStore = create<AccountState>((set) => ({
       role,
       activeExperience,
       previewExperience: null,
+      isSuspended: profile?.isSuspended ?? false,
     });
   },
 
@@ -109,5 +112,6 @@ export const useAccountStore = create<AccountState>((set) => ({
       role: 'shoouts',
       activeExperience: 'shoouts',
       previewExperience: null,
+      isSuspended: false,
     }),
 }));

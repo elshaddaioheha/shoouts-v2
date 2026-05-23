@@ -1,4 +1,6 @@
 import { queryClient } from '@/src/config/queryClient';
+import { useAccountStore } from '@/src/features/account/account.store';
+import { SuspendedScreen } from '@/src/features/account/screens/SuspendedScreen';
 import { useAccountProfileBootstrap } from '@/src/features/account/useAccountProfileBootstrap';
 import { GlobalPlayerHost } from '@/src/features/player/components/GlobalPlayerHost';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
@@ -20,7 +22,7 @@ export function AppProviders({ children }: AppProvidersProps) {
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <>
             <AccountBootstrapBridge />
-            {children}
+            <AppContent>{children}</AppContent>
             <GlobalPlayerHost />
           </>
         </ThemeProvider>
@@ -32,4 +34,10 @@ export function AppProviders({ children }: AppProvidersProps) {
 function AccountBootstrapBridge() {
   useAccountProfileBootstrap();
   return null;
+}
+
+function AppContent({ children }: { children: ReactNode }) {
+  const isSuspended = useAccountStore((s) => s.isSuspended);
+  if (isSuspended) return <SuspendedScreen />;
+  return <>{children}</>;
 }
