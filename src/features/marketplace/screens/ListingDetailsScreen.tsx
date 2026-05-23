@@ -5,6 +5,10 @@ import { ErrorState } from '@/src/components/ui/ErrorState';
 import { LoadingState } from '@/src/components/ui/LoadingState';
 import { useAuthStore } from '@/src/features/auth/auth.store';
 import { useCartStore } from '@/src/features/cart/cart.store';
+import { can } from '@/src/features/access/access.helpers';
+import { useAccountStore } from '@/src/features/account/account.store';
+import { createThread, findExistingThread } from '@/src/features/chat/chat.api';
+import { ComposeThreadModal } from '@/src/features/chat/components/ComposeThreadModal';
 import { ListingArtwork } from '@/src/features/marketplace/components/ListingArtwork';
 import { useMarketplaceListingDetail } from '@/src/features/marketplace/marketplace.hooks';
 import { formatMarketplacePrice } from '@/src/features/marketplace/marketplace.types';
@@ -32,7 +36,10 @@ export function ListingDetailsScreen() {
   const addItem = useCartStore((state) => state.addItem);
   const isInCart = useCartStore((state) => state.isInCart);
   const loadTrack = usePlayerStore((state) => state.loadTrack);
+  const user = useAuthStore((state) => state.user);
+  const role = useAccountStore((state) => state.role);
   const [featureNotice, setFeatureNotice] = useState<ListingFeatureNotice | null>(null);
+  const [showCompose, setShowCompose] = useState(false);
 
   if (listingQuery.isLoading) {
     return (
@@ -129,6 +136,39 @@ export function ListingDetailsScreen() {
     }
 
     router.push('/(tabs)/cart' as any);
+  }
+
+  async function handleMessageSeller() {
+    if (!user) {
+      setFeatureNotice({
+        title: 'Sign in to message',
+        message: 'You need an account to contact sellers.',
+        actionLabel: 'Go to login',
+        onAction: () => router.push('/(auth)/login' as any),
+      });
+      return;
+    }
+    if (!listing) return;
+    const existing = await findExistingThread(user.uid, listing.id);
+    if (existing) {
+      router.push({ pathname: '/messages/[threadId]', params: { threadId: existing } } as any);
+    } else {
+      setShowCompose(true);
+    }
+  }
+
+  async function handleSendFirstMessage(text: string) {
+    if (!user || !listing) return;
+    const threadId = await createThread({
+      buyerId: user.uid,
+      sellerId: listing.sellerId,
+      listingId: listing.id,
+      listingTitle: listing.title,
+      listingCoverUrl: listing.coverUrl ?? null,
+      firstMessage: text,
+    });
+    setShowCompose(false);
+    router.push({ pathname: '/messages/[threadId]', params: { threadId } } as any);
   }
 
   function handleOpenArtist() {
@@ -235,7 +275,20 @@ export function ListingDetailsScreen() {
             {listingData.price <= 0 ? 'Review access' : 'Review purchase'}
           </AppText>
         </Pressable>
+
+        {can(role, 'chat.buyer') && user?.uid !== listingData.sellerId ? (
+          <Pressable style={styles.messageButton} onPress={handleMessageSeller}>
+            <AppText variant="button" tone="accent">Message seller</AppText>
+          </Pressable>
+        ) : null}
       </ScrollView>
+
+      <ComposeThreadModal
+        visible={showCompose}
+        listingTitle={listingData.title}
+        onSend={handleSendFirstMessage}
+        onClose={() => setShowCompose(false)}
+      />
 
       <InterimFeatureSheet
         visible={Boolean(featureNotice)}
@@ -372,6 +425,15 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       borderWidth: 1,
       borderColor: theme.colors.cardBorder,
       paddingVertical: theme.spacing.lg,
+      alignItems: 'center',
+    },
+    messageButton: {
+      marginTop: theme.spacing.xs,
+      borderRadius: theme.radius.lg,
+      backgroundColor: theme.colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: theme.colors.accentBorder,
+      paddingVertical: theme.spacing.md,
       alignItems: 'center',
     },
   });

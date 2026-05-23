@@ -1,5 +1,7 @@
 import { AppIcon } from '@/src/components/ui/AppIcon';
 import { AppText } from '@/src/components/ui/AppText';
+import { useAuthStore } from '@/src/features/auth/auth.store';
+import { useTotalUnreadCount } from '@/src/features/chat/chat.hooks';
 import {
   deriveExperienceFromRouteContext,
   normalizeNavigationPath,
@@ -36,6 +38,8 @@ export function BottomPillBar() {
   const styles = createStyles(theme);
   const pathname = usePathname();
   const { source } = useLocalSearchParams<{ source?: string }>();
+  const uid = useAuthStore((state) => state.user?.uid ?? null);
+  const totalUnread = useTotalUnreadCount(uid);
   const normalizedPathname = normalizeNavigationPath(pathname);
   const routeExperience = deriveExperienceFromRouteContext(pathname, source);
   const config = EXPERIENCE_NAVIGATION[routeExperience];
@@ -249,6 +253,7 @@ export function BottomPillBar() {
                 icon={item.icon}
                 label={item.label}
                 active={active}
+                showDot={item.key === 'more' && totalUnread > 0}
                 styles={styles}
               />
             </Pressable>
@@ -263,22 +268,27 @@ const BottomTabItem = ({
   icon,
   label,
   active,
+  showDot,
   styles,
 }: {
   icon: Parameters<typeof AppIcon>[0]['name'];
   label: string;
   active: boolean;
+  showDot: boolean;
   styles: ReturnType<typeof createStyles>;
 }) => {
   return (
     <View style={styles.itemContent}>
-      <AppIcon
-        name={icon}
-        size="sm"
-        variant="plain"
-        tone={active ? 'inverse' : 'secondary'}
-        stroke="regular"
-      />
+      <View style={styles.iconWrap}>
+        <AppIcon
+          name={icon}
+          size="sm"
+          variant="plain"
+          tone={active ? 'inverse' : 'secondary'}
+          stroke="regular"
+        />
+        {showDot ? <View style={styles.unreadDot} /> : null}
+      </View>
 
       <View style={styles.labelWrap}>
         <AppText
@@ -300,6 +310,7 @@ const MemoBottomTabItem = memo(
     previous.icon === next.icon &&
     previous.label === next.label &&
     previous.active === next.active &&
+    previous.showDot === next.showDot &&
     previous.styles === next.styles
 );
 
@@ -367,6 +378,18 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       gap: 2,
       paddingHorizontal: theme.spacing.xs,
       width: '100%',
+    },
+    iconWrap: {
+      position: 'relative',
+    },
+    unreadDot: {
+      position: 'absolute',
+      top: -2,
+      right: -4,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.colors.accent,
     },
     labelWrap: {
       justifyContent: 'center',
