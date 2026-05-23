@@ -1,5 +1,6 @@
-import { getFirebaseDb } from '@/src/config/firebase';
+import { getFirebaseDb, getFirebaseStorage } from '@/src/config/firebase';
 import { FirebaseError } from 'firebase/app';
+import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
 import {
   collection,
   collectionGroup,
@@ -66,6 +67,37 @@ export async function markVaultProjectPromoted(sourcePath: string): Promise<void
   await updateDoc(docRef, {
     lifecycleStatus: 'promoted',
     updatedAt: serverTimestamp(),
+  });
+}
+
+export function uploadVaultCover(
+  uid: string,
+  projectId: string,
+  fileUri: string,
+  onProgress: (progress: number) => void
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const storage = getFirebaseStorage();
+    const ext = fileUri.split('.').pop()?.toLowerCase() ?? 'jpg';
+    const storagePath = `users/${uid}/vaultProjects/${projectId}/cover.${ext}`;
+    const storageRef = ref(storage, storagePath);
+
+    fetch(fileUri)
+      .then((res) => res.blob())
+      .then((blob) => {
+        const task = uploadBytesResumable(storageRef, blob);
+        task.on(
+          'state_changed',
+          (snap) => {
+            if (snap.totalBytes > 0) {
+              onProgress(snap.bytesTransferred / snap.totalBytes);
+            }
+          },
+          reject,
+          () => getDownloadURL(task.snapshot.ref).then(resolve).catch(reject)
+        );
+      })
+      .catch(reject);
   });
 }
 

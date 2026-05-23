@@ -3,7 +3,7 @@ import { LoadingState } from '@/src/components/ui/LoadingState';
 import { useAuthStore } from '@/src/features/auth/auth.store';
 import { useAccountStore } from '@/src/features/account/account.store';
 import { AppShell } from '@/src/features/navigation/components/AppShell';
-import { updateVaultProject } from '@/src/features/vault/vault.api';
+import { updateVaultProject, uploadVaultCover } from '@/src/features/vault/vault.api';
 import { useVaultProjects } from '@/src/features/vault/vault.hooks';
 import type { VaultProjectEditFields } from '@/src/features/vault/vault.types';
 import { useThemeTokens } from '@/src/theme';
@@ -41,6 +41,7 @@ export function HybridVaultEditScreen() {
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (!initialized && project) {
@@ -74,17 +75,26 @@ export function HybridVaultEditScreen() {
 
     setSaving(true);
     setError(null);
-
-    const fields: Partial<VaultProjectEditFields> = {
-      title: title.trim() || project.title,
-      artist: artist.trim() || project.artist,
-      genre: genre.trim() || null,
-      bpm: bpm.trim() ? Number(bpm.trim()) || null : null,
-      key: key.trim() || null,
-      description: description.trim() || null,
-    };
+    setUploadProgress(null);
 
     try {
+      let resolvedCoverUrl = coverUrl;
+      const isLocalUri = coverUrl != null && (coverUrl.startsWith('file://') || coverUrl.startsWith('content://') || coverUrl.startsWith('/'));
+      if (isLocalUri && uid) {
+        resolvedCoverUrl = await uploadVaultCover(uid, project.id, coverUrl!, (p) => setUploadProgress(p));
+        setUploadProgress(null);
+      }
+
+      const fields: Partial<VaultProjectEditFields> = {
+        title: title.trim() || project.title,
+        artist: artist.trim() || project.artist,
+        genre: genre.trim() || null,
+        bpm: bpm.trim() ? Number(bpm.trim()) || null : null,
+        key: key.trim() || null,
+        description: description.trim() || null,
+        coverUrl: resolvedCoverUrl,
+      };
+
       await updateVaultProject(project.sourcePath, fields);
       await query.refetch();
       router.back();
@@ -92,6 +102,7 @@ export function HybridVaultEditScreen() {
       setError('Failed to save. Please try again.');
     } finally {
       setSaving(false);
+      setUploadProgress(null);
     }
   }
 
@@ -227,7 +238,13 @@ export function HybridVaultEditScreen() {
             disabled={saving}
           >
             {saving ? (
-              <ActivityIndicator size="small" color={theme.colors.textOnAccent} />
+              uploadProgress != null ? (
+                <AppText variant="button" style={{ color: theme.colors.textOnAccent }}>
+                  {`Uploading ${Math.round(uploadProgress * 100)}%`}
+                </AppText>
+              ) : (
+                <ActivityIndicator size="small" color={theme.colors.textOnAccent} />
+              )
             ) : (
               <AppText variant="button" style={{ color: theme.colors.textOnAccent }}>
                 Save changes
