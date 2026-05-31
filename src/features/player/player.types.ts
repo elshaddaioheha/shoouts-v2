@@ -1,5 +1,5 @@
 export type PlayerSurface = 'marketplace' | 'vault';
-export type PlayerRepeatMode = 'off' | 'one';
+export type PlayerRepeatMode = 'off' | 'all' | 'one';
 
 export type PlayerTrack = {
   id: string;

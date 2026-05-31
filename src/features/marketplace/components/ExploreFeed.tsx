@@ -11,7 +11,7 @@ import {
   type ExploreFeedItemModel,
   type ExploreFeedTab,
 } from '../marketplace.types';
-import { useExploreFeed } from '../marketplace.hooks';
+import { MARKETPLACE_FEED_LIMIT, useExploreFeed } from '../marketplace.hooks';
 import { MemoExploreFeedItem } from './ExploreFeedItem';
 
 type ExploreFeedProps = {
@@ -20,7 +20,7 @@ type ExploreFeedProps = {
 };
 
 export function ExploreFeed({ activeTab, filters }: ExploreFeedProps) {
-  const feedQuery = useExploreFeed(activeTab, 24, filters);
+  const feedQuery = useExploreFeed(activeTab, MARKETPLACE_FEED_LIMIT, filters);
   const startupStatus = useAuthStore((state) => state.startupStatus);
   const data = useMemo(() => feedQuery.data ?? [], [feedQuery.data]);
   const { height } = useWindowDimensions();
@@ -32,28 +32,51 @@ export function ExploreFeed({ activeTab, filters }: ExploreFeedProps) {
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 80 }).current;
 
+  // Pre-build the full ordered queue so skip-forward/back in the player follows
+  // feed scroll order rather than picking at random.
+  const feedQueue = useMemo(
+    () =>
+      data
+        .filter((item) => item.audioUrl)
+        .map((item) => ({
+          id: item.listingId,
+          title: item.title,
+          artist: item.artist,
+          sellerId: item.sellerId ?? null,
+          projectTitle: item.genre ?? 'Marketplace preview',
+          audioUrl: item.audioUrl!,
+          coverUrl: item.coverUrl ?? null,
+          artworkGradient: mediaGradient as readonly [string, string],
+          surface: 'marketplace' as const,
+        })),
+    [data, mediaGradient]
+  );
+
   const handleViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       const first = viewableItems.find((v) => v.isViewable);
       if (!first) return;
       const item = first.item as ExploreFeedItemModel;
       if (!item.audioUrl) return;
-      loadTrack(
-        {
-          id: item.listingId,
-          title: item.title,
-          artist: item.artist,
-          sellerId: item.sellerId,
-          projectTitle: item.genre ?? 'Marketplace preview',
-          audioUrl: item.audioUrl,
-          coverUrl: item.coverUrl ?? null,
-          artworkGradient: mediaGradient as readonly [string, string],
-          surface: 'marketplace',
-        },
-        { autoPlay: true }
-      );
+      const track = {
+        id: item.listingId,
+        title: item.title,
+        artist: item.artist,
+        sellerId: item.sellerId ?? null,
+        projectTitle: item.genre ?? 'Marketplace preview',
+        audioUrl: item.audioUrl,
+        coverUrl: item.coverUrl ?? null,
+        artworkGradient: mediaGradient as readonly [string, string],
+        surface: 'marketplace' as const,
+      };
+      const startIndex = feedQueue.findIndex((t) => t.id === item.listingId);
+      loadTrack(track, {
+        autoPlay: true,
+        queue: feedQueue,
+        startIndex: startIndex >= 0 ? startIndex : undefined,
+      });
     },
-    [loadTrack, mediaGradient]
+    [feedQueue, loadTrack, mediaGradient]
   );
 
   const renderItem = useCallback(

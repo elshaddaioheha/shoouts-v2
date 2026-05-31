@@ -26,6 +26,7 @@ type PlayerState = {
   isSuppressed: boolean;
   preSuppressionPlaying: boolean;
   loadTrack: (track: PlayerTrack, options?: PlayerLoadOptions) => void;
+  dismiss: () => void;
   togglePlayback: () => void;
   requestPlay: () => void;
   requestPause: () => void;
@@ -140,7 +141,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         queueIndex,
         history: [],
         visible: true,
-        requestedPlaying: options?.autoPlay ?? true,
+        // Preserve the user's play/pause intent if the same track is re-loaded
+        // (e.g. viewability callback fires after the user deliberately paused).
+        requestedPlaying: sameTrack ? state.requestedPlaying : (options?.autoPlay ?? true),
         snapshot: sameTrack ? state.snapshot : defaultSnapshot,
       };
     }),
@@ -175,9 +178,14 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     })),
 
   toggleRepeatMode: () =>
-    set((state) => ({
-      repeatMode: state.repeatMode === 'off' ? 'one' : 'off',
-    })),
+    set((state) => {
+      const next: Record<typeof state.repeatMode, typeof state.repeatMode> = {
+        off: 'all',
+        all: 'one',
+        one: 'off',
+      };
+      return { repeatMode: next[state.repeatMode] };
+    }),
 
   requestSeekToStart: () =>
     set((state) => ({
@@ -306,6 +314,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         visible: true,
         requestedPlaying: state.preSuppressionPlaying,
       };
+    }),
+
+  dismiss: () =>
+    set({
+      visible: false,
+      requestedPlaying: false,
+      fullPlayerOpen: false,
     }),
 
   stop: () =>

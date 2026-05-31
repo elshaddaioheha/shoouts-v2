@@ -32,6 +32,29 @@ export const experienceTokens: Record<AppExperience | UserRole, ExperienceTone> 
   shoouts: {
     id: 'shoouts',
     label: 'Shoouts',
+    accent: '#E65AD4',
+    accentHover: '#FF7BE1',
+    accentPressed: '#B934A9',
+    dark: {
+      background: '#111111',
+      surface: '#1A1A1A',
+      surfaceElevated: '#242424',
+      accentSoft: 'rgba(230,90,212,0.18)',
+      accentBorder: 'rgba(230,90,212,0.36)',
+    },
+    light: {
+      background: '#FFF5FC',
+      surface: '#FFFFFF',
+      surfaceElevated: '#FFE9F8',
+      accentSoft: 'rgba(230,90,212,0.12)',
+      accentBorder: 'rgba(230,90,212,0.28)',
+    },
+    gradient: ['#E65AD4', '#FFB7D6'],
+  },
+
+  vault: {
+    id: 'vault',
+    label: 'Vault',
     accent: '#EC5C39',
     accentHover: '#FF704D',
     accentPressed: '#C9472B',
@@ -51,29 +74,6 @@ export const experienceTokens: Record<AppExperience | UserRole, ExperienceTone> 
     },
     gradient: ['#EC5C39', '#FF8A5B'],
     mediaGradient: ['#522007', '#666666'],
-  },
-
-  vault: {
-    id: 'vault',
-    label: 'Vault',
-    accent: '#E65AD4',
-    accentHover: '#FF7BE1',
-    accentPressed: '#B934A9',
-    dark: {
-      background: '#111111',
-      surface: '#1A1A1A',
-      surfaceElevated: '#242424',
-      accentSoft: 'rgba(230,90,212,0.18)',
-      accentBorder: 'rgba(230,90,212,0.36)',
-    },
-    light: {
-      background: '#FFF5FC',
-      surface: '#FFFFFF',
-      surfaceElevated: '#FFE9F8',
-      accentSoft: 'rgba(230,90,212,0.12)',
-      accentBorder: 'rgba(230,90,212,0.28)',
-    },
-    gradient: ['#E65AD4', '#FFB7D6'],
   },
 
   vault_pro: {

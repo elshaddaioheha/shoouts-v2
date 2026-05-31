@@ -7,10 +7,12 @@ import {
 } from '@/src/features/access/access.helpers';
 import type { AppExperience, UserRole } from '@/src/features/access/access.types';
 import { useAccountStore } from '@/src/features/account/account.store';
+import { InterimFeatureSheet } from '@/src/components/ui/InterimFeatureSheet';
 import { AppShell } from '@/src/features/navigation/components/AppShell';
 import { openExperienceWelcome } from '@/src/features/navigation/experienceWelcome';
 import { experienceTokens, useThemeTokens } from '@/src/theme';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 type SubscriptionFeature = {
@@ -166,6 +168,7 @@ export function SubscriptionsScreen() {
   const selectedTierLabel = formatLabel(profile?.subscriptionTier ?? roleConfig.id);
   const statusLabel = formatLabel(profile?.subscriptionStatus ?? 'free');
   const toneMode = theme.isDark ? 'dark' : 'light';
+  const [subscribeTarget, setSubscribeTarget] = useState<string | null>(null);
 
   function openExperience(experience: AppExperience) {
     if (activeExperience === experience) {
@@ -250,7 +253,11 @@ export function SubscriptionsScreen() {
         </View>
 
         {activeConfig ? (
-          <ExperiencePlanSection config={activeConfig} />
+          <ExperiencePlanSection
+            config={activeConfig}
+            currentRole={role}
+            onSubscribe={(planName) => setSubscribeTarget(planName)}
+          />
         ) : (
           <View style={styles.emptyPrompt}>
             <AppText variant="title">Pick an experience</AppText>
@@ -260,11 +267,25 @@ export function SubscriptionsScreen() {
           </View>
         )}
       </ScrollView>
+      <InterimFeatureSheet
+        visible={Boolean(subscribeTarget)}
+        title={`Subscribe to ${subscribeTarget ?? ''}`}
+        message="Subscription payments are being connected. Once the checkout provider is integrated, you'll be able to activate this plan directly from here."
+        onClose={() => setSubscribeTarget(null)}
+      />
     </AppShell>
   );
 }
 
-function ExperiencePlanSection({ config }: { config: SubscriptionExperienceConfig }) {
+function ExperiencePlanSection({
+  config,
+  currentRole,
+  onSubscribe,
+}: {
+  config: SubscriptionExperienceConfig;
+  currentRole: UserRole;
+  onSubscribe: (planName: string) => void;
+}) {
   const theme = useThemeTokens();
   const styles = createStyles(theme);
   const token = experienceTokens[config.experience];
@@ -307,43 +328,68 @@ function ExperiencePlanSection({ config }: { config: SubscriptionExperienceConfi
       </View>
 
       <View style={styles.planList}>
-        {config.plans.map((plan) => (
-          <View key={plan.id} style={styles.planCard}>
-            <View style={styles.planHeader}>
-              <View>
-                <AppText variant="sectionHeading">{plan.name}</AppText>
-                <AppText variant="bodySmall" tone="secondary">
-                  {plan.summary}
-                </AppText>
-              </View>
-              <View style={styles.pricePill}>
-                <AppText variant="title" tone="accent">
-                  {plan.price}
-                </AppText>
-                <AppText variant="caption" tone="muted">
-                  {plan.cadence}
-                </AppText>
-              </View>
-            </View>
+        {config.plans.map((plan) => {
+          const isCurrent = plan.id === currentRole;
+          const isFree = plan.price === 'Free';
 
-            <View style={styles.planFeatureList}>
-              {plan.features.map((feature) => (
-                <View key={feature} style={styles.planFeatureRow}>
-                  <View style={styles.featureDot} />
-                  <AppText variant="bodySmall" tone="secondary" style={styles.planFeatureText}>
-                    {feature}
+          return (
+            <View key={plan.id} style={styles.planCard}>
+              <View style={styles.planHeader}>
+                <View style={styles.planHeaderCopy}>
+                  <AppText variant="sectionHeading">{plan.name}</AppText>
+                  <AppText variant="bodySmall" tone="secondary">
+                    {plan.summary}
                   </AppText>
                 </View>
-              ))}
-            </View>
+                <View style={styles.pricePill}>
+                  <AppText variant="title" tone="accent">
+                    {plan.price}
+                  </AppText>
+                  <AppText variant="caption" tone="muted">
+                    {plan.cadence}
+                  </AppText>
+                </View>
+              </View>
 
-            <View style={styles.paymentNotice}>
-              <AppText variant="caption" tone="muted">
-                Checkout remains gated until secure subscription activation is connected.
-              </AppText>
+              <View style={styles.planFeatureList}>
+                {plan.features.map((feature) => (
+                  <View key={feature} style={styles.planFeatureRow}>
+                    <View style={styles.featureDot} />
+                    <AppText variant="bodySmall" tone="secondary" style={styles.planFeatureText}>
+                      {feature}
+                    </AppText>
+                  </View>
+                ))}
+              </View>
+
+              {isCurrent ? (
+                <View style={styles.currentPlanBadge}>
+                  <AppText variant="caption" tone="success">
+                    ✓ Your current plan
+                  </AppText>
+                </View>
+              ) : isFree ? (
+                <View style={styles.freeBadge}>
+                  <AppText variant="caption" tone="accent">
+                    Included with your account
+                  </AppText>
+                </View>
+              ) : (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.subscribeButton,
+                    pressed && styles.subscribeButtonPressed,
+                  ]}
+                  onPress={() => onSubscribe(plan.name)}
+                >
+                  <AppText variant="button" style={styles.subscribeButtonText}>
+                    Subscribe · {plan.price}/{plan.cadence === 'per month' ? 'mo' : plan.cadence}
+                  </AppText>
+                </Pressable>
+              )}
             </View>
-          </View>
-        ))}
+          );
+        })}
       </View>
     </View>
   );
@@ -504,6 +550,11 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       gap: theme.spacing.md,
       alignItems: 'flex-start',
     },
+    planHeaderCopy: {
+      flex: 1,
+      minWidth: 0,
+      gap: theme.spacing.xs,
+    },
     pricePill: {
       borderRadius: theme.radius.lg,
       backgroundColor: theme.colors.surface,
@@ -532,12 +583,37 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       flex: 1,
       lineHeight: 20,
     },
-    paymentNotice: {
+    currentPlanBadge: {
       borderRadius: theme.radius.lg,
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.successSoft,
       borderWidth: 1,
-      borderColor: theme.colors.borderStrong,
-      padding: theme.spacing.md,
+      borderColor: theme.colors.success,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      alignItems: 'center',
+    },
+    freeBadge: {
+      borderRadius: theme.radius.lg,
+      backgroundColor: theme.colors.accentSoft,
+      borderWidth: 1,
+      borderColor: theme.colors.accentBorder,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      alignItems: 'center',
+    },
+    subscribeButton: {
+      minHeight: theme.layout.minTouchTarget,
+      borderRadius: theme.radius.lg,
+      backgroundColor: theme.colors.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: theme.spacing.lg,
+    },
+    subscribeButtonPressed: {
+      backgroundColor: theme.colors.accentPressed,
+    },
+    subscribeButtonText: {
+      color: theme.colors.textOnAccent,
     },
   });
 }

@@ -14,6 +14,7 @@ import {
   where,
   writeBatch,
   type DocumentData,
+  type DocumentReference,
   type QueryDocumentSnapshot,
   type Unsubscribe,
 } from 'firebase/firestore';
@@ -211,33 +212,49 @@ export async function fetchAdminUser(uid: string): Promise<AdminUser | null> {
   return mapAdminUser(snap.docs[0]);
 }
 
+// Firestore caps a single writeBatch at 500 operations, so listing updates are
+// committed in chunks for users with large catalogs.
+const MAX_BATCH_WRITES = 500;
+
+async function updateRefsInChunks(
+  db: ReturnType<typeof getFirebaseDb>,
+  refs: DocumentReference[],
+  data: DocumentData
+): Promise<void> {
+  for (let i = 0; i < refs.length; i += MAX_BATCH_WRITES) {
+    const batch = writeBatch(db);
+    refs.slice(i, i + MAX_BATCH_WRITES).forEach((ref) => batch.update(ref, data));
+    await batch.commit();
+  }
+}
+
 export async function restrictUser(uid: string): Promise<void> {
   const db = getFirebaseDb();
-  const batch = writeBatch(db);
+  await updateDoc(doc(db, USERS, uid), { isRestricted: true });
 
-  batch.update(doc(db, USERS, uid), { isRestricted: true });
-
+  // Hide currently-public published listings, tagging each so unrestrict can
+  // restore exactly these (and not listings hidden for other reasons).
   const publishedSnap = await getDocs(
     query(collection(db, USERS, uid, LISTINGS), where('lifecycleStatus', '==', 'published'), where('isPublic', '==', true))
   );
-  publishedSnap.docs.forEach((d) => batch.update(d.ref, { isPublic: false }));
-
-  await batch.commit();
+  await updateRefsInChunks(db, publishedSnap.docs.map((d) => d.ref), {
+    isPublic: false,
+    hiddenByRestriction: true,
+  });
 }
 
 export async function unrestrictUser(uid: string): Promise<void> {
   const db = getFirebaseDb();
-  const batch = writeBatch(db);
+  await updateDoc(doc(db, USERS, uid), { isRestricted: false });
 
-  batch.update(doc(db, USERS, uid), { isRestricted: false });
-
-  // Restore only published listings hidden by restriction (not taken_down/archived)
+  // Restore only listings this restriction hid (tagged via hiddenByRestriction).
   const hiddenSnap = await getDocs(
-    query(collection(db, USERS, uid, LISTINGS), where('lifecycleStatus', '==', 'published'), where('isPublic', '==', false))
+    query(collection(db, USERS, uid, LISTINGS), where('hiddenByRestriction', '==', true))
   );
-  hiddenSnap.docs.forEach((d) => batch.update(d.ref, { isPublic: true }));
-
-  await batch.commit();
+  await updateRefsInChunks(db, hiddenSnap.docs.map((d) => d.ref), {
+    isPublic: true,
+    hiddenByRestriction: false,
+  });
 }
 
 export async function suspendUser(uid: string): Promise<void> {

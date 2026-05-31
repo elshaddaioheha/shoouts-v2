@@ -6,8 +6,38 @@ import {
   type CommerceEntitlementStatus,
   type CommercePaymentStatus,
 } from '@/src/features/commerce/transaction.types';
-import { collection, getDocs, limit, query } from 'firebase/firestore';
+import { addDoc, collection, getDocs, limit, query, serverTimestamp } from 'firebase/firestore';
 import type { LibraryPurchase } from './downloads.types';
+
+export type FreeClaimInput = {
+  listingId: string;
+  title: string;
+  artist: string;
+  currency: string;
+  coverUrl?: string | null;
+};
+
+export async function claimFreeItems(uid: string, items: FreeClaimInput[]): Promise<void> {
+  const db = getFirebaseDb();
+  await Promise.all(
+    items.map((item) =>
+      addDoc(collection(db, 'users', uid, 'purchases'), {
+        listingId: item.listingId,
+        title: item.title,
+        artist: item.artist,
+        price: 0,
+        currency: item.currency,
+        accessType: 'free',
+        paymentStatus: 'paid',
+        entitlementStatus: 'granted',
+        deliveryStatus: 'not_ready',
+        coverUrl: item.coverUrl ?? null,
+        deliveryUrl: null,
+        purchasedAt: serverTimestamp(),
+      })
+    )
+  );
+}
 
 export async function fetchUserPurchases(uid: string, limitCount = 24): Promise<LibraryPurchase[]> {
   try {

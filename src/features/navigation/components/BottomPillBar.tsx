@@ -35,7 +35,7 @@ export function BottomPillBar() {
   const theme = useThemeTokens();
   const insets = useSafeAreaInsets();
   const { width: viewportWidth } = useWindowDimensions();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const pathname = usePathname();
   const { source } = useLocalSearchParams<{ source?: string }>();
   const uid = useAuthStore((state) => state.user?.uid ?? null);
@@ -93,8 +93,7 @@ export function BottomPillBar() {
   // When no tab matches (for example a detail route outside this tab set),
   // keep the active index empty instead of forcing index 0.
   const selectedIndex = activeIndex >= 0 ? activeIndex : -1;
-  const selectedTab = selectedIndex >= 0 ? tabs[selectedIndex] : tabs[0];
-  const selectedTabLayout = selectedIndex >= 0 ? tabLayouts[selectedTab.key] : undefined;
+  const selectedTabLayout = selectedIndex >= 0 ? tabLayouts[tabs[selectedIndex].key] : undefined;
 
   const indicatorX = useSharedValue(0);
   const indicatorWidth = useSharedValue(0);
@@ -158,14 +157,18 @@ export function BottomPillBar() {
   }));
 
   useEffect(() => {
-    if (!pendingTabKey) {
-      return;
-    }
+    if (!pendingTabKey) return;
 
     const activeRouteKey = routeActiveIndex >= 0 ? tabs[routeActiveIndex]?.key : null;
     if (activeRouteKey === pendingTabKey) {
       setPendingTabKey(null);
+      return;
     }
+
+    // If the route never catches up (e.g. navigation cancelled or failed),
+    // drop the pending state so the indicator doesn't remain on the wrong tab.
+    const fallback = setTimeout(() => setPendingTabKey(null), 600);
+    return () => clearTimeout(fallback);
   }, [pendingTabKey, routeActiveIndex, tabs]);
 
   const handleTabLayout = useCallback((tabKey: string, x: number, width: number) => {
@@ -243,6 +246,9 @@ export function BottomPillBar() {
                 const { x, width } = event.nativeEvent.layout;
                 handleTabLayout(item.key, x, width);
               }}
+              accessibilityRole="tab"
+              accessibilityLabel={item.label}
+              accessibilityState={{ selected: active }}
               style={({ pressed }) => [
                 styles.item,
                 { paddingHorizontal: tabHorizontalPadding },
@@ -293,7 +299,6 @@ const BottomTabItem = ({
       <View style={styles.labelWrap}>
         <AppText
           variant="bodySmall"
-          tone={active ? 'primary' : 'secondary'}
           numberOfLines={1}
           style={[styles.labelText, active ? styles.activeLabel : undefined]}
         >

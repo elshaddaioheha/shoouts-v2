@@ -9,6 +9,7 @@ import { useCartStore } from '@/src/features/cart/cart.store';
 import { usePlayerStore } from '@/src/features/player/player.store';
 import type { PlayerTrack } from '@/src/features/player/player.types';
 import {
+  MARKETPLACE_FEED_LIMIT,
   useMarketplaceListings,
 } from '@/src/features/marketplace/marketplace.hooks';
 import { ListingArtwork } from '@/src/features/marketplace/components/ListingArtwork';
@@ -42,7 +43,7 @@ export function HomeScreen() {
   const addItem = useCartStore((state) => state.addItem);
   const isInCart = useCartStore((state) => state.isInCart);
   const loadTrack = usePlayerStore((state) => state.loadTrack);
-  const listingsQuery = useMarketplaceListings(24);
+  const listingsQuery = useMarketplaceListings(MARKETPLACE_FEED_LIMIT);
   const tracks = useMemo<HomeTrack[]>(
     () =>
       (listingsQuery.data ?? []).map((listing, index) => ({
@@ -378,7 +379,7 @@ function SectionHeader({
   onActionPress: () => void;
 }) {
   const theme = useThemeTokens();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   return (
     <View style={styles.sectionHeader}>

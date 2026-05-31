@@ -1,4 +1,14 @@
 import { getFirebaseDb, getFirebaseStorage } from '@/src/config/firebase';
+import {
+  asNullableString,
+  asRecord,
+  asString,
+  getTimestampMs,
+  isRecoverableFirestoreReadError,
+  pickNullableString,
+  pickString,
+  pickTimestampMs,
+} from '@/src/services/firestore/mappers';
 import { FirebaseError } from 'firebase/app';
 import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
 import {
@@ -494,135 +504,4 @@ function isPublicProject(raw: Record<string, unknown>) {
   return raw.published === true || raw.isPublished === true || visibility === 'public';
 }
 
-function isRecoverableFirestoreReadError(error: unknown) {
-  return (
-    error instanceof FirebaseError &&
-    [
-      'failed-precondition',
-      'permission-denied',
-      'unavailable',
-      'deadline-exceeded',
-      'resource-exhausted',
-    ].includes(error.code)
-  );
-}
 
-function pickString(...values: unknown[]) {
-  for (const value of values) {
-    const nextValue = asString(value);
-    if (nextValue) {
-      return nextValue;
-    }
-  }
-
-  return null;
-}
-
-function pickNullableString(...values: unknown[]) {
-  for (const value of values) {
-    const nextValue = asNullableString(value);
-    if (nextValue) {
-      return nextValue;
-    }
-  }
-
-  return null;
-}
-
-function pickTimestampMs(...values: unknown[]) {
-  for (const value of values) {
-    const nextValue = getTimestampMs(value);
-    if (nextValue > 0) {
-      return nextValue;
-    }
-  }
-
-  return 0;
-}
-
-function asString(value: unknown): string | null {
-  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
-}
-
-function asNullableString(value: unknown): string | null {
-  return typeof value === 'string' ? value.trim() || null : null;
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
-}
-
-function normalizeUnixTimestamp(value: number) {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-
-  if (value > 0 && value < 10_000_000_000) {
-    return Math.round(value * 1000);
-  }
-
-  return Math.round(value);
-}
-
-function getFirestoreSeconds(value: unknown): number | null {
-  if (typeof value !== 'object' || value === null) {
-    return null;
-  }
-
-  if ('seconds' in value && typeof (value as { seconds?: unknown }).seconds === 'number') {
-    return (value as { seconds: number }).seconds;
-  }
-
-  if ('_seconds' in value && typeof (value as { _seconds?: unknown })._seconds === 'number') {
-    return (value as { _seconds: number })._seconds;
-  }
-
-  return null;
-}
-
-function getTimestampMs(value: unknown): number {
-  if (!value) {
-    return 0;
-  }
-
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return normalizeUnixTimestamp(value);
-  }
-
-  if (typeof value === 'string') {
-    const parsedNumber = Number(value);
-    if (Number.isFinite(parsedNumber)) {
-      return normalizeUnixTimestamp(parsedNumber);
-    }
-
-    const parsedDate = Date.parse(value);
-    return Number.isFinite(parsedDate) ? normalizeUnixTimestamp(parsedDate) : 0;
-  }
-
-  if (typeof value === 'object') {
-    if ('toMillis' in value && typeof (value as { toMillis?: unknown }).toMillis === 'function') {
-      try {
-        const millis = Number((value as { toMillis: () => unknown }).toMillis()) || 0;
-        return normalizeUnixTimestamp(millis);
-      } catch {
-        return 0;
-      }
-    }
-
-    if ('toDate' in value && typeof (value as { toDate?: unknown }).toDate === 'function') {
-      try {
-        const date = (value as { toDate: () => unknown }).toDate();
-        return date instanceof Date ? normalizeUnixTimestamp(date.getTime()) : 0;
-      } catch {
-        return 0;
-      }
-    }
-
-    const seconds = getFirestoreSeconds(value);
-    if (seconds !== null) {
-      return normalizeUnixTimestamp(seconds);
-    }
-  }
-
-  return 0;
-}

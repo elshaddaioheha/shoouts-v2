@@ -31,7 +31,7 @@ export function MiniPlayerBar({ variant = 'global', style }: MiniPlayerBarProps)
   const snapshot = usePlayerStore((state) => state.snapshot);
   const togglePlayback = usePlayerStore((state) => state.togglePlayback);
   const openFullPlayer = usePlayerStore((state) => state.openFullPlayer);
-  const stop = usePlayerStore((state) => state.stop);
+  const dismiss = usePlayerStore((state) => state.dismiss);
   const dragY = useRef(new Animated.Value(0)).current;
 
   const panResponder = useMemo(
@@ -50,7 +50,9 @@ export function MiniPlayerBar({ variant = 'global', style }: MiniPlayerBarProps)
               useNativeDriver: true,
             }).start(() => {
               dragY.setValue(0);
-              stop();
+              // Pause and hide without destroying the track/queue — the user
+              // can resume by tapping the artwork in the feed.
+              dismiss();
             });
             return;
           }
@@ -71,7 +73,7 @@ export function MiniPlayerBar({ variant = 'global', style }: MiniPlayerBarProps)
           }).start();
         },
       }),
-    [dragY, stop]
+    [dragY, dismiss]
   );
 
   useEffect(() => {

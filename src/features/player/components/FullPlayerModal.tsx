@@ -2,7 +2,7 @@ import { AppIcon } from '@/src/components/ui/AppIcon';
 import { AppText } from '@/src/components/ui/AppText';
 import type { AppIconKey } from '@/src/components/ui/appIcons';
 import { InterimFeatureSheet } from '@/src/components/ui/InterimFeatureSheet';
-import { useMarketplaceListings } from '@/src/features/marketplace/marketplace.hooks';
+import { MARKETPLACE_FEED_LIMIT, useMarketplaceListings } from '@/src/features/marketplace/marketplace.hooks';
 import {
   formatPlayerTime,
   getPlayerProgress,
@@ -17,6 +17,7 @@ import {
   MoreVertical,
   Pause,
   Play,
+  Repeat1,
   Repeat2,
   Share2,
   SkipBack,
@@ -72,9 +73,8 @@ export function FullPlayerModal() {
   const playNextTrack = usePlayerStore((state) => state.playNextTrack);
   const playPreviousTrack = usePlayerStore((state) => state.playPreviousTrack);
   const closeFullPlayer = usePlayerStore((state) => state.closeFullPlayer);
-  const listingsQuery = useMarketplaceListings(72);
+  const listingsQuery = useMarketplaceListings(MARKETPLACE_FEED_LIMIT);
   const dragY = useSharedValue(0);
-  const lastSkipBackPressAt = useRef(0);
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [notice, setNotice] = useState<PlayerNotice | null>(null);
 
@@ -183,16 +183,13 @@ export function FullPlayerModal() {
   }
 
   function handleSkipBackPress() {
-    const now = Date.now();
-    const isDoublePress = now - lastSkipBackPressAt.current <= 360;
-    lastSkipBackPressAt.current = now;
-
-    if (isDoublePress) {
-      playPreviousTrack();
+    // Past 3 s: seek to start (same press restarts current track).
+    // Within 3 s: go to previous track — matches Beatstars behaviour.
+    if (snapshot.currentTime > 3) {
+      requestSeekToStart();
       return;
     }
-
-    requestSeekToStart();
+    playPreviousTrack();
   }
 
   function handleSkipForwardPress() {
@@ -419,11 +416,14 @@ export function FullPlayerModal() {
               <Pressable
                 style={[
                   styles.controlButton,
-                  repeatMode === 'one' ? styles.controlButtonActive : undefined,
+                  repeatMode !== 'off' ? styles.controlButtonActive : undefined,
                 ]}
                 onPress={toggleRepeatMode}
               >
-                <Repeat2 size={25} color={theme.colors.textOnMedia} strokeWidth={2.4} />
+                {repeatMode === 'one'
+                  ? <Repeat1 size={25} color={theme.colors.textOnMedia} strokeWidth={2.4} />
+                  : <Repeat2 size={25} color={theme.colors.textOnMedia} strokeWidth={2.4} />
+                }
               </Pressable>
             </View>
             </View>

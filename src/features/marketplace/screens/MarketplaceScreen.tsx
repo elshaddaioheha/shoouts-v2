@@ -7,7 +7,7 @@ import { ExploreFeed } from '../components/ExploreFeed';
 import { ExploreHeader } from '../components/ExploreHeader';
 import { MemoExploreTabs } from '../components/ExploreTabs';
 import { SearchMarketplaceModal } from '../components/SearchMarketplaceModal';
-import { useMarketplaceListings } from '../marketplace.hooks';
+import { MARKETPLACE_FEED_LIMIT, useMarketplaceListings } from '../marketplace.hooks';
 import type {
   ExploreFeedFilters,
   ExploreFeedTab,
@@ -27,7 +27,7 @@ export function MarketplaceScreen() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [filters, setFilters] = useState<ExploreFeedFilters>(defaultFilters);
   const [presets, setPresets] = useState<ExploreFilterPreset[]>([]);
-  const listingsQuery = useMarketplaceListings(48);
+  const listingsQuery = useMarketplaceListings(MARKETPLACE_FEED_LIMIT);
   const genreOptions = useMemo(() => {
     const genres = (listingsQuery.data ?? [])
       .map((listing) => listing.genre?.trim())

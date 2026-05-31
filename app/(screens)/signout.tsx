@@ -5,6 +5,7 @@ import { AppText } from '@/src/components/ui/AppText';
 import { getFirebaseAuth } from '@/src/config/firebase';
 import { useAccountStore } from '@/src/features/account/account.store';
 import { useAuthStore } from '@/src/features/auth/auth.store';
+import { useCartStore } from '@/src/features/cart/cart.store';
 import { useExperienceNavigationStore } from '@/src/features/navigation/navigation.store';
 import { AppShell } from '@/src/features/navigation/components/AppShell';
 import { useThemeTokens } from '@/src/theme';
@@ -16,6 +17,7 @@ export default function SignOut() {
   const router = useRouter();
   const clearSession = useAuthStore((s) => s.clearSession);
   const resetAccount = useAccountStore((s) => s.resetAccount);
+  const clearCart = useCartStore((s) => s.clearCart);
   const setActiveExperience = useExperienceNavigationStore((s) => s.setActiveExperience);
 
   useEffect(() => {
@@ -32,6 +34,7 @@ export default function SignOut() {
 
       clearSession();
       resetAccount();
+      clearCart();
       setActiveExperience('shoouts');
       router.replace('/(auth)/login');
     })();
@@ -39,7 +42,7 @@ export default function SignOut() {
     return () => {
       mounted = false;
     };
-  }, [clearSession, resetAccount, router, setActiveExperience]);
+  }, [clearCart, clearSession, resetAccount, router, setActiveExperience]);
 
   return (
     <AppShell showBottomBar={false}>

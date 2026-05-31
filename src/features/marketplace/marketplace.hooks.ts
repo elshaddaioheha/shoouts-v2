@@ -5,6 +5,10 @@ import {
   fetchSellerListings,
   fetchSellerProfile,
 } from './marketplace.api';
+
+// Single canonical limit used by all feed consumers so React Query serves
+// one shared cache entry across HomeScreen, ExploreFeed, and GlobalPlayerHost.
+export const MARKETPLACE_FEED_LIMIT = 48;
 import type {
   ExploreFeedFilters,
   ExploreFeedItemModel,
@@ -45,7 +49,7 @@ export function useSellerListings(sellerId: string | null, limitCount = 12) {
 
 export function useExploreFeed(
   tab: ExploreFeedTab,
-  limitCount = 24,
+  limitCount = MARKETPLACE_FEED_LIMIT,
   filters?: ExploreFeedFilters
 ) {
   const listingsQuery = useMarketplaceListings(limitCount);

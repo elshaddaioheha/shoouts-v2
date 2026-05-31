@@ -1,13 +1,15 @@
 import { AppText } from '@/src/components/ui/AppText';
 import { InterimFeatureSheet } from '@/src/components/ui/InterimFeatureSheet';
+import { useAuthStore } from '@/src/features/auth/auth.store';
 import { useCartStore } from '@/src/features/cart/cart.store';
 import { formatCartPrice, formatCartTotal } from '@/src/features/cart/cart.types';
+import { claimFreeItems } from '@/src/features/downloads/downloads.api';
 import { useLibraryStore } from '@/src/features/library/library.store';
 import { ListingArtwork } from '@/src/features/marketplace/components/ListingArtwork';
 import { useThemeTokens } from '@/src/theme';
 import { router } from 'expo-router';
 import { X } from 'lucide-react-native';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { CartItem } from '../cart.types';
@@ -18,6 +20,7 @@ export function CheckoutSheet() {
   const theme = useThemeTokens();
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme, insets.top, insets.bottom);
+  const uid = useAuthStore((state) => state.user?.uid ?? null);
   const items = useCartStore((state) => state.items);
   const removeItem = useCartStore((state) => state.removeItem);
   const addLibraryItem = useLibraryStore((state) => state.addItem);
@@ -33,10 +36,30 @@ export function CheckoutSheet() {
 
   async function handleClaimFree() {
     setSheetState('claiming');
-    await new Promise<void>((resolve) => setTimeout(resolve, 640));
     const now = Date.now();
     const count = freeItems.length;
     const paidRemaining = paidItems.length > 0;
+
+    // Write entitlements to Firestore so they persist across devices.
+    // Falls back gracefully — local store is still written either way.
+    if (uid) {
+      try {
+        await claimFreeItems(
+          uid,
+          freeItems.map((item) => ({
+            listingId: item.listingId,
+            title: item.title,
+            artist: item.artist,
+            currency: item.currency,
+            coverUrl: item.coverUrl ?? null,
+          }))
+        );
+      } catch {
+        // Non-fatal: local library write below still gives the user access
+        // on this device even if the Firestore write fails.
+      }
+    }
+
     for (const item of freeItems) {
       addLibraryItem({
         id: item.id,
@@ -52,6 +75,7 @@ export function CheckoutSheet() {
       });
       removeItem(item.id);
     }
+
     setClaimedCount(count);
     setHadPaidOnClaim(paidRemaining);
     setSheetState('claimed');
@@ -193,7 +217,7 @@ function CheckoutItemRow({
   item: CartItem;
   theme: ReturnType<typeof useThemeTokens>;
 }) {
-  const styles = createItemStyles(theme);
+  const styles = useMemo(() => createItemStyles(theme), [theme]);
   return (
     <View style={styles.row}>
       <ListingArtwork coverUrl={item.coverUrl} label="Item" style={styles.art} />

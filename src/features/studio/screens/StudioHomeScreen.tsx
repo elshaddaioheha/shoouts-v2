@@ -148,6 +148,18 @@ export function StudioHomeScreen() {
               View Listings
             </AppText>
           </Pressable>
+          <Pressable
+            onPress={() => router.push('/studio/wallet' as any)}
+            style={({ pressed }) => [
+              styles.secondaryAction,
+              pressed && styles.actionPressed,
+            ]}
+          >
+            <AppIcon name="cart" size="sm" tone="accent" />
+            <AppText variant="button" tone="accent">
+              Wallet & Payouts
+            </AppText>
+          </Pressable>
         </View>
 
         <View style={styles.verificationCard}>

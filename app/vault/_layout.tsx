@@ -3,21 +3,20 @@ import { canAccessExperience } from '@/src/features/access/access.helpers';
 import { useAccountStore } from '@/src/features/account/account.store';
 import { Stack } from 'expo-router';
 
-export default function StudioLayout() {
+export default function VaultLayout() {
   const role = useAccountStore((state) => state.role);
 
-  if (!canAccessExperience(role, 'studio')) {
-    return <SubscriptionGate experience="studio" />;
+  if (!canAccessExperience(role, 'vault')) {
+    return <SubscriptionGate experience="vault" />;
   }
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
-      <Stack.Screen name="listings" />
-      <Stack.Screen name="analytics" />
-      <Stack.Screen name="promote" />
-      <Stack.Screen name="upload" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="wallet" />
+      <Stack.Screen name="folders" />
+      <Stack.Screen name="record" />
+      <Stack.Screen name="shared" />
+      <Stack.Screen name="more" />
     </Stack>
   );
 }

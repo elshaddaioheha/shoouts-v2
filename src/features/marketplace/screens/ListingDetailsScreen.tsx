@@ -127,13 +127,21 @@ export function ListingDetailsScreen() {
 
   function handleBuyNow() {
     if (listingData.price <= 0) {
-      setFeatureNotice({
-        title: 'Secure library access is next',
-        message:
-          'Free download delivery will be connected with entitlement checks in the next phase.',
-        actionLabel: 'Open cart',
-        onAction: () => router.push('/(tabs)/cart' as any),
-      });
+      // Add to cart first if not already there, then go straight to checkout.
+      if (!inCart) {
+        addItem({
+          id: listingData.id,
+          listingId: listingData.id,
+          title: listingData.title,
+          artist: listingData.artist,
+          price: listingData.price,
+          currency: listingData.currency,
+          accessType: 'free',
+          checkoutState: 'review_only',
+          coverUrl: listingData.coverUrl ?? undefined,
+        });
+      }
+      router.push('/checkout' as any);
       return;
     }
 
@@ -274,7 +282,7 @@ export function ListingDetailsScreen() {
 
         <Pressable style={styles.buyButton} onPress={handleBuyNow}>
           <AppText variant="button" tone="secondary">
-            {listingData.price <= 0 ? 'Review access' : 'Review purchase'}
+            {listingData.price <= 0 ? 'Get free track' : 'Review purchase'}
           </AppText>
         </Pressable>
 

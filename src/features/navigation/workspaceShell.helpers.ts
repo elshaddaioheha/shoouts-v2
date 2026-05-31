@@ -2,10 +2,10 @@ import { Alert } from 'react-native';
 import {
   canAccessExperience,
   getRoleConfig,
-  getUpgradeTarget,
 } from '@/src/features/access/access.helpers';
 import type { AppExperience, UserRole } from '@/src/features/access/access.types';
 import type { AccountProfile } from '@/src/features/account/account.types';
+import { router } from 'expo-router';
 
 export type WorkspaceCardStatus = 'available' | 'shell' | 'locked';
 
@@ -28,15 +28,15 @@ export function openWorkspaceGate(
   shellMessage: string
 ) {
   if (!canAccessExperience(role, experience)) {
-    const upgradeTarget = getUpgradeTarget(role);
-    const upgradeLabel = upgradeTarget ? getRoleConfig(upgradeTarget).label : 'a higher plan';
-    Alert.alert(
-      'Upgrade required',
-      `${featureLabel} needs ${upgradeLabel}. Upgrade your plan to unlock ${experience}.`
+    // Route to the subscriptions screen pre-selected to the locked experience
+    // so the user sees the exact plan they need with a Subscribe CTA.
+    router.push(
+      `/settings/subscriptions?experience=${experience}&source=${experience}` as any
     );
     return;
   }
 
+  // User has the plan but the feature is not yet built — show coming-soon notice.
   Alert.alert('Coming soon', shellMessage);
 }
 

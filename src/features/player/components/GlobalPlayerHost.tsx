@@ -3,9 +3,10 @@ import {
   normalizeNavigationPath,
 } from '@/src/features/navigation/navigation.helpers';
 import { layout, useThemeTokens } from '@/src/theme';
+import { MARKETPLACE_FEED_LIMIT, useMarketplaceListings } from '@/src/features/marketplace/marketplace.hooks';
 import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
 import { usePathname } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePlayerStore } from '../player.store';
@@ -28,10 +29,30 @@ export function GlobalPlayerHost() {
   const clearControlCommand = usePlayerStore((state) => state.clearControlCommand);
   const setSnapshot = usePlayerStore((state) => state.setSnapshot);
   const requestPause = usePlayerStore((state) => state.requestPause);
+  const queue = usePlayerStore((state) => state.queue);
+  const playNextTrack = usePlayerStore((state) => state.playNextTrack);
   const isSuppressed = usePlayerStore((state) => state.isSuppressed);
   const suppress = usePlayerStore((state) => state.suppress);
   const unsuppress = usePlayerStore((state) => state.unsuppress);
   const stop = usePlayerStore((state) => state.stop);
+  const listingsQuery = useMarketplaceListings(MARKETPLACE_FEED_LIMIT);
+  const randomPool = useMemo(() => {
+    const mediaGradient = theme.experience.mediaGradient ?? theme.experience.gradient;
+    return (listingsQuery.data ?? [])
+      .filter((listing) => listing.audioUrl)
+      .map((listing) => ({
+        id: listing.id,
+        title: listing.title,
+        artist: listing.artist,
+        sellerId: listing.sellerId,
+        projectTitle: listing.genre ?? 'Marketplace preview',
+        audioUrl: listing.audioUrl ?? null,
+        coverUrl: listing.coverUrl,
+        artworkGradient: mediaGradient as readonly [string, string],
+        surface: 'marketplace' as const,
+      }));
+  }, [listingsQuery.data, theme.experience.gradient, theme.experience.mediaGradient]);
+
   const player = useAudioPlayer(track?.audioUrl ?? null, {
     updateInterval: 250,
   });
@@ -86,12 +107,16 @@ export function GlobalPlayerHost() {
         return;
       }
 
-      requestPause();
-      player.seekTo(0).catch(() => null);
+      // Auto-advance: use the existing ordered queue when available, otherwise
+      // fall back to a random pick from marketplace listings (single-track queue).
+      playNextTrack(queue.length <= 1 ? randomPool : undefined);
     }
   }, [
     repeatMode,
     player,
+    playNextTrack,
+    queue,
+    randomPool,
     requestPause,
     requestedPlaying,
     setSnapshot,

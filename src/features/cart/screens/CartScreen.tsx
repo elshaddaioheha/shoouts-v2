@@ -1,6 +1,7 @@
 import { AppIcon } from '@/src/components/ui/AppIcon';
 import { AppText } from '@/src/components/ui/AppText';
 import { useCartStore } from '@/src/features/cart/cart.store';
+import { useCartValidation } from '@/src/features/cart/cart.hooks';
 import {
   formatCartPrice,
   formatCartTotal,
@@ -21,6 +22,9 @@ export function CartScreen() {
   const styles = createStyles(theme);
   const totalLabel = formatCartTotal(items);
   const hasMixedCurrencies = hasMixedCartCurrencies(items);
+  const { statusMap, isValidating } = useCartValidation(items);
+  const hasUnavailable = Object.values(statusMap).some((s) => s === 'unavailable');
+  const hasPriceChanged = Object.values(statusMap).some((s) => s === 'price_changed');
 
   function handleCheckout() {
     router.push('/checkout' as any);
@@ -33,9 +37,15 @@ export function CartScreen() {
           Cart
         </AppText>
         <AppText variant="pageHeading">Your selected items</AppText>
-        <AppText variant="bodySmall" tone="secondary" style={styles.subtitle}>
-          This is local review state only. Secure checkout, entitlement writes, and protected delivery are next.
-        </AppText>
+        {(hasUnavailable || hasPriceChanged) && !isValidating ? (
+          <View style={styles.validationBanner}>
+            <AppText variant="caption" tone="warning">
+              {hasUnavailable
+                ? 'One or more items are no longer available. Remove them before checkout.'
+                : 'A price has changed since you added an item. Review before proceeding.'}
+            </AppText>
+          </View>
+        ) : null}
 
         {items.length === 0 ? (
           <View style={styles.emptyCard}>
@@ -54,9 +64,15 @@ export function CartScreen() {
           <View style={styles.list}>
             {items.map((item) => {
               const stateCopy = getCartItemStateCopy(item);
+              const itemStatus = statusMap[item.id];
+              const isUnavailable = itemStatus === 'unavailable';
+              const isPriceChanged = itemStatus === 'price_changed';
 
               return (
-                <View key={item.id} style={styles.item}>
+                <View
+                  key={item.id}
+                  style={[styles.item, isUnavailable && styles.itemStale]}
+                >
                   <View style={styles.itemLeading}>
                     <ListingArtwork
                       coverUrl={item.coverUrl}
@@ -76,19 +92,31 @@ export function CartScreen() {
                       <AppText variant="bodySmall" tone="secondary" numberOfLines={1}>
                         {item.artist}
                       </AppText>
-                      <AppText variant="bodySmall" tone="accent">
+                      <AppText variant="bodySmall" tone={isUnavailable ? 'danger' : 'accent'}>
                         {formatCartPrice(item)}
                       </AppText>
-                      <AppText variant="caption" tone="muted">
-                        {stateCopy.badge}
-                      </AppText>
+                      {isUnavailable ? (
+                        <AppText variant="caption" tone="danger">
+                          No longer available
+                        </AppText>
+                      ) : isPriceChanged ? (
+                        <AppText variant="caption" tone="warning">
+                          Price has changed — review before checkout
+                        </AppText>
+                      ) : (
+                        <AppText variant="caption" tone="muted">
+                          {stateCopy.badge}
+                        </AppText>
+                      )}
                     </View>
                   </View>
 
                   <View style={styles.itemFooter}>
-                    <AppText variant="caption" tone="secondary" style={styles.itemNote}>
-                      {stateCopy.detail}
-                    </AppText>
+                    {!isUnavailable && !isPriceChanged ? (
+                      <AppText variant="caption" tone="secondary" style={styles.itemNote}>
+                        {stateCopy.detail}
+                      </AppText>
+                    ) : null}
                     <Pressable
                       style={styles.removeButton}
                       onPress={() => removeItem(item.id)}
@@ -126,12 +154,15 @@ export function CartScreen() {
           ) : null}
 
           <Pressable
-            style={[styles.checkoutButton, items.length === 0 && styles.checkoutButtonDisabled]}
+            style={[
+              styles.checkoutButton,
+              (items.length === 0 || hasUnavailable) && styles.checkoutButtonDisabled,
+            ]}
             onPress={handleCheckout}
-            disabled={items.length === 0}
+            disabled={items.length === 0 || hasUnavailable}
           >
             <AppText variant="button" style={styles.checkoutText}>
-              Proceed to checkout
+              {hasUnavailable ? 'Remove unavailable items first' : 'Proceed to checkout'}
             </AppText>
           </Pressable>
 
@@ -158,8 +189,13 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       backgroundColor: theme.colors.background,
       gap: theme.spacing.lg,
     },
-    subtitle: {
-      marginTop: -theme.spacing.sm,
+    validationBanner: {
+      borderRadius: theme.radius.lg,
+      backgroundColor: theme.colors.warningSoft,
+      borderWidth: 1,
+      borderColor: theme.colors.warning,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
     },
     emptyCard: {
       borderRadius: theme.radius.xl,
@@ -192,6 +228,10 @@ function createStyles(theme: ReturnType<typeof useThemeTokens>) {
       borderColor: theme.colors.borderStrong,
       padding: theme.spacing.md,
       gap: theme.spacing.md,
+    },
+    itemStale: {
+      borderColor: theme.colors.danger,
+      backgroundColor: theme.colors.dangerSoft,
     },
     itemLeading: {
       flexDirection: 'row',
